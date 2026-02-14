@@ -7,7 +7,7 @@ const router = express.Router();
 
 //register
 router.post ('/register', async(req, res)=>{
-    const{username, email, password} = req.body;
+    const{username, email,nationality, password} = req.body;
     try{
         if(!username|| !email || !nationality|| !password) {
             return res.status(400).json({message: "please fill all the field"})
@@ -22,7 +22,14 @@ router.post ('/register', async(req, res)=>{
         
         }
 
-        const user = await User.create({username,email,nationality,password});
+        const user = await User.create(
+            {
+                username,
+                email,
+                nationality,
+                password
+            });
+
         const token = generateToken(user._id);
         res.status(201).json({
             id: user._id,

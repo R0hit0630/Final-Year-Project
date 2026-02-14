@@ -4,6 +4,7 @@ import axios from "axios";
 import bgImage from "../assets/bg.jpg";
 
 const Login = ({ setUser }) => {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,27 +16,29 @@ const Login = ({ setUser }) => {
     setError("");
 
     try {
-      const res = await axios.post("/api/users/login", {
+      const res = await axios.post("http://localhost:5000/api/users/login", {
+        username,
         email,
         password,
       });
 
-      // save token
+      // backend returns: { id, username, email, token }
       localStorage.setItem("token", res.data.token);
 
-      // set logged-in user
-      setUser(res.data.user);
+      setUser({
+        id: res.data.id,
+        username: res.data.username,
+        email: res.data.email,
+      });
 
-      // ✅ redirect to home
       navigate("/home");
     } catch (err) {
-      setError("Invalid email or password");
+      setError(err.response?.data?.message || "Invalid email or password");
     }
   };
 
   return (
     <div className="h-screen w-full flex">
-
       {/* LEFT IMAGE */}
       <div
         className="hidden md:flex w-1/2 relative bg-cover bg-center"
@@ -47,16 +50,21 @@ const Login = ({ setUser }) => {
       {/* RIGHT LOGIN */}
       <div className="w-full md:w-1/2 flex items-center justify-center bg-white">
         <form onSubmit={handleSubmit} className="w-full max-w-sm px-8">
-          <h2 className="text-2xl font-semibold text-center mb-8">
-            Login
-          </h2>
+          <h2 className="text-2xl font-semibold text-center mb-8">Login</h2>
 
           {error && (
-            <p className="text-red-500 text-sm text-center mb-4">
-              {error}
-            </p>
+            <p className="text-red-500 text-sm text-center mb-4">{error}</p>
           )}
 
+           <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full mb-4 px-4 py-3 rounded-full bg-gray-100 focus:outline-none"
+            required
+          />
+          
           <input
             type="email"
             placeholder="Email"
@@ -82,7 +90,6 @@ const Login = ({ setUser }) => {
             LOGIN
           </button>
 
-          {/* ✅ SIGN UP REDIRECT */}
           <p className="text-center text-xs mt-6 text-gray-500">
             Don’t have an account?
             <span
@@ -94,7 +101,6 @@ const Login = ({ setUser }) => {
           </p>
         </form>
       </div>
-
     </div>
   );
 };
