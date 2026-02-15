@@ -46,33 +46,36 @@ router.post ('/register', async(req, res)=>{
     }
 });
 
-//lognin
+//login
+router.post("/login", async (req, res) => {
+  const { identifier, password } = req.body;
 
-router.post('/login', async(req,res) => {
-    const {username, email, password} = req.body;
-    try{
-        if(!username|| !email || !password) {
-            return res.status(400).json({message: "please fill all the field"})
-        }
-
-        const user = await User.findOne({email});
-
-        if(!user || !(await user.matchPassword(password))){
-            return res.status(401).json({message: "invalid credentials"});
-        }
-
-        const token = generateToken(user._id);
-        res.status(200).json({
-            id: user._id,
-            username: user.username,
-            email: user.email,
-            token,
-        })
-
-    } catch(err){
-        res.status(500).json({message:"server error"});
+  try {
+    if (!identifier || !password) {
+      return res.status(400).json({ message: "please fill all the field" });
     }
-})
+
+    const user = await User.findOne({
+      $or: [{ email: identifier }, { username: identifier }],
+    });
+
+    if (!user || !(await user.matchPassword(password))) {
+      return res.status(401).json({ message: "invalid credentials" });
+    }
+
+    const token = generateToken(user._id);
+    res.status(200).json({
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      token,
+    });
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    res.status(500).json({ message: "server error" });
+  }
+});
+
 
 //me
 router.get("/me",protect, async (req, res)=>{

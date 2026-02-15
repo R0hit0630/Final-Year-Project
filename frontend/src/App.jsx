@@ -1,4 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -7,20 +13,24 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 
-/*  Wrapper to control Navbar visibility */
-function Layout({ user, setUser }) {
+/* Wrapper to control Navbar visibility */
+function Layout({ user, setUser, loading }) {
   const location = useLocation();
 
   // Hide navbar on auth pages
   const hideNavbar = ["/login", "/register"].includes(location.pathname);
+  if (loading) {
+  return null; // prevents redirect during refresh
+}
+
 
   return (
     <>
       {!hideNavbar && <Navbar user={user} setUser={setUser} />}
 
       <Routes>
-        {/* Redirect root to login */}
-        <Route path="/" element={<Navigate to="/login" />} />
+        {/* Redirect root */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* Auth routes */}
         <Route path="/login" element={<Login setUser={setUser} />} />
@@ -29,7 +39,7 @@ function Layout({ user, setUser }) {
         {/* Protected route */}
         <Route
           path="/home"
-          element={user ? <Home /> : <Navigate to="/login" />}
+          element={user ? <Home user={user} /> : <Navigate to="/login" replace />}
         />
       </Routes>
     </>
@@ -39,24 +49,35 @@ function Layout({ user, setUser }) {
 function App() {
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
-
-      if (!token) return;
+      if (!token) 
+         {
+            setLoading(false);
+            return;
+         }
 
       try {
-        const res = await axios.get("/api/users/me", {
+        // call backend on 5000 (same as your login)
+        const res = await axios.get("http://localhost:5000/api/users/me", {
           headers: {
-            Authorization: `Bearer ${token}`, 
+            Authorization: `Bearer ${token}`,
           },
         });
+
         setUser(res.data);
       } catch (err) {
-        setError("Failed to fetch user data");
+        setError(err.response?.data?.message || "Failed to fetch user data");
         localStorage.removeItem("token");
+        setUser(null);
       }
+      finally {
+       setLoading(false);
+}
+
     };
 
     fetchUser();
@@ -64,7 +85,8 @@ function App() {
 
   return (
     <Router>
-      <Layout user={user} setUser={setUser} />
+      <Layout user={user} setUser={setUser} loading={loading} />
+      {error && <p style={{ display: "none" }}>{error}</p>}
     </Router>
   );
 }

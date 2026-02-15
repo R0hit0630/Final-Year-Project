@@ -4,8 +4,7 @@ import axios from "axios";
 import bgImage from "../assets/bg.jpg";
 
 const Login = ({ setUser }) => {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState(""); // ✅ username OR email
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -17,12 +16,10 @@ const Login = ({ setUser }) => {
 
     try {
       const res = await axios.post("http://localhost:5000/api/users/login", {
-        username,
-        email,
+        identifier,
         password,
       });
 
-      // backend returns: { id, username, email, token }
       localStorage.setItem("token", res.data.token);
 
       setUser({
@@ -33,7 +30,7 @@ const Login = ({ setUser }) => {
 
       navigate("/home");
     } catch (err) {
-      setError(err.response?.data?.message || "Invalid email or password");
+      setError(err.response?.data?.message || "Invalid credentials");
     }
   };
 
@@ -56,20 +53,11 @@ const Login = ({ setUser }) => {
             <p className="text-red-500 text-sm text-center mb-4">{error}</p>
           )}
 
-           <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full mb-4 px-4 py-3 rounded-full bg-gray-100 focus:outline-none"
-            required
-          />
-          
           <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="Username or Email"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             className="w-full mb-4 px-4 py-3 rounded-full bg-gray-100 focus:outline-none"
             required
           />
