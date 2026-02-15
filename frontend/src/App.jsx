@@ -12,6 +12,7 @@ import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
+import User from "./pages/User";
 
 /* Wrapper to control Navbar visibility */
 function Layout({ user, setUser, loading }) {
@@ -26,22 +27,28 @@ function Layout({ user, setUser, loading }) {
 
   return (
     <>
-      {!hideNavbar && <Navbar user={user} setUser={setUser} />}
-
+     
       <Routes>
-        {/* Redirect root */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+  {/* Landing page (PUBLIC) */}
+  <Route path="/" element={<Home user={user} />} />
 
-        {/* Auth routes */}
-        <Route path="/login" element={<Login setUser={setUser} />} />
-        <Route path="/register" element={<Register />} />
+  {/* Auth routes */}
+  <Route
+    path="/login"
+    element={!user ? <Login setUser={setUser} /> : <Navigate to="/user" replace />}
+  />
+  <Route
+    path="/register"
+    element={!user ? <Register /> : <Navigate to="/user" replace />}
+  />
 
-        {/* Protected route */}
-        <Route
-          path="/home"
-          element={user ? <Home user={user} /> : <Navigate to="/login" replace />}
-        />
-      </Routes>
+  {/* Protected page after login */}
+  <Route
+    path="/user"
+    element={user ? <User /> : <Navigate to="/login" replace />}
+  />
+</Routes>
+
     </>
   );
 }

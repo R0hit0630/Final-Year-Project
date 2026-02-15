@@ -1,7 +1,10 @@
-// src/pages/TravolinHome.jsx
 import React from "react";
+import { useNavigate } from "react-router-dom";
+
 
 export default function TravolinHome() {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white transition-colors">
       {/* Header / Navigation */}
@@ -31,14 +34,22 @@ export default function TravolinHome() {
             </a>
           </div>
 
+          
           <div className="flex items-center gap-4">
-            <button className="px-5 py-2.5 font-semibold hover:text-emerald-500 transition-colors">
-              Sign In
+            <button
+              onClick={() => navigate("/register")}
+              className="px-5 py-2.5 font-semibold hover:text-emerald-500 transition-colors">
+              Sign up
             </button>
-            <button className="bg-emerald-400 hover:bg-emerald-500 text-slate-900 px-6 py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-emerald-300/40">
+
+            <button
+              onClick={() => navigate("/login")}
+              className="bg-emerald-400 hover:bg-emerald-500 text-slate-900 px-6 py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-emerald-300/40"
+            >
               Book a Trip
             </button>
           </div>
+
         </nav>
       </header>
 

@@ -4,7 +4,7 @@ import axios from "axios";
 import bgImage from "../assets/bg.jpg";
 
 const Login = ({ setUser }) => {
-  const [identifier, setIdentifier] = useState(""); // ✅ username OR email
+  const [identifier, setIdentifier] = useState(""); // can be username or email
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -28,7 +28,7 @@ const Login = ({ setUser }) => {
         email: res.data.email,
       });
 
-      navigate("/home");
+      navigate("/user");
     } catch (err) {
       setError(err.response?.data?.message || "Invalid credentials");
     }
