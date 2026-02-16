@@ -20,9 +20,14 @@ export default function TravolinHome() {
           </div>
 
           <div className="hidden md:flex items-center gap-8">
-            <a className="font-medium hover:text-emerald-500 transition-colors" href="#">
-              Destinations
-            </a>
+            <button
+  onClick={() => navigate("/destinations")}
+  className="bg-emerald-400 px-6 py-3 rounded-lg font-bold"
+>
+  Destinations
+</button>
+
+
             <a className="font-medium hover:text-emerald-500 transition-colors" href="#">
               Packages
             </a>

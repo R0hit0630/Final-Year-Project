@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import User from "./pages/User";
+import Destination from "./pages/Destination";
 
 /* Wrapper to control Navbar visibility */
 function Layout({ user, setUser, loading }) {
@@ -27,7 +28,7 @@ function Layout({ user, setUser, loading }) {
 
   return (
     <>
-     
+      
       <Routes>
   {/* Landing page (PUBLIC) */}
   <Route path="/" element={<Home user={user} />} />
@@ -47,6 +48,13 @@ function Layout({ user, setUser, loading }) {
     path="/user"
     element={user ? <User /> : <Navigate to="/login" replace />}
   />
+
+  {/*Destination page*/}
+  <Route
+  path="/destinations"
+  element={<Destination />}
+/>
+
 </Routes>
 
     </>
