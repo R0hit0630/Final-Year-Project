@@ -130,7 +130,6 @@ export default function ExplorePackages() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
-      {/* NAVBAR (matches screenshot + responsive) */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
           {/* Mobile: burger */}
@@ -148,7 +147,7 @@ export default function ExplorePackages() {
               <IconMountain className="w-5 h-5 text-white" />
             </div>
             <span className="text-lg sm:text-xl font-extrabold tracking-tight uppercase">
-              Nepal<span className="text-emerald-500">Vibe</span>
+              Travolin
             </span>
           </div>
 
