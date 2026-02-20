@@ -10,8 +10,14 @@ import axios from "axios";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
-import User from "./pages/User";
+import User from "./pages/User/User";
 import Destination from "./pages/Destination";
+import AddDestination from "./Adminpage/AddDestination";
+import AddPackage from "./Adminpage/Addpackage";
+import DestinationPackages from "./Adminpage/packagelist";
+import Userhome from "./pages/User/Userhome";
+import History from "./pages/User/History";
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -58,18 +64,12 @@ function App() {
         {/* 🌍 PUBLIC ROUTES */}
         <Route path="/" element={<Home user={user} />} />
         <Route path="/destinations" element={<Destination />} />
-
-        {/* 🔐 AUTH ROUTES */}
-        <Route
-          path="/login"
-          element={
-            !user ? (
-              <Login setUser={setUser} />
-            ) : (
-              <Navigate to="/user" replace />
-            )
-          }
-        />
+          <Route path="/adddestination" element={<AddDestination />} />
+             <Route path="/addpackage" element={<AddPackage />} />
+                 <Route  path="/packages/:id" element={<DestinationPackages />} />
+   <Route  path="/history" element={<History />} />
+    <Route  path="/userhome" element={<Userhome />} />
+           <Route path="/login" element={<Login />} />
 
         <Route
           path="/register"

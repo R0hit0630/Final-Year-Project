@@ -3,6 +3,10 @@ import dotenv from "dotenv";
 import cors from "cors";
 import authRoutes from "./routes/auth.js";
 import { connectDB } from "./config/db.js";
+import destinationRoutes from "./routes/destination.routes.js";
+import packageRoutes from "./routes/package.routes.js";
+import bookingroutes from "./routes/bookingRoutes.js";
+
 
 dotenv.config();
 
@@ -16,9 +20,11 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use("/api/destinations", destinationRoutes);
+app.use("/api/packages", packageRoutes);
 app.use("/api/users", authRoutes)
 
-
+app.use("/api/booking", bookingroutes)
 // connect to DB
 connectDB();
 
