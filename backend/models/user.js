@@ -1,33 +1,96 @@
 import mongoose from "mongoose";
-import bcrypt from 'bcryptjs';
+import bcrypt from "bcryptjs";
 
-const userSchema = new mongoose.Schema({
-        
-        role: {
-    type: String,
-    enum: ["user", "agency", "admin"],
-    default: "user",
+// ✅ Emergency contacts schema (for Profile page)
+const emergencyContactSchema = new mongoose.Schema(
+  {
+    name: { type: String, trim: true, required: true },
+    phone: { type: String, trim: true, required: true },
+  },
+  { _id: false }
+);
+
+const userSchema = new mongoose.Schema(
+  {
+    role: {
+      type: String,
+      enum: ["user", "agency", "admin"],
+      default: "user",
+      index: true,
     },
 
     username: {
-        type: String,
-        required: true,
-        unique: true,
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      index: true,
     },
-    email:{
-        type: String,
-        unique: true,
+
+    email: {
+      type: String,
+      unique: true,
+      required: true,
+      trim: true,
+      lowercase: true,
+      index: true,
     },
+
     nationality: {
-        type:String,
-        required:true,
-        unique:true,
+      type: String,
+      required: true,
+      trim: true,
     },
-    password:{
+
+    password: {
+      type: String,
+      required: true,
+      minlength: 6,
+      select: false, // ✅ hide password by default
+    },
+
+    // ✅ account enable/disable
+    isActive: { type: Boolean, default: true },
+
+    // ==========================
+    // ✅ PROFILE PAGE FIELDS
+    // ==========================
+    fullName: { type: String, trim: true, default: "" },
+    phone: { type: String, trim: true, default: "" },
+    location: { type: String, trim: true, default: "" },
+    avatar: { type: String, trim: true, default: "" },
+
+    level: { type: Number, default: 1 },
+    tier: { type: String, default: "EXPLORER" },
+
+    preferences: {
+      difficulty: {
         type: String,
-        required: true,
+        enum: ["Easy", "Moderate", "Challenging", "Extreme"],
+        default: "Challenging",
+      },
+      interests: [{ type: String, trim: true }],
     },
-},{timestamps: true});
+
+    emergencyContacts: [emergencyContactSchema],
+
+    // ==========================
+    // ✅ AGENCY FIELDS
+    // (only meaningful when role === "agency")
+    // ==========================
+    agencyName: { type: String, trim: true, default: "" },
+    agencyAddress: { type: String, trim: true, default: "" },
+    agencyPhone: { type: String, trim: true, default: "" },
+    agencyLogo: { type: String, trim: true, default: "" },
+
+    // ✅ controlled by admin
+    agencyVerified: { type: Boolean, default: false },
+    agencyVerifiedAt: { type: Date, default: null },
+  },
+  { timestamps: true }
+);
+
+// ✅ Hash password
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
 
@@ -35,14 +98,9 @@ userSchema.pre("save", async function () {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
+// ✅ Compare password
+userSchema.methods.matchPassword = function (enteredPassword) {
+  return bcrypt.compare(enteredPassword, this.password);
+};
 
-
-
-userSchema.methods.matchPassword = async function(enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
-}
-
-
-const User = mongoose.model("User", userSchema);
-
-export default User;
+export default mongoose.model("User", userSchema);
