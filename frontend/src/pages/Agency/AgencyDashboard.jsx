@@ -1,6 +1,6 @@
 // src/Pages/AgencyDashboard.jsx
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function AgencyDashboard() {
   // ✅ Use SAME color system as your previous Profile page
@@ -302,6 +302,8 @@ export default function AgencyDashboard() {
     </div>
   );
 
+  const navigate = useNavigate();
+
   return (
     <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
       <div className="flex h-full w-full bg-[#fcfbf8]" style={paperTextureStyle}>
@@ -402,21 +404,19 @@ export default function AgencyDashboard() {
 
               <div className="flex gap-3">
                 <button
-                  className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-[#2d3b2a] hover:bg-gray-50 transition-colors"
                   type="button"
-                >
-                  <span className="material-symbols-outlined text-sm">download</span>
-                  Export Report
-                </button>
-
-                <button
+                  onClick={() => navigate("/agency/add-package")}
                   className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white shadow-lg transition-all"
-                  style={{ backgroundColor: COLORS.primary, boxShadow: "0 12px 30px rgba(25,120,229,0.18)" }}
-                  type="button"
+                  style={{
+                    backgroundColor: COLORS.primary,
+                    boxShadow: "0 12px 30px rgba(25,120,229,0.18)",
+                  }}
                 >
                   <span className="material-symbols-outlined text-sm">add</span>
                   New Package
                 </button>
+
+               
               </div>
             </div>
 

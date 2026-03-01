@@ -5,11 +5,11 @@ import { generateToken } from "../utils/generateToken.js";
 
 const router = express.Router();
 
-// ==========================
+
 // REGISTER (PUBLIC)
 // roles allowed: user, agency
 // admin NOT allowed here
-// ==========================
+
 router.post("/register", async (req, res) => {
   const {
     username,
@@ -32,7 +32,7 @@ router.post("/register", async (req, res) => {
       return res.status(403).json({ message: "Admin registration is not allowed" });
     }
 
-    // ✅ duplicate check (email OR username)
+    // duplicate check (email OR username)
     const userExist = await User.findOne({ $or: [{ email }, { username }] });
     if (userExist) {
       return res.status(400).json({ message: "Email or username already exists" });
@@ -48,7 +48,7 @@ router.post("/register", async (req, res) => {
       password,
       role: safeRole,
 
-      // ✅ only store agency fields if role = agency
+      // only store agency fields if role = agency
       agencyName: safeRole === "agency" ? agencyName || "" : "",
       agencyAddress: safeRole === "agency" ? agencyAddress || "" : "",
       agencyPhone: safeRole === "agency" ? agencyPhone || "" : "",
@@ -83,10 +83,10 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// ==========================
+
 // LOGIN (PUBLIC)
 // identifier: email OR username
-// ==========================
+
 router.post("/login", async (req, res) => {
   const { identifier, password } = req.body;
 
@@ -125,17 +125,15 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ==========================
 // ME (PROTECTED)
-// ==========================
+
 router.get("/me", protect, async (req, res) => {
   return res.status(200).json(req.user);
 });
 
-// ==========================
 // ADMIN: LIST AGENCIES (PENDING/VERIFIED)
 // GET /api/auth/agencies?verified=true|false
-// ==========================
+
 router.get("/agencies", protect, authorize("admin"), async (req, res) => {
   try {
     const { verified } = req.query;
@@ -155,10 +153,10 @@ router.get("/agencies", protect, authorize("admin"), async (req, res) => {
   }
 });
 
-// ==========================
+
 // ADMIN: VERIFY AGENCY
 // PATCH /api/auth/verify-agency/:id
-// ==========================
+
 router.patch("/verify-agency/:id", protect, authorize("admin"), async (req, res) => {
   try {
     const agency = await User.findById(req.params.id);

@@ -19,15 +19,12 @@ import ExploreNepal from "./pages/User/ExploreNepal";
 
 import AgencyDashboard from "./pages/Agency/AgencyDashboard";
 import AgencyProfile from "./pages/Agency/AgencyProfile";
+import AddPackageAgency from "./pages/Agency/AddPackage";
 
-// Admin pages (your current admin pages)
 import AddDestination from "./Adminpage/AddDestination";
 import AddPackage from "./Adminpage/Addpackage";
 import DestinationPackages from "./Adminpage/packagelist";
 import AgencyPending from "./pages/Agency/AgencyPending";
-
-// OPTIONAL: create unauthorized page if you want
-// import Unauthorized from "./pages/Unauthorized";
 
 // -------- Helpers --------
 const getStoredUser = () => {
@@ -42,7 +39,7 @@ const ProtectedRoute = ({ user, roles, children }) => {
   if (!user) return <Navigate to="/login" replace />;
 
   if (roles && !roles.includes(user.role)) {
-    return <Navigate to="/" replace />; // or /unauthorized
+    return <Navigate to="/" replace />;
   }
 
   // ✅ block unverified agency from agency pages
@@ -53,11 +50,27 @@ const ProtectedRoute = ({ user, roles, children }) => {
   return children;
 };
 
+// ✅ Logout route component (runs logout then redirects)
+const LogoutRoute = ({ onLogout }) => {
+  useEffect(() => {
+    onLogout();
+  }, [onLogout]);
+
+  return <Navigate to="/login" replace />;
+};
+
 function App() {
   const [user, setUser] = useState(getStoredUser());
   const [loading, setLoading] = useState(true);
 
-  // 🔐 Validate token on refresh using /api/auth/me
+  // ✅ Central logout function
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+  };
+
+  // 🔐 Validate token on refresh using /api/users/me
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
@@ -71,7 +84,6 @@ function App() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // res.data is full user object from backend
         const u = res.data;
 
         const normalized = {
@@ -96,7 +108,6 @@ function App() {
     fetchUser();
   }, []);
 
-  // 🛑 Prevent flicker before auth check
   if (loading) return null;
 
   return (
@@ -105,17 +116,29 @@ function App() {
         {/* 🌍 PUBLIC ROUTES */}
         <Route path="/" element={<Home user={user} />} />
         <Route path="/destinations" element={<Destination />} />
-        <Route path="/packages/:id" element={<DestinationPackages />} />
+
+        {/* ✅ NOTE:
+            This route was pointing to Admin packagelist (DestinationPackages).
+            Keep it ONLY if you really intend it public.
+            Otherwise remove it and use a real public package details page.
+        */}
+        {/* <Route path="/packages/:id" element={<DestinationPackages />} /> */}
+
         <Route path="/explore" element={<ExploreNepal />} />
 
         <Route path="/login" element={<Login setUser={setUser} />} />
-        <Route path="/register"element={!user ? <Register setUser={setUser} /> : <Navigate to="/" replace />}
+        <Route
+          path="/register"
+          element={!user ? <Register setUser={setUser} /> : <Navigate to="/" replace />}
         />
+
+        {/* ✅ LOGOUT */}
+        <Route path="/logout" element={<LogoutRoute onLogout={logout} />} />
 
         {/* ✅ Agency pending approval */}
         <Route path="/agency/pending" element={<AgencyPending />} />
 
-        {/* 🔒 USER ROUTES (only role=user) */}
+        {/* 🔒 USER ROUTES */}
         <Route
           path="/user"
           element={
@@ -149,7 +172,7 @@ function App() {
           }
         />
 
-        {/* 🔒 AGENCY ROUTES (only agency, verified) */}
+        {/* 🔒 AGENCY ROUTES */}
         <Route
           path="/agency"
           element={
@@ -167,7 +190,17 @@ function App() {
           }
         />
 
-        {/* 🔒 ADMIN ROUTES (only admin) */}
+        {/* ✅ NEW: Add Package (Agency) */}
+        <Route
+          path="/agency/add-package"
+          element={
+            <ProtectedRoute user={user} roles={["agency"]}>
+              <AddPackageAgency />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 🔒 ADMIN ROUTES */}
         <Route
           path="/adddestination"
           element={

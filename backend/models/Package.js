@@ -1,5 +1,13 @@
 import mongoose from "mongoose";
 
+const itinerarySchema = new mongoose.Schema(
+  {
+    title: { type: String, trim: true, default: "" },
+    details: { type: String, trim: true, default: "" },
+  },
+  { _id: false }
+);
+
 const packageSchema = new mongoose.Schema(
   {
     agency: {
@@ -9,42 +17,32 @@ const packageSchema = new mongoose.Schema(
       index: true,
     },
 
-    destination: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Destination",
-      required: true,
-      index: true,
-    },
-
     title: { type: String, required: true, trim: true, index: true },
-    description: { type: String, required: true },
+    region: { type: String, required: true, trim: true, index: true },
+    type: { type: String, required: true, trim: true },
+
+    description: { type: String, default: "", trim: true },
 
     price: { type: Number, required: true, min: 0, index: true },
-    durationDays: { type: Number, required: true, min: 1, index: true },
+    days: { type: Number, required: true, min: 1, index: true },
 
-    groupType: {
+    minGroupSize: { type: Number, default: 1, min: 1 },
+    maxGroupSize: { type: Number, default: 10, min: 1 },
+
+    difficulty: {
       type: String,
-      enum: ["solo", "couple", "family", "group"],
-      default: "group",
+      enum: ["Hard", "Moderate", "Easy"],
+      default: "Moderate",
+      index: true,
     },
+    
 
-    tripType: {
-      type: String,
-      enum: ["trek", "hiking", "tour", "adventure", "cultural", "wildlife"],
-      default: "tour",
-    },
+    // ✅ store URLs like "/uploads/abc.jpg"
+    images: { type: [String], default: [] },
 
-    images: [
-      {
-        data: { type: Buffer, required: true },
-        contentType: { type: String, required: true },
-      },
-    ],
+    itinerary: { type: [itinerarySchema], default: [] },
 
     isActive: { type: Boolean, default: true, index: true },
-
-    avgRating: { type: Number, default: 0 },
-    ratingCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
