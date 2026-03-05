@@ -16,6 +16,7 @@ import Userhome from "./pages/User/Userhome";
 import History from "./pages/User/History";
 import Profile from "./pages/User/profile";
 import ExploreNepal from "./pages/User/ExploreNepal";
+import PackageDetails from "./pages/User/PackageDetails";
 
 import AgencyDashboard from "./pages/Agency/AgencyDashboard";
 import AgencyProfile from "./pages/Agency/AgencyProfile";
@@ -217,6 +218,11 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/packages/:id"
+         element={
+         <PackageDetails />
+         }
+          />
 
         {/* 🚫 Unknown routes */}
         <Route path="*" element={<Navigate to="/" replace />} />

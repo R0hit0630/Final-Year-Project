@@ -1,6 +1,12 @@
-// src/Pages/ExploreNepal.jsx
+// src/pages/User/ExploreNepal.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+
+const API = "http://localhost:5000";
+
+// helpers (robust filtering)
+const norm = (s) => (s ?? "").toString().trim().toLowerCase();
+const uniqSorted = (arr) => Array.from(new Set(arr.filter(Boolean))).sort();
 
 export default function ExploreNepal() {
   const COLORS = {
@@ -15,74 +21,70 @@ export default function ExploreNepal() {
     muted2: "#94a3b8",
   };
 
-  const allPackages = useMemo(
-    () => [
-      {
-        id: 1,
-        title: "Everest Base Camp Trek",
-        region: "Everest Region",
-        activities: ["Trekking & Hiking"],
-        days: 14,
-        difficulty: "Moderate",
-        price: 1299,
-        rating: 4.9,
-        reviews: "1.2k",
-        tags: ["Best Seller", "Eco-Friendly"],
-        img: "https://lh3.googleusercontent.com/aida-public/AB6AXuB17NyTi5ZdbYu9tC37q69a8msPwcu6qw6Syz7xzielB4JUWwL1I7Ci8FGOOu5aomrLoDHXdw7X-rlQlXvby9NiX6WM3iKcv6XJMxqRw1Jdmbbg6y32Aqy_Sbaa2lxVLwygb-vvOsLxGn8UG72xqvnmNJlsGZM2OZRW0t9kYJQjqFK_UBhi7n9W59z4qaPPUIWzcVNynpAMv3xth3BE9gX5HB0t4qdxcaleRFRo6yu6oahDepBhw_MdK-YCn5WNlkQTRwK69hjrFve7",
-      },
-      {
-        id: 2,
-        title: "Chitwan Wildlife Safari",
-        region: "Terai",
-        activities: ["Jungle Safari"],
-        days: 4,
-        difficulty: "Easy",
-        price: 450,
-        rating: 4.7,
-        reviews: "850",
-        tags: ["Eco-Friendly"],
-        img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAq6KQPoIytiYQ-vYPruWiIS5dJh9PK-UYo9vhckUYOUhFWn3w-kaqoE-m2OSVDhq19KrvYaktuP--X9zobWpEgrhs-5FtbVFdDNIzJ1PBLwHmt0cRKwTxYVZrlKhQQy9BAo5SPnPcDlyZb4mTBlb9pIjl_6smQXwQgB2GoJsJ3pHvtqtSpcijNyu737QmhSqjKxZZMFgU1in60Y2qk5ahx59HdvbAiYHkduqVPg-thxCuSMp3D9ihvwlq_umdBUnFJp-n8YIcWszCp",
-      },
-      {
-        id: 3,
-        title: "Annapurna Base Camp",
-        region: "Annapurna Circuit",
-        activities: ["Trekking & Hiking", "Cultural Heritage"],
-        days: 10,
-        difficulty: "Moderate",
-        price: 890,
-        rating: 4.8,
-        reviews: "2.1k",
-        tags: ["Popular"],
-        img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDTRBiQxEvdB1YVDHE0riFEDn49VCLLntPD9wZ3tnfQCr7y8bKI8kXiAbvSerPMIqlLvo2CkhphckT8yyUte68T9tD9K5scB5suiotky76fJB8cFl5rORXQstojNC4AK_-LdbbQ14QRCdD7OlCqV0UGHU-Op77H3AB7PRJKzEygChCzxmptL8v-uSFS2tTmPvrGZQdfq0MKY6_YoMQc_HK_19wNk89fbdirqwAFoW8erDjRAe0WIFyvtK5JnzrKetsVbXwZGLoaqmE7",
-      },
-      {
-        id: 4,
-        title: "Forbidden Kingdom Mustang",
-        region: "Mustang",
-        activities: ["Trekking & Hiking", "Cultural Heritage"],
-        days: 17,
-        difficulty: "Strenuous",
-        price: 2100,
-        rating: 5.0,
-        reviews: "310",
-        tags: [],
-        img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCpPi6xfn80HE7Wat2RTbjHBjDJaizJhKCGEbS9MqK1tr3rn76AR-FmK0dKJ2TchuVP4jmhtN3w_X_dyPtp1PJFWWHWyVE5NGYHebS0OAG4tCvOJQNYz3oxHaHMX5DpDXYoeCid4lUNnkmue6mo59doWGk7dPv6-4gk2OgEKUZVm9yubdq_4a4KaMXIAO4dJ6kWMUvQGqyTCHal2XeQiMhVymxVXtuqHqzS80oFr7V34rH7QkLumRZXXDUCk1qdAskVpOMgCKF5ulm3",
-      },
-    ],
-    []
-  );
+  const [allPackages, setAllPackages] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // ✅ Fetch packages from backend
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`${API}/api/packages`);
+        const data = await res.json();
+
+        const mapped = (Array.isArray(data) ? data : []).map((p) => ({
+          id: p._id,
+          title: p.title ?? "",
+          region: p.region ?? "",
+          // ✅ DB doesn't have activities => map type -> activities
+          activities: p.type ? [p.type] : [],
+          days: Number(p.days ?? 0),
+          difficulty: p.difficulty ?? "Moderate",
+          price: Number(p.price ?? 0),
+          // UI placeholders (not in DB)
+          rating: 4.8,
+          reviews: "—",
+          tags: [],
+          img: p.images?.[0]
+            ? `${API}${p.images[0]}`
+            : "https://via.placeholder.com/800x600",
+        }));
+
+        setAllPackages(mapped);
+      } catch (e) {
+        console.error("Fetch packages error:", e);
+        setAllPackages([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPackages();
+  }, []);
 
   // ----------- FILTER STATE -----------
-  const regionOptions = ["Everest Region", "Annapurna Circuit", "Langtang Valley", "Mustang", "Terai"];
-  const activityOptions = ["Trekking & Hiking", "Jungle Safari", "Cultural Heritage"];
+  // ✅ Build dropdown options from DB values (trim/case safe)
+  const regionOptions = useMemo(() => {
+    return uniqSorted(allPackages.map((p) => p.region).map((r) => r?.trim()));
+  }, [allPackages]);
+
+  const activityOptions = useMemo(() => {
+    return uniqSorted(
+      allPackages.flatMap((p) => (p.activities || []).map((a) => a?.trim()))
+    );
+  }, [allPackages]);
 
   const [q, setQ] = useState("");
-  const [selectedRegions, setSelectedRegions] = useState(new Set()); // empty => no filter
-  const [selectedActivities, setSelectedActivities] = useState(new Set()); // empty => no filter
-  const [budget, setBudget] = useState(2500); // show <= budget
-  const [duration, setDuration] = useState("6-10"); // UI selection, but optional if you want
-  const [durationEnabled, setDurationEnabled] = useState(true); // you can disable to behave like "no duration selected"
+  const [selectedRegions, setSelectedRegions] = useState(new Set()); // stores original strings (display)
+  const [selectedActivities, setSelectedActivities] = useState(new Set()); // stores original strings (display)
+
+  // ✅ Budget: set to 5000 by default (means "no limit" in our logic)
+  const [budget, setBudget] = useState(5000);
+
+  // ✅ Duration off by default (show all durations until user enables)
+  const [duration, setDuration] = useState("6-10");
+  const [durationEnabled, setDurationEnabled] = useState(false);
+
   const [sortBy, setSortBy] = useState("Popularity");
 
   const toggleSet = (setter) => (value) => {
@@ -98,9 +100,9 @@ export default function ExploreNepal() {
     setQ("");
     setSelectedRegions(new Set());
     setSelectedActivities(new Set());
-    setBudget(2500);
+    setBudget(5000);
     setDuration("6-10");
-    setDurationEnabled(false); // ✅ means “nothing selected” for duration -> show all durations
+    setDurationEnabled(false);
     setSortBy("Popularity");
   };
 
@@ -111,30 +113,51 @@ export default function ExploreNepal() {
     return [16, 999];
   };
 
-  // ✅ MAIN RULE: if selectedRegions/selectedActivities are empty -> do NOT filter by them
+  // ✅ normalized sets so filter works even with case/space differences
+  const selectedRegionsNorm = useMemo(
+    () => new Set([...selectedRegions].map(norm)),
+    [selectedRegions]
+  );
+  const selectedActivitiesNorm = useMemo(
+    () => new Set([...selectedActivities].map(norm)),
+    [selectedActivities]
+  );
+
+  // ✅ MAIN filter (fixed)
   const filtered = useMemo(() => {
+    const query = norm(q);
+
     const regionsActive = selectedRegions.size > 0;
     const activitiesActive = selectedActivities.size > 0;
-    const durationActive = durationEnabled; // only filter by duration if enabled
+    const durationActive = durationEnabled;
 
     const [dMin, dMax] = durationRange(duration);
 
     let list = allPackages.filter((p) => {
-      const matchSearch =
-        !q.trim() ||
-        p.title.toLowerCase().includes(q.toLowerCase()) ||
-        p.region.toLowerCase().includes(q.toLowerCase()) ||
-        p.activities.some((a) => a.toLowerCase().includes(q.toLowerCase()));
+      const title = norm(p.title);
+      const region = norm(p.region);
+      const acts = (p.activities || []).map(norm);
 
-      const matchRegion = !regionsActive || selectedRegions.has(p.region);
+      const matchSearch =
+        !query ||
+        title.includes(query) ||
+        region.includes(query) ||
+        acts.some((a) => a.includes(query));
+
+      const matchRegion = !regionsActive || selectedRegionsNorm.has(region);
 
       const matchActivity =
-        !activitiesActive || p.activities.some((a) => selectedActivities.has(a));
+        !activitiesActive || acts.some((a) => selectedActivitiesNorm.has(a));
 
-      const matchBudget = p.price <= budget || budget >= 2500; // as your UI shows "$2,500+"
-      const matchDuration = !durationActive || (p.days >= dMin && p.days <= dMax);
+      // ✅ budget filter: if slider at 5000 => no limit
+      const matchBudget = budget >= 5000 ? true : Number(p.price) <= budget;
 
-      return matchSearch && matchRegion && matchActivity && matchBudget && matchDuration;
+      const matchDuration =
+        !durationActive || (Number(p.days) >= dMin && Number(p.days) <= dMax);
+
+      return (
+        matchSearch && matchRegion && matchActivity && matchBudget && matchDuration
+      );
     });
 
     // sorting
@@ -143,9 +166,19 @@ export default function ExploreNepal() {
     if (sortBy === "Duration") list = [...list].sort((a, b) => a.days - b.days);
 
     return list;
-  }, [allPackages, q, selectedRegions, selectedActivities, budget, duration, durationEnabled, sortBy]);
+  }, [
+    allPackages,
+    q,
+    selectedRegions,
+    selectedActivities,
+    selectedRegionsNorm,
+    selectedActivitiesNorm,
+    budget,
+    duration,
+    durationEnabled,
+    sortBy,
+  ]);
 
-  // ✅ REPLACED NavItem component with navItems useMemo (no other change)
   const navItems = useMemo(
     () => [
       { label: "My Trips", icon: "map", to: "/trips" },
@@ -156,8 +189,13 @@ export default function ExploreNepal() {
     []
   );
 
-  // ✅ Custom multi-select dropdown (NOT native select multiple)
-  function MultiSelectDropdown({ options, selectedSet, onToggle, placeholder = "Select..." }) {
+  // ✅ Custom multi-select dropdown
+  function MultiSelectDropdown({
+    options,
+    selectedSet,
+    onToggle,
+    placeholder = "Select...",
+  }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
@@ -179,9 +217,7 @@ export default function ExploreNepal() {
           onClick={() => setOpen((v) => !v)}
           className="w-full flex items-center justify-between rounded-lg border border-[#e0e8dc] bg-white px-3 py-2 text-sm font-medium text-[#2d3b2a] hover:border-primary transition-all"
         >
-          <span>
-            {count === 0 ? placeholder : `${count} selected`}
-          </span>
+          <span>{count === 0 ? placeholder : `${count} selected`}</span>
           <span className="material-symbols-outlined text-[18px]">
             {open ? "expand_less" : "expand_more"}
           </span>
@@ -206,7 +242,9 @@ export default function ExploreNepal() {
                       <span
                         className={[
                           "inline-flex h-4 w-4 items-center justify-center rounded border",
-                          active ? "border-primary bg-primary/10" : "border-[#e0e8dc] bg-white",
+                          active
+                            ? "border-primary bg-primary/10"
+                            : "border-[#e0e8dc] bg-white",
                         ].join(" ")}
                       >
                         {active && (
@@ -273,8 +311,13 @@ export default function ExploreNepal() {
                 />
               </div>
               <div className="flex flex-col">
-                <h1 className="text-[#2d3b2a] text-base font-bold leading-tight">Arjun K.</h1>
-                <p className="text-xs font-medium uppercase tracking-wider" style={{ color: COLORS.primary }}>
+                <h1 className="text-[#2d3b2a] text-base font-bold leading-tight">
+                  Arjun K.
+                </h1>
+                <p
+                  className="text-xs font-medium uppercase tracking-wider"
+                  style={{ color: COLORS.primary }}
+                >
                   Explorer
                 </p>
               </div>
@@ -294,7 +337,9 @@ export default function ExploreNepal() {
                   <span
                     className={[
                       "material-symbols-outlined transition-colors",
-                      item.active ? "text-primary" : "text-[#6b7280] group-hover:text-primary",
+                      item.active
+                        ? "text-primary"
+                        : "text-[#6b7280] group-hover:text-primary",
                     ].join(" ")}
                   >
                     {item.icon}
@@ -302,7 +347,9 @@ export default function ExploreNepal() {
                   <span
                     className={[
                       "text-sm",
-                      item.active ? "font-semibold text-[#2d3b2a]" : "font-medium text-[#4b5563] group-hover:text-[#2d3b2a]",
+                      item.active
+                        ? "font-semibold text-[#2d3b2a]"
+                        : "font-medium text-[#4b5563] group-hover:text-[#2d3b2a]",
                     ].join(" ")}
                   >
                     {item.label}
@@ -319,7 +366,9 @@ export default function ExploreNepal() {
                 <span className="material-symbols-outlined text-[#6b7280] group-hover:text-red-500 transition-colors">
                   logout
                 </span>
-                <span className="text-sm font-medium text-[#4b5563] group-hover:text-red-500">Log Out</span>
+                <span className="text-sm font-medium text-[#4b5563] group-hover:text-red-500">
+                  Log Out
+                </span>
               </Link>
             </div>
           </div>
@@ -345,7 +394,10 @@ export default function ExploreNepal() {
               </div>
 
               <div className="flex items-center gap-4">
-                <button className="relative rounded-full p-2 text-[#6b7280] hover:bg-primary/10 hover:text-primary transition-colors" type="button">
+                <button
+                  className="relative rounded-full p-2 text-[#6b7280] hover:bg-primary/10 hover:text-primary transition-colors"
+                  type="button"
+                >
                   <span className="material-symbols-outlined">notifications</span>
                   <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 border-2 border-white" />
                 </button>
@@ -367,15 +419,24 @@ export default function ExploreNepal() {
             <aside className="hidden w-64 shrink-0 flex-col gap-8 lg:flex">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#2d3b2a]">Filters</h3>
-                  <button onClick={clearAll} className="text-xs font-semibold hover:underline" style={{ color: COLORS.primary }} type="button">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#2d3b2a]">
+                    Filters
+                  </h3>
+                  <button
+                    onClick={clearAll}
+                    className="text-xs font-semibold hover:underline"
+                    style={{ color: COLORS.primary }}
+                    type="button"
+                  >
                     Clear All
                   </button>
                 </div>
 
-                {/* ✅ Region (custom multi-select dropdown) */}
+                {/* Region */}
                 <div className="mb-6">
-                  <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#6b7280]">Region</h4>
+                  <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#6b7280]">
+                    Region
+                  </h4>
                   <MultiSelectDropdown
                     options={regionOptions}
                     selectedSet={selectedRegions}
@@ -386,7 +447,9 @@ export default function ExploreNepal() {
 
                 {/* Budget */}
                 <div className="mb-6">
-                  <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#6b7280]">Budget (USD)</h4>
+                  <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#6b7280]">
+                    Budget (USD)
+                  </h4>
                   <div className="px-1">
                     <input
                       className="w-full h-1.5 bg-[#e0e8dc] rounded-lg appearance-none cursor-pointer accent-[--p]"
@@ -399,18 +462,25 @@ export default function ExploreNepal() {
                     />
                     <div className="flex justify-between mt-2 text-[10px] font-bold text-[#94a3b8]">
                       <span>$200</span>
-                      <span style={{ color: COLORS.primary }}>${budget.toLocaleString()}+</span>
-                      <span>$5,000</span>
+                      <span style={{ color: COLORS.primary }}>
+                        ${budget.toLocaleString()}
+                        {budget >= 5000 ? "+" : ""}
+                      </span>
+                      <span>$5,000+</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Duration */}
                 <div className="mb-6">
-                  <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#6b7280]">Duration</h4>
+                  <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#6b7280]">
+                    Duration
+                  </h4>
 
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs text-[#6b7280]">Apply duration filter</span>
+                    <span className="text-xs text-[#6b7280]">
+                      Apply duration filter
+                    </span>
                     <button
                       type="button"
                       className="text-xs font-semibold"
@@ -452,9 +522,11 @@ export default function ExploreNepal() {
                   </div>
                 </div>
 
-                {/* ✅ Activities (custom multi-select dropdown) */}
+                {/* Activities */}
                 <div className="mb-6">
-                  <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#6b7280]">Activities</h4>
+                  <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#6b7280]">
+                    Activities
+                  </h4>
                   <MultiSelectDropdown
                     options={activityOptions}
                     selectedSet={selectedActivities}
@@ -469,19 +541,23 @@ export default function ExploreNepal() {
             <div className="flex-1">
               <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#2d3b2a]">Adventure Packages</h2>
+                  <h2 className="text-2xl font-bold text-[#2d3b2a]">All Packages</h2>
                   <p className="text-sm text-[#6b7280]">
-                    Found <span className="font-bold text-[#2d3b2a]">{filtered.length}</span> experiences matching your criteria
+                    Found{" "}
+                    <span className="font-bold text-[#2d3b2a]">{filtered.length}</span>{" "}
+                    experiences matching your criteria
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2 self-end md:self-auto">
                   <div className="flex rounded-lg border border-[#e0e8dc] bg-white p-1">
-                    <button className="flex items-center justify-center rounded-md bg-primary/10 p-1.5 text-primary" type="button">
-                      <span className="material-symbols-outlined text-[20px]">grid_view</span>
-                    </button>
-                    <button className="flex items-center justify-center rounded-md p-1.5 text-[#6b7280] hover:text-primary transition-colors" type="button">
-                      <span className="material-symbols-outlined text-[20px]">map</span>
+                    <button
+                      className="flex items-center justify-center rounded-md bg-primary/10 p-1.5 text-primary"
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        grid_view
+                      </span>
                     </button>
                   </div>
 
@@ -498,6 +574,12 @@ export default function ExploreNepal() {
                 </div>
               </div>
 
+              {loading && (
+                <div className="mb-6 rounded-2xl border border-[#e0e8dc] bg-white p-6 text-sm text-[#6b7280]">
+                  Loading packages...
+                </div>
+              )}
+
               <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2">
                 {filtered.map((p) => (
                   <div
@@ -512,21 +594,38 @@ export default function ExploreNepal() {
                       />
 
                       <div className="absolute left-3 top-3 flex flex-col gap-2">
-                        {p.tags.includes("Best Seller") && <TagPill text="Best Seller" variant="primary" />}
-                        {p.tags.includes("Eco-Friendly") && <TagPill text="Eco-Friendly" variant="secondary" />}
-                        {p.tags.includes("Popular") && <TagPill text="Popular" variant="orange" />}
+                        {p.tags.includes("Best Seller") && (
+                          <TagPill text="Best Seller" variant="primary" />
+                        )}
+                        {p.tags.includes("Eco-Friendly") && (
+                          <TagPill text="Eco-Friendly" variant="secondary" />
+                        )}
+                        {p.tags.includes("Popular") && (
+                          <TagPill text="Popular" variant="orange" />
+                        )}
                       </div>
 
-                      <button className="absolute right-3 top-3 h-8 w-8 rounded-full bg-white/20 text-white backdrop-blur-md transition-all hover:bg-white hover:text-red-500" type="button">
-                        <span className="material-symbols-outlined text-[20px]">favorite</span>
+                      <button
+                        className="absolute right-3 top-3 h-8 w-8 rounded-full bg-white/20 text-white backdrop-blur-md transition-all hover:bg-white hover:text-red-500"
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">
+                          favorite
+                        </span>
                       </button>
 
                       <div className="absolute bottom-3 left-3 flex items-center gap-3">
                         <div className="flex items-center gap-1 rounded-md bg-black/40 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-md">
-                          <span className="material-symbols-outlined text-[14px]">schedule</span> {p.days} Days
+                          <span className="material-symbols-outlined text-[14px]">
+                            schedule
+                          </span>{" "}
+                          {p.days} Days
                         </div>
                         <div className="flex items-center gap-1 rounded-md bg-black/40 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-md">
-                          <span className="material-symbols-outlined text-[14px]">trending_up</span> {p.difficulty}
+                          <span className="material-symbols-outlined text-[14px]">
+                            trending_up
+                          </span>{" "}
+                          {p.difficulty}
                         </div>
                       </div>
                     </div>
@@ -535,7 +634,10 @@ export default function ExploreNepal() {
                       <div className="mb-2 flex items-center justify-between">
                         <h3 className="text-lg font-bold text-[#2d3b2a]">{p.title}</h3>
                         <div className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[16px] text-yellow-400" style={{ fontVariationSettings: "'FILL' 1" }}>
+                          <span
+                            className="material-symbols-outlined text-[16px] text-yellow-400"
+                            style={{ fontVariationSettings: "'FILL' 1" }}
+                          >
                             star
                           </span>
                           <span className="text-xs font-bold text-[#2d3b2a]">{p.rating}</span>
@@ -544,56 +646,84 @@ export default function ExploreNepal() {
                       </div>
 
                       <p className="mb-6 text-sm text-[#6b7280] line-clamp-2">
-                        Region: <span className="font-semibold text-[#2d3b2a]">{p.region}</span> • Activities:{" "}
-                        <span className="font-semibold text-[#2d3b2a]">{p.activities.join(", ")}</span>
+                        Region:{" "}
+                        <span className="font-semibold text-[#2d3b2a]">{p.region}</span>{" "}
+                        • Activities:{" "}
+                        <span className="font-semibold text-[#2d3b2a]">
+                          {p.activities.join(", ")}
+                        </span>
                       </p>
 
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-medium text-[#6b7280] uppercase tracking-wider">Starting from</span>
-                          <span className="text-xl font-bold text-[#2d3b2a]">${p.price.toLocaleString()}</span>
+                          <span className="text-[10px] font-medium text-[#6b7280] uppercase tracking-wider">
+                            Starting from
+                          </span>
+                          <span className="text-xl font-bold text-[#2d3b2a]">
+                            ${p.price.toLocaleString()}
+                          </span>
                         </div>
-                        <button
+
+                        <Link
+                          to={`/packages/${p.id}`}
                           className="rounded-lg px-5 py-2 text-sm font-bold text-white transition-all"
-                          style={{ backgroundColor: COLORS.secondary }}
-                          type="button"
+                          style={{ backgroundColor: COLORS.secondary, textAlign: "center" }}
                         >
                           View Details
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Empty state */}
-              {filtered.length === 0 && (
+              {!loading && filtered.length === 0 && (
                 <div className="mt-10 rounded-2xl border border-[#e0e8dc] bg-white p-8 text-center">
                   <p className="text-sm text-[#6b7280]">
-                    No packages match your filters. Click <span className="font-semibold">Clear All</span> to see everything.
+                    No packages match your filters. Click{" "}
+                    <span className="font-semibold">Clear All</span> to see everything.
                   </p>
                 </div>
               )}
 
               {/* Pagination UI (static) */}
               <div className="mt-12 flex items-center justify-center gap-2">
-                <button className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#e0e8dc] bg-white text-[#6b7280] hover:border-primary hover:text-primary transition-all" type="button">
+                <button
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#e0e8dc] bg-white text-[#6b7280] hover:border-primary hover:text-primary transition-all"
+                  type="button"
+                >
                   <span className="material-symbols-outlined">chevron_left</span>
                 </button>
-                <button className="h-10 w-10 rounded-lg text-sm font-bold text-white" style={{ backgroundColor: COLORS.primary }} type="button">
+                <button
+                  className="h-10 w-10 rounded-lg text-sm font-bold text-white"
+                  style={{ backgroundColor: COLORS.primary }}
+                  type="button"
+                >
                   1
                 </button>
-                <button className="h-10 w-10 rounded-lg border border-transparent text-sm font-bold text-[#4b5563] hover:bg-primary/10 hover:text-primary transition-all" type="button">
+                <button
+                  className="h-10 w-10 rounded-lg border border-transparent text-sm font-bold text-[#4b5563] hover:bg-primary/10 hover:text-primary transition-all"
+                  type="button"
+                >
                   2
                 </button>
-                <button className="h-10 w-10 rounded-lg border border-transparent text-sm font-bold text-[#4b5563] hover:bg-primary/10 hover:text-primary transition-all" type="button">
+                <button
+                  className="h-10 w-10 rounded-lg border border-transparent text-sm font-bold text-[#4b5563] hover:bg-primary/10 hover:text-primary transition-all"
+                  type="button"
+                >
                   3
                 </button>
                 <span className="px-2 text-[#94a3b8]">...</span>
-                <button className="h-10 w-10 rounded-lg border border-transparent text-sm font-bold text-[#4b5563] hover:bg-primary/10 hover:text-primary transition-all" type="button">
+                <button
+                  className="h-10 w-10 rounded-lg border border-transparent text-sm font-bold text-[#4b5563] hover:bg-primary/10 hover:text-primary transition-all"
+                  type="button"
+                >
                   12
                 </button>
-                <button className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#e0e8dc] bg-white text-[#6b7280] hover:border-primary hover:text-primary transition-all" type="button">
+                <button
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#e0e8dc] bg-white text-[#6b7280] hover:border-primary hover:text-primary transition-all"
+                  type="button"
+                >
                   <span className="material-symbols-outlined">chevron_right</span>
                 </button>
               </div>
@@ -603,15 +733,26 @@ export default function ExploreNepal() {
           {/* Footer */}
           <footer className="mt-auto border-t border-[#e0e8dc] bg-white/50 py-8 px-8">
             <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-[#94a3b8]">© 2023 Travolin. All adventures curated with ❤️ in Nepal.</p>
+              <p className="text-xs text-[#94a3b8]">
+                © 2023 Travolin. All adventures curated with ❤️ in Nepal.
+              </p>
               <div className="flex items-center gap-6">
-                <a className="text-xs font-semibold text-[#6b7280] hover:text-primary transition-colors" href="#">
+                <a
+                  className="text-xs font-semibold text-[#6b7280] hover:text-primary transition-colors"
+                  href="#"
+                >
                   Terms of Service
                 </a>
-                <a className="text-xs font-semibold text-[#6b7280] hover:text-primary transition-colors" href="#">
+                <a
+                  className="text-xs font-semibold text-[#6b7280] hover:text-primary transition-colors"
+                  href="#"
+                >
                   Privacy Policy
                 </a>
-                <a className="text-xs font-semibold text-[#6b7280] hover:text-primary transition-colors" href="#">
+                <a
+                  className="text-xs font-semibold text-[#6b7280] hover:text-primary transition-colors"
+                  href="#"
+                >
                   Help Center
                 </a>
               </div>
