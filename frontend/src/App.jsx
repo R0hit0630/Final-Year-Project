@@ -17,10 +17,12 @@ import History from "./pages/User/History";
 import Profile from "./pages/User/profile";
 import ExploreNepal from "./pages/User/ExploreNepal";
 import PackageDetails from "./pages/User/PackageDetails";
+import MyTrip from "./pages/User/MyTrip"; 
 
 import AgencyDashboard from "./pages/Agency/AgencyDashboard";
 import AgencyProfile from "./pages/Agency/AgencyProfile";
 import AddPackageAgency from "./pages/Agency/AddPackage";
+
 
 import AddDestination from "./Adminpage/AddDestination";
 import AddPackage from "./Adminpage/Addpackage";
@@ -172,6 +174,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+            path="/trips"
+            element={
+              <ProtectedRoute user={user} roles={["user"]}>
+                <MyTrip />
+              </ProtectedRoute>
+            }
+          />
 
         {/* 🔒 AGENCY ROUTES */}
         <Route
