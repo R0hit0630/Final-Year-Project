@@ -43,7 +43,7 @@ const Login = ({ setUser }) => {
       } else if (res.data.role === "admin") {
         navigate("/adddestination"); // your admin landing page
       } else {
-        navigate("/userhome"); // normal user
+        navigate("/explore"); // normal user: go to Explore page
       }
     } catch (err) {
       setError(err.response?.data?.message || "Invalid credentials");

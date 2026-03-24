@@ -35,9 +35,7 @@ const packageSchema = new mongoose.Schema(
       default: "Moderate",
       index: true,
     },
-    
 
-    // ✅ store URLs like "/uploads/abc.jpg"
     images: { type: [String], default: [] },
 
     itinerary: { type: [itinerarySchema], default: [] },

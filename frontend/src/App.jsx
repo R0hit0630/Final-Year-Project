@@ -13,20 +13,20 @@ import Home from "./pages/Home";
 import Destination from "./pages/Destination";
 import User from "./pages/User/User";
 import Userhome from "./pages/User/Userhome";
-import History from "./pages/User/History";
 import Profile from "./pages/User/profile";
 import ExploreNepal from "./pages/User/ExploreNepal";
 import PackageDetails from "./pages/User/PackageDetails";
-import MyTrip from "./pages/User/MyTrip"; 
+import MyTrip from "./pages/User/MyTrip";
+import SavedDestinations from "./pages/User/SavedDestinations";
 
 import AgencyDashboard from "./pages/Agency/AgencyDashboard";
 import AgencyProfile from "./pages/Agency/AgencyProfile";
 import AddPackageAgency from "./pages/Agency/AddPackage";
+import AgencyPackages from "./pages/Agency/AgencyPackages";
 
 
 import AddDestination from "./Adminpage/AddDestination";
 import AddPackage from "./Adminpage/Addpackage";
-import DestinationPackages from "./Adminpage/packagelist";
 import AgencyPending from "./pages/Agency/AgencyPending";
 
 // -------- Helpers --------
@@ -45,7 +45,7 @@ const ProtectedRoute = ({ user, roles, children }) => {
     return <Navigate to="/" replace />;
   }
 
-  // ✅ block unverified agency from agency pages
+  //  block unverified agency from agency pages
   if (user.role === "agency" && user.agencyVerified === false) {
     return <Navigate to="/agency/pending" replace />;
   }
@@ -53,27 +53,28 @@ const ProtectedRoute = ({ user, roles, children }) => {
   return children;
 };
 
-// ✅ Logout route component (runs logout then redirects)
+//  Logout route component (runs logout then redirects)
 const LogoutRoute = ({ onLogout }) => {
   useEffect(() => {
     onLogout();
   }, [onLogout]);
 
-  return <Navigate to="/login" replace />;
+  // After logout, redirect back to the public home page
+  return <Navigate to="/" replace />;
 };
 
 function App() {
   const [user, setUser] = useState(getStoredUser());
   const [loading, setLoading] = useState(true);
 
-  // ✅ Central logout function
+  //  Central logout function
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
   };
 
-  // 🔐 Validate token on refresh using /api/users/me
+  //  Validate token on refresh using /api/users/me
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
@@ -116,11 +117,11 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* 🌍 PUBLIC ROUTES */}
+        {/*  PUBLIC ROUTES */}
         <Route path="/" element={<Home user={user} />} />
         <Route path="/destinations" element={<Destination />} />
 
-        {/* ✅ NOTE:
+        {/*  NOTE:
             This route was pointing to Admin packagelist (DestinationPackages).
             Keep it ONLY if you really intend it public.
             Otherwise remove it and use a real public package details page.
@@ -135,13 +136,13 @@ function App() {
           element={!user ? <Register setUser={setUser} /> : <Navigate to="/" replace />}
         />
 
-        {/* ✅ LOGOUT */}
+        {/*  LOGOUT */}
         <Route path="/logout" element={<LogoutRoute onLogout={logout} />} />
 
-        {/* ✅ Agency pending approval */}
+        {/*  Agency pending approval */}
         <Route path="/agency/pending" element={<AgencyPending />} />
 
-        {/* 🔒 USER ROUTES */}
+        {/*  USER ROUTES */}
         <Route
           path="/user"
           element={
@@ -158,14 +159,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/history"
-          element={
-            <ProtectedRoute user={user} roles={["user"]}>
-              <History />
-            </ProtectedRoute>
-          }
-        />
+        
         <Route
           path="/profile"
           element={
@@ -182,8 +176,20 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/saved" 
+          element={
+          <SavedDestinations />} />
 
-        {/* 🔒 AGENCY ROUTES */}
+          <Route
+             path="/saved"
+             element={
+               <ProtectedRoute user={user} roles={["user"]}>
+                 <SavedDestinations />
+               </ProtectedRoute>
+                 }
+              />
+
+        {/*  AGENCY ROUTES */}
         <Route
           path="/agency"
           element={
@@ -201,7 +207,7 @@ function App() {
           }
         />
 
-        {/* ✅ NEW: Add Package (Agency) */}
+        {/*  NEW: Add Package (Agency) */}
         <Route
           path="/agency/add-package"
           element={
@@ -211,7 +217,8 @@ function App() {
           }
         />
 
-        {/* 🔒 ADMIN ROUTES */}
+
+        {/*  ADMIN ROUTES */}
         <Route
           path="/adddestination"
           element={
@@ -233,8 +240,17 @@ function App() {
          <PackageDetails />
          }
           />
+          
+          <Route
+            path="/agency/packages"
+            element={
+              <ProtectedRoute user={user} roles={["agency"]}>
+                <AgencyPackages />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* 🚫 Unknown routes */}
+        {/*  Unknown routes */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

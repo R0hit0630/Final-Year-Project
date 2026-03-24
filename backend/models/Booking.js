@@ -6,12 +6,14 @@ const bookingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
 
     package: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Package",
       required: true,
+      index: true,
     },
 
     travelers: {
@@ -23,6 +25,7 @@ const bookingSchema = new mongoose.Schema(
     startDate: {
       type: Date,
       required: true,
+      index: true,
     },
 
     endDate: {
@@ -31,21 +34,26 @@ const bookingSchema = new mongoose.Schema(
 
     totalPrice: {
       type: Number,
+      min: 0,
+      default: 0,
     },
 
     notes: {
       type: String,
+      trim: true,
+      default: "",
     },
 
     status: {
       type: String,
-      enum: ["pending", "confirmed", "cancelled"],
+      enum: ["pending", "confirmed", "cancelled", "completed"],
       default: "pending",
+      index: true,
     },
 
     paymentStatus: {
       type: String,
-      enum: ["pending", "paid"],
+      enum: ["pending", "paid", "refunded"],
       default: "pending",
     },
   },

@@ -33,7 +33,7 @@ const DestinationPackages = () => {
 
     try {
       await axios.post(
-        "http://localhost:5000/api/booking", // make sure this matches your backend route
+        "http://localhost:5000/api/bookings", // make sure this matches your backend route
         {
           packageId: selectedPackage._id,
           ...bookingForm,

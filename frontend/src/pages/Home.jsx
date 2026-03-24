@@ -52,9 +52,12 @@ export default function Home() {
           </Link>
 
           <div className="hidden md:flex items-center gap-10">
-            <a href="#destinations" className="text-gray-200 hover:text-white text-sm font-medium transition">
+            <Link to="/" className="text-gray-200 hover:text-white text-sm font-medium transition">
+              Home
+            </Link>
+            <Link to="/destinations" className="text-gray-200 hover:text-white text-sm font-medium transition">
               Destinations
-            </a>
+            </Link>
             <a href="#experiences" className="text-gray-200 hover:text-white text-sm font-medium transition">
               Experiences
             </a>
