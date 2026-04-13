@@ -1,7 +1,7 @@
 import User from "../models/user.js";
 import jwt from "jsonwebtoken";
 
-// ✅ Protect routes (requires valid token)
+//  Protect routes (requires valid token)
 export const protect = async (req, res, next) => {
   const authHeader = req.headers.authorization || "";
 
@@ -32,7 +32,7 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// ✅ Restrict by roles: authorize("admin") or authorize("agency","admin")
+//  Restrict by roles: authorize("admin") or authorize("agency","admin")
 export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ message: "Not authorized" });

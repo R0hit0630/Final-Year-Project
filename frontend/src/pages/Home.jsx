@@ -98,7 +98,7 @@ export default function Home() {
         <div className="relative z-10 max-w-4xl px-6 text-center flex flex-col items-center gap-8">
           <div className="flex items-center gap-3 text-[#197fe6]/90 uppercase tracking-[0.2em] text-xs">
             <span className="h-px w-8 bg-[#197fe6]/60" />
-            Nepal Tourism Board
+            Travolin
             <span className="h-px w-8 bg-[#197fe6]/60" />
           </div>
 

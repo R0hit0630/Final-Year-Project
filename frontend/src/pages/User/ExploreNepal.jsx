@@ -372,8 +372,10 @@ function PackageCard({ pkg, isFavorite, onToggleFavorite }) {
             >
               star
             </span>
-            <span className="text-xs font-bold text-[#2d3b2a]">{pkg.rating}</span>
-            <span className="text-[10px] text-[#6b7280]">({pkg.reviews})</span>
+            <span className="text-xs font-bold text-[#2d3b2a]">
+              {Number(pkg.rating || 0).toFixed(1)}
+            </span>
+            <span className="text-[10px] text-[#6b7280]">({pkg.reviews || 0})</span>
           </div>
         </div>
 
@@ -649,8 +651,8 @@ export default function ExploreNepal() {
           days: Number(p.days ?? 0),
           difficulty: p.difficulty ?? "Moderate",
           price: Number(p.price ?? 0),
-          rating: Number(p.rating ?? 4.8),
-          reviews: Number(p.reviewsCount ?? p.reviews ?? 0),
+          rating: Number(p.averageRating ?? p.rating ?? 0),
+          reviews: Number(p.numReviews ?? p.reviewsCount ?? p.reviews ?? 0),
           tags: Array.isArray(p.tags) ? p.tags : [],
           img: p.images?.[0]
             ? buildImageUrl(p.images[0])
@@ -914,14 +916,7 @@ export default function ExploreNepal() {
                   Filters
                 </button>
 
-                <button
-                  className="relative rounded-full p-2 text-[#6b7280] transition-colors hover:bg-blue-50 hover:text-blue-600"
-                  type="button"
-                  aria-label="Notifications"
-                >
-                  <span className="material-symbols-outlined">notifications</span>
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-red-500" />
-                </button>
+                
 
                 <div className="hidden h-8 w-px bg-[#e0e8dc] md:block" />
 

@@ -156,9 +156,7 @@ router.get("/destination/:id", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-/* =====================================================
-   SOFT DELETE
-===================================================== */
+   //SOFT DELETE
 router.delete("/:id", async (req, res) => {
   try {
     await Destination.findByIdAndUpdate(req.params.id, {

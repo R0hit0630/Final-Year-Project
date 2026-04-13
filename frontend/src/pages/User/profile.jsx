@@ -21,8 +21,6 @@ const normalizeProfileData = (data = {}) => ({
   location: data.location || "",
   avatar: data.avatar || "",
   role: data.role || "user",
-  level: data.level || "LEVEL 1",
-  tier: data.tier || "EXPLORER",
   difficulty: data.difficulty || "Challenging",
   interests: Array.isArray(data.interests) ? data.interests : [],
   contacts: Array.isArray(data.emergencyContacts) ? data.emergencyContacts : [],
@@ -36,23 +34,7 @@ function LoadingSkeleton() {
           <div className="mx-auto mb-4 h-32 w-32 animate-pulse rounded-full bg-[#e5e7eb]" />
           <div className="mx-auto h-5 w-40 animate-pulse rounded bg-[#e5e7eb]" />
           <div className="mx-auto mt-3 h-4 w-52 animate-pulse rounded bg-[#e5e7eb]" />
-          <div className="mx-auto mt-4 flex gap-2">
-            <div className="h-7 w-20 animate-pulse rounded-full bg-[#e5e7eb]" />
-            <div className="h-7 w-24 animate-pulse rounded-full bg-[#e5e7eb]" />
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-          <div className="mb-4 h-5 w-40 animate-pulse rounded bg-[#e5e7eb]" />
-          <div className="grid grid-cols-2 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-xl border border-black/5 p-3">
-                <div className="mx-auto mb-2 h-8 w-8 animate-pulse rounded bg-[#e5e7eb]" />
-                <div className="mx-auto h-3 w-16 animate-pulse rounded bg-[#e5e7eb]" />
-                <div className="mx-auto mt-2 h-3 w-12 animate-pulse rounded bg-[#e5e7eb]" />
-              </div>
-            ))}
-          </div>
+          <div className="mx-auto mt-6 h-10 w-36 animate-pulse rounded-lg bg-[#e5e7eb]" />
         </div>
       </div>
 
@@ -102,21 +84,6 @@ export default function Profile() {
     []
   );
 
-  const badges = useMemo(
-    () => [
-      { title: "Mountain Climber", sub: "15 Expeditions", icon: "mountain_flag" },
-      {
-        title: "Cultural Seeker",
-        sub: "8 Heritage Sites",
-        icon: "temple_hindu",
-        primary: true,
-      },
-      { title: "Jungle King", sub: "Safari Pro", icon: "forest", accent: true },
-      { title: "Sky Diver", sub: "Locked", icon: "lock", locked: true },
-    ],
-    []
-  );
-
   const token = getToken();
 
   const authHeaders = useMemo(() => {
@@ -125,7 +92,8 @@ export default function Profile() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
@@ -136,9 +104,6 @@ export default function Profile() {
   const [avatar, setAvatar] = useState("");
 
   const [role, setRole] = useState("user");
-  const [level, setLevel] = useState("LEVEL 1");
-  const [tier, setTier] = useState("EXPLORER");
-
   const [difficulty, setDifficulty] = useState("Challenging");
   const [interests, setInterests] = useState([]);
   const [contacts, setContacts] = useState([]);
@@ -171,8 +136,6 @@ export default function Profile() {
         setLocation(normalized.location);
         setAvatar(normalized.avatar);
         setRole(normalized.role);
-        setLevel(normalized.level);
-        setTier(normalized.tier);
         setDifficulty(normalized.difficulty);
         setInterests(normalized.interests);
         setContacts(normalized.contacts);
@@ -190,43 +153,72 @@ export default function Profile() {
     load();
   }, [authHeaders]);
 
-  const handleAvatarUpload = async (file) => {
-    if (!file) return;
+  const handleProfilePictureUpload = async (file) => {
+    if (!file || !isEditing) return;
 
     try {
-      setUploadingAvatar(true);
+      setUploadingPicture(true);
       setErr("");
       setMsg("");
 
       const formData = new FormData();
-      formData.append("avatar", file);
+      formData.append("image", file);
 
-      const { data } = await axios.put(`${API}/api/users/me/avatar`, formData, {
-        headers: {
-          ...authHeaders,
-        },
-      });
+      const uploadRes = await axios.post(`${API}/api/upload`, formData);
 
-      const uploadedAvatar =
-        data?.avatar || data?.data?.avatar || data?.user?.avatar || "";
-
-      if (uploadedAvatar) {
-        setAvatar(uploadedAvatar);
+      const imageUrl = uploadRes?.data?.imageUrl || "";
+      if (!imageUrl) {
+        throw new Error("Image upload failed");
       }
 
-      setMsg("Avatar updated successfully.");
+      const relativePath = imageUrl.replace(API, "");
+
+      await axios.put(
+        `${API}/api/users/me`,
+        {
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+          location: location.trim(),
+          avatar: relativePath,
+          difficulty,
+          interests,
+          emergencyContacts: contacts,
+        },
+        { headers: authHeaders }
+      );
+
+      setAvatar(relativePath);
+
+      const updatedSnapshot = {
+        fullName: fullName.trim(),
+        email,
+        phone: phone.trim(),
+        location: location.trim(),
+        avatar: relativePath,
+        role,
+        difficulty,
+        interests,
+        contacts,
+      };
+
+      setOriginal(updatedSnapshot);
+      setMsg("Profile picture updated successfully.");
     } catch (e) {
-      setErr(e?.response?.data?.message || "Upload failed.");
+      console.error("Profile picture upload failed:", e);
+      setErr(e?.response?.data?.message || e.message || "Upload failed.");
     } finally {
-      setUploadingAvatar(false);
+      setUploadingPicture(false);
     }
   };
 
   const removeInterest = (tag) => {
+    if (!isEditing) return;
     setInterests((prev) => prev.filter((t) => t !== tag));
   };
 
   const addInterest = () => {
+    if (!isEditing) return;
+
     const value = prompt("Add interest tag (no #):");
     if (!value) return;
 
@@ -240,6 +232,8 @@ export default function Profile() {
   };
 
   const addEmergencyContact = () => {
+    if (!isEditing) return;
+
     const name = prompt("Contact name:");
     const phoneValue = prompt("Contact phone:");
     if (!name || !phoneValue) return;
@@ -260,13 +254,12 @@ export default function Profile() {
     setLocation(original.location);
     setAvatar(original.avatar);
     setRole(original.role);
-    setLevel(original.level);
-    setTier(original.tier);
     setDifficulty(original.difficulty);
     setInterests(original.interests);
     setContacts(original.contacts);
     setMsg("");
     setErr("");
+    setIsEditing(false);
   };
 
   const save = async () => {
@@ -296,8 +289,6 @@ export default function Profile() {
         location: location.trim(),
         avatar,
         role,
-        level,
-        tier,
         difficulty,
         interests,
         contacts,
@@ -305,6 +296,7 @@ export default function Profile() {
 
       setOriginal(snapshot);
       setMsg("Profile saved successfully.");
+      setIsEditing(false);
     } catch (e) {
       setErr(e?.response?.data?.message || "Failed to save profile.");
     } finally {
@@ -315,7 +307,6 @@ export default function Profile() {
   return (
     <div className="h-screen w-full overflow-hidden font-['Inter'] text-[#2d3b2a]">
       <div className="flex h-full w-full bg-[#fcfbf8]">
-        {/* Sidebar */}
         <aside className="hidden w-64 shrink-0 flex-col justify-between border-r border-[#e0e8dc] bg-[#fdfdfc]/80 backdrop-blur-sm lg:flex">
           <div className="flex h-full flex-col p-6">
             <div className="mb-10 flex items-center gap-3">
@@ -386,7 +377,6 @@ export default function Profile() {
           </div>
         </aside>
 
-        {/* Main */}
         <main className="flex flex-1 flex-col overflow-y-auto bg-[#f6f7f8]">
           <header className="sticky top-0 z-40 border-b border-[#e0e8dc] bg-[#fdfdfc]/80 px-4 py-4 backdrop-blur-md md:px-8">
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 md:gap-6">
@@ -401,20 +391,13 @@ export default function Profile() {
                     My Profile
                   </h1>
                   <p className="text-xs text-[#6b7280]">
-                    Manage your Himalayan adventures and settings
+                    Manage your personal details and account information
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 md:gap-4">
-                <button
-                  className="relative rounded-full p-2 text-[#6b7280] transition-colors hover:bg-blue-50 hover:text-blue-600"
-                  type="button"
-                  aria-label="Notifications"
-                >
-                  <span className="material-symbols-outlined">notifications</span>
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-red-500" />
-                </button>
+                
                 <div className="hidden h-8 w-px bg-[#e0e8dc] md:block" />
                 <Link
                   to="/trips"
@@ -439,7 +422,6 @@ export default function Profile() {
               <LoadingSkeleton />
             ) : (
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-                {/* Left */}
                 <div className="flex flex-col gap-8 lg:col-span-4">
                   <div className="flex flex-col items-center rounded-2xl border border-black/5 bg-white p-6 text-center shadow-sm">
                     <div className="relative mb-4">
@@ -455,28 +437,31 @@ export default function Profile() {
                       </div>
 
                       <input
-                        id="avatarUpload"
+                        id="profilePictureUpload"
                         type="file"
                         accept="image/*"
+                        disabled={!isEditing}
                         onChange={(e) => {
                           if (e.target.files?.[0]) {
-                            handleAvatarUpload(e.target.files[0]);
+                            handleProfilePictureUpload(e.target.files[0]);
                           }
                         }}
                         className="hidden"
                       />
 
                       <label
-                        htmlFor="avatarUpload"
-                        className={`absolute bottom-1 right-1 cursor-pointer rounded-full p-2 text-white shadow-lg transition-all ${
-                          uploadingAvatar
-                            ? "bg-gray-400"
-                            : "bg-[#1978e5] hover:bg-[#3fa10e]"
+                        htmlFor={isEditing ? "profilePictureUpload" : undefined}
+                        className={`absolute bottom-1 right-1 rounded-full p-2 text-white shadow-lg transition-all ${
+                          isEditing
+                            ? uploadingPicture
+                              ? "cursor-not-allowed bg-gray-400"
+                              : "cursor-pointer bg-[#1978e5] hover:bg-[#3fa10e]"
+                            : "cursor-not-allowed bg-gray-300"
                         }`}
-                        aria-label="Upload avatar"
+                        aria-label="Upload profile picture"
                       >
                         <span className="material-symbols-outlined text-base">
-                          {uploadingAvatar ? "hourglass_top" : "photo_camera"}
+                          {uploadingPicture ? "hourglass_top" : "photo_camera"}
                         </span>
                       </label>
                     </div>
@@ -484,80 +469,29 @@ export default function Profile() {
                     <h2 className="text-xl font-bold">{fullName || "User"}</h2>
                     <p className="text-sm text-[#6b7280]">{email || "No email"}</p>
 
-                    <div className="mt-4 flex gap-2">
-                      <span className="rounded-full border border-[#1978e5]/10 bg-[#f3f6f1] px-3 py-1 text-xs font-bold text-[#1978e5]">
-                        {level}
-                      </span>
-                      <span className="rounded-full bg-[#2d3b2a] px-3 py-1 text-xs font-bold text-white">
-                        {tier}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h3 className="flex items-center gap-2 font-bold">
-                        <span className="material-symbols-outlined text-[#1978e5]">
-                          military_tech
-                        </span>
-                        Explorer Badges
-                      </h3>
-                      <Link className="text-xs font-semibold text-[#1978e5]" to="/badges">
-                        View All
-                      </Link>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      {badges.map((b) => (
-                        <div
-                          key={b.title}
-                          className={`flex flex-col items-center rounded-xl p-3 text-center ${
-                            b.locked
-                              ? "border border-dashed border-gray-300 bg-white opacity-60"
-                              : "border border-black/5 bg-[#f3f6f1]/50"
-                          }`}
-                        >
-                          <span
-                            className={`material-symbols-outlined mb-2 text-3xl ${
-                              b.locked
-                                ? "text-gray-300"
-                                : b.accent
-                                ? "text-[#b45309]"
-                                : b.primary
-                                ? "text-[#1978e5]"
-                                : "text-[#2d3b2a]"
-                            }`}
-                          >
-                            {b.icon}
-                          </span>
-                          <span
-                            className={`text-xs font-bold ${
-                              b.locked ? "text-gray-400" : "text-[#2d3b2a]"
-                            }`}
-                          >
-                            {b.title}
-                          </span>
-                          <span
-                            className={`text-[10px] uppercase tracking-tighter ${
-                              b.locked ? "text-gray-400" : "text-gray-500"
-                            }`}
-                          >
-                            {b.sub}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                    {!isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMsg("");
+                          setErr("");
+                          setIsEditing(true);
+                        }}
+                        className="mt-6 rounded-lg bg-[#1978e5] px-6 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:opacity-95"
+                      >
+                        Update Profile
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {/* Right */}
                 <div className="flex flex-col gap-6 lg:col-span-8">
                   <div className="rounded-2xl border border-black/5 bg-white p-8 shadow-sm">
                     <h3 className="mb-6 flex items-center gap-2 text-lg font-bold">
                       <span className="material-symbols-outlined text-[#1978e5]">
-                        settings
+                        badge
                       </span>
-                      Account Settings
+                      Personal Details
                     </h3>
 
                     <div className="grid gap-6 md:grid-cols-2">
@@ -566,10 +500,15 @@ export default function Profile() {
                           Full Name
                         </label>
                         <input
-                          className="w-full rounded-lg border border-[#e0e8dc] bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-1"
+                          className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-all ${
+                            isEditing
+                              ? "border-[#e0e8dc] bg-white focus:border-blue-500 focus:ring-1"
+                              : "border-[#e0e8dc] bg-[#f8fafc] text-[#6b7280]"
+                          }`}
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           type="text"
+                          readOnly={!isEditing}
                         />
                       </div>
 
@@ -578,7 +517,7 @@ export default function Profile() {
                           Email Address
                         </label>
                         <input
-                          className="w-full rounded-lg border border-[#e0e8dc] bg-white px-3 py-2.5 text-sm outline-none opacity-80"
+                          className="w-full rounded-lg border border-[#e0e8dc] bg-[#f8fafc] px-3 py-2.5 text-sm outline-none opacity-80"
                           value={email}
                           readOnly
                           type="email"
@@ -590,10 +529,15 @@ export default function Profile() {
                           Phone Number
                         </label>
                         <input
-                          className="w-full rounded-lg border border-[#e0e8dc] bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-1"
+                          className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-all ${
+                            isEditing
+                              ? "border-[#e0e8dc] bg-white focus:border-blue-500 focus:ring-1"
+                              : "border-[#e0e8dc] bg-[#f8fafc] text-[#6b7280]"
+                          }`}
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           type="tel"
+                          readOnly={!isEditing}
                         />
                       </div>
 
@@ -602,10 +546,15 @@ export default function Profile() {
                           Location
                         </label>
                         <input
-                          className="w-full rounded-lg border border-[#e0e8dc] bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-1"
+                          className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-all ${
+                            isEditing
+                              ? "border-[#e0e8dc] bg-white focus:border-blue-500 focus:ring-1"
+                              : "border-[#e0e8dc] bg-[#f8fafc] text-[#6b7280]"
+                          }`}
                           value={location}
                           onChange={(e) => setLocation(e.target.value)}
                           type="text"
+                          readOnly={!isEditing}
                         />
                       </div>
                     </div>
@@ -631,11 +580,16 @@ export default function Profile() {
                               <button
                                 key={d}
                                 type="button"
-                                onClick={() => setDifficulty(d)}
+                                onClick={() => isEditing && setDifficulty(d)}
+                                disabled={!isEditing}
                                 className={`rounded-lg border px-4 py-2 text-sm transition-all ${
                                   active
                                     ? "border-blue-500 bg-blue-50 font-bold text-blue-600"
-                                    : "border-[#e0e8dc] bg-white font-semibold text-[#4b5563] hover:border-blue-500 hover:bg-blue-50"
+                                    : "border-[#e0e8dc] bg-white font-semibold text-[#4b5563]"
+                                } ${
+                                  isEditing
+                                    ? "hover:border-blue-500 hover:bg-blue-50"
+                                    : "cursor-not-allowed opacity-70"
                                 }`}
                               >
                                 {d}
@@ -656,24 +610,28 @@ export default function Profile() {
                               className="inline-flex items-center gap-1 rounded-full border border-black/5 bg-[#f3f6f1] px-3 py-1 text-xs font-medium text-[#2d3b2a]"
                             >
                               #{tag}
-                              <button
-                                type="button"
-                                onClick={() => removeInterest(tag)}
-                                className="material-symbols-outlined text-sm transition-colors hover:text-red-500"
-                                aria-label={`Remove ${tag}`}
-                              >
-                                close
-                              </button>
+                              {isEditing && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeInterest(tag)}
+                                  className="material-symbols-outlined text-sm transition-colors hover:text-red-500"
+                                  aria-label={`Remove ${tag}`}
+                                >
+                                  close
+                                </button>
+                              )}
                             </span>
                           ))}
 
-                          <button
-                            type="button"
-                            className="rounded-full border border-dashed border-[#1978e5] px-3 py-1 text-xs font-bold text-[#1978e5] transition-all hover:bg-blue-50"
-                            onClick={addInterest}
-                          >
-                            + Add Interest
-                          </button>
+                          {isEditing && (
+                            <button
+                              type="button"
+                              className="rounded-full border border-dashed border-[#1978e5] px-3 py-1 text-xs font-bold text-[#1978e5] transition-all hover:bg-blue-50"
+                              onClick={addInterest}
+                            >
+                              + Add Interest
+                            </button>
+                          )}
                         </div>
 
                         {interests.length === 0 && (
@@ -694,16 +652,18 @@ export default function Profile() {
                         Emergency Contacts
                       </h3>
 
-                      <button
-                        type="button"
-                        className="flex items-center gap-1 text-xs font-bold text-[#1978e5] hover:underline"
-                        onClick={addEmergencyContact}
-                      >
-                        <span className="material-symbols-outlined text-sm">
-                          add_circle
-                        </span>
-                        Add New
-                      </button>
+                      {isEditing && (
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 text-xs font-bold text-[#1978e5] hover:underline"
+                          onClick={addEmergencyContact}
+                        >
+                          <span className="material-symbols-outlined text-sm">
+                            add_circle
+                          </span>
+                          Add New
+                        </button>
+                      )}
                     </div>
 
                     <div className="space-y-3">
@@ -724,18 +684,20 @@ export default function Profile() {
                             </div>
                           </div>
 
-                          <button
-                            type="button"
-                            className="text-gray-400 transition-colors hover:text-red-500"
-                            aria-label={`Delete ${c.name}`}
-                            onClick={() =>
-                              setContacts((prev) => prev.filter((_, i) => i !== idx))
-                            }
-                          >
-                            <span className="material-symbols-outlined text-xl">
-                              delete
-                            </span>
-                          </button>
+                          {isEditing && (
+                            <button
+                              type="button"
+                              className="text-gray-400 transition-colors hover:text-red-500"
+                              aria-label={`Delete ${c.name}`}
+                              onClick={() =>
+                                setContacts((prev) => prev.filter((_, i) => i !== idx))
+                              }
+                            >
+                              <span className="material-symbols-outlined text-xl">
+                                delete
+                              </span>
+                            </button>
+                          )}
                         </div>
                       ))}
 
@@ -748,22 +710,38 @@ export default function Profile() {
                   </div>
 
                   <div className="mt-2 flex flex-col justify-end gap-4 sm:flex-row">
-                    <button
-                      type="button"
-                      onClick={discard}
-                      className="rounded-lg border border-[#e0e8dc] bg-white px-6 py-2.5 text-sm font-bold text-[#6b7280] transition-all hover:border-blue-500 hover:bg-blue-50"
-                      disabled={saving}
-                    >
-                      Discard Changes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={save}
-                      className="rounded-lg bg-[#1978e5] px-10 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:opacity-95 disabled:opacity-60"
-                      disabled={saving}
-                    >
-                      {saving ? "Saving..." : "Save Profile"}
-                    </button>
+                    {!isEditing ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMsg("");
+                          setErr("");
+                          setIsEditing(true);
+                        }}
+                        className="rounded-lg bg-[#1978e5] px-10 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:opacity-95"
+                      >
+                        Update Profile
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={discard}
+                          className="rounded-lg border border-[#e0e8dc] bg-white px-6 py-2.5 text-sm font-bold text-[#6b7280] transition-all hover:border-blue-500 hover:bg-blue-50"
+                          disabled={saving}
+                        >
+                          Discard Changes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={save}
+                          className="rounded-lg bg-[#1978e5] px-10 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:opacity-95 disabled:opacity-60"
+                          disabled={saving}
+                        >
+                          {saving ? "Saving..." : "Save Profile"}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

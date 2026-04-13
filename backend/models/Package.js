@@ -36,6 +36,15 @@ const packageSchema = new mongoose.Schema(
       index: true,
     },
 
+    averageRating: {
+    type: Number,
+    default: 0,
+  },
+  numReviews: {
+    type: Number,
+    default: 0,
+  },
+
     images: { type: [String], default: [] },
 
     itinerary: { type: [itinerarySchema], default: [] },

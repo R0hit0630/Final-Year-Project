@@ -56,6 +56,34 @@ const bookingSchema = new mongoose.Schema(
       enum: ["pending", "paid", "refunded"],
       default: "pending",
     },
+
+    transactionUuid: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+
+    paymentReference: {
+      type: String,
+      default: "",
+    },
+
+    guide: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Guide",
+      default: null,
+    },
+
+    guideAssigned: {
+      type: Boolean,
+      default: false,
+    },
+
+    isReviewed: {
+    type: Boolean,
+    default: false,
+},
   },
   { timestamps: true }
 );

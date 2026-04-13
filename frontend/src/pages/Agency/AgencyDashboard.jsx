@@ -3,7 +3,6 @@ import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function AgencyDashboard() {
-  // ✅ Use SAME color system as your previous Profile page
   const COLORS = {
     primary: "#1978e5",
     primaryDark: "#3fa10e",
@@ -15,12 +14,12 @@ export default function AgencyDashboard() {
 
   const sidebar = useMemo(
     () => [
-      { label: "Overview", icon: "dashboard", to: "/agency", active: true },
-      { label: "My Packages", icon: "hiking", to: "/agency/packages" },
-      { label: "Bookings", icon: "book_online", to: "/agency/bookings" },
-      { label: "Guides", icon: "groups", to: "/agency/guides" },
-      { label: "Earnings", icon: "payments", to: "/agency/earnings" },
-      { label: "Profile", icon: "settings_account_box", to: "/agency/profile" },
+      { label: "Overview", icon: "dashboard", to: "/agency", active: false },
+      { label: "My Packages", icon: "hiking", to: "/agency/packages", active: true },
+      { label: "Bookings", icon: "book_online", to: "/agency/bookings", active: false },
+      { label: "Earnings", icon: "payments", to: "/agency/earnings", active: false },
+      { label: "Guides", icon: "person", to: "/agency/guides", active: false },
+      { label: "Profile", icon: "settings_account_box", to: "/agency/profile", active: false },
     ],
     []
   );

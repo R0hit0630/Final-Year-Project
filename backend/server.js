@@ -8,6 +8,10 @@ import packageRoutes from "./routes/package.routes.js";
 import bookingroutes from "./routes/bookingRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import path from "path";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import guideRoutes from "./routes/guideRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
 
 dotenv.config();
 
@@ -29,7 +33,12 @@ app.use("/api/packages", packageRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/bookings", bookingroutes);
+app.use("/api/payments", paymentRoutes);
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use("/api/guides", guideRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use("/uploads", express.static("uploads"));
+app.use("/api/reviews", reviewRoutes);
 
 connectDB();
 

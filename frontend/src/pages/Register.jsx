@@ -11,7 +11,7 @@ const Register = ({ setUser }) => {
     email: "",
     nationality: "",
     password: "",
-    role: "user", // ✅ default
+    role: "user",
     agencyName: "",
     agencyAddress: "",
     agencyPhone: "",
@@ -31,7 +31,6 @@ const Register = ({ setUser }) => {
     setLoading(true);
 
     try {
-      // ✅ build payload
       const payload = {
         username: formData.username,
         email: formData.email,
@@ -52,7 +51,6 @@ const Register = ({ setUser }) => {
         payload
       );
 
-      // ✅ store token + user (because backend returns token on register)
       localStorage.setItem("token", res.data.token);
 
       const userObj = {
@@ -66,18 +64,17 @@ const Register = ({ setUser }) => {
       localStorage.setItem("user", JSON.stringify(userObj));
       if (setUser) setUser(userObj);
 
-      // ✅ redirect after register
       if (res.data.role === "agency") {
-          if (res.data.agencyVerified) {
-            navigate("/AgencyDashboard");   // AgencyDashboard
-          } else {
-            navigate("/agency/AgencyPending"); // AgencyPending
-          }
-        } else if (res.data.role === "admin") {
-          navigate("/adddestination"); // your admin landing page
+        if (res.data.agencyVerified) {
+          navigate("/agency");
         } else {
-          navigate("/userhome"); // normal user
+          navigate("/agency/pending");
         }
+      } else if (res.data.role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/explore");
+      }
     } catch (err) {
       console.log("REGISTER ERROR RESPONSE:", err.response?.data);
       setError(err.response?.data?.message || "Registration failed");
@@ -111,7 +108,6 @@ const Register = ({ setUser }) => {
       {/* RIGHT REGISTER */}
       <div className="w-full md:w-1/2 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
-          {/* Card */}
           <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-semibold text-gray-900">
@@ -129,7 +125,6 @@ const Register = ({ setUser }) => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* ✅ Role selector */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   Account Type
@@ -144,7 +139,6 @@ const Register = ({ setUser }) => {
                   <option value="agency">Agency</option>
                 </select>
 
-                {/* small helper */}
                 <div className="mt-2 flex gap-2">
                   <span
                     className={`px-3 py-1 text-xs rounded-full border ${
@@ -167,7 +161,6 @@ const Register = ({ setUser }) => {
                 </div>
               </div>
 
-              {/* Username */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   Username
@@ -183,7 +176,6 @@ const Register = ({ setUser }) => {
                 />
               </div>
 
-              {/* Email */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   Email
@@ -199,7 +191,6 @@ const Register = ({ setUser }) => {
                 />
               </div>
 
-              {/* Nationality */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   Nationality
@@ -215,7 +206,6 @@ const Register = ({ setUser }) => {
                 />
               </div>
 
-              {/* ✅ Agency extra fields */}
               {formData.role === "agency" && (
                 <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-4">
                   <div className="flex items-center justify-between">
@@ -295,7 +285,6 @@ const Register = ({ setUser }) => {
                 </div>
               )}
 
-              {/* Password */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   Password
@@ -333,7 +322,6 @@ const Register = ({ setUser }) => {
             </form>
           </div>
 
-          {/* small footer */}
           <p className="text-center text-[11px] text-gray-400 mt-4">
             By registering, you agree to our basic terms & privacy policy.
           </p>

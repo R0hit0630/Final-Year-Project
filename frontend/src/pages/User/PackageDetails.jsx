@@ -46,6 +46,8 @@ export default function PackageDetails() {
   const { id } = useParams();
 
   const [pkg, setPkg] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(getStoredUser());
@@ -116,6 +118,25 @@ export default function PackageDetails() {
     };
 
     if (id) fetchOne();
+  }, [id]);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setReviewsLoading(true);
+        const res = await fetch(`${API}/api/reviews/package/${id}`);
+        if (!res.ok) throw new Error("Failed to fetch reviews");
+        const data = await res.json();
+        setReviews(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Fetch reviews error:", err);
+        setReviews([]);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    if (id) fetchReviews();
   }, [id]);
 
   const navItems = useMemo(
@@ -252,7 +273,7 @@ export default function PackageDetails() {
   }, [pkg, minGroupSize, maxGroupSize]);
 
   const excludedItems = useMemo(() => {
-    if (Array.isArray(pkg?.excludedItems) && pkg.excludedItems.length > 0) {
+    if (Array.isArray(pkg?.excludedItems) && pkg?.excludedItems.length > 0) {
       return pkg.excludedItems;
     }
 
@@ -268,6 +289,9 @@ export default function PackageDetails() {
   const subtotal = Number(pkg?.price || 0) * Number(groupSize || 1);
   const serviceFee = 50;
   const total = subtotal + serviceFee;
+
+  const averageRating = Number(pkg?.averageRating || 0);
+  const numReviews = Number(pkg?.numReviews || 0);
 
   if (loading) {
     return <LoadingSkeleton />;
@@ -298,7 +322,6 @@ export default function PackageDetails() {
   return (
     <div className="h-screen w-full overflow-hidden font-['Inter'] text-[#2d3b2a]">
       <div className="flex h-full w-full bg-[#fcfbf8]">
-        {/* Sidebar */}
         <aside className="hidden w-64 shrink-0 flex-col justify-between border-r border-[#e0e8dc] bg-[#fdfdfc]/80 backdrop-blur-sm lg:flex">
           <div className="flex h-full flex-col p-6">
             <div className="mb-10 flex items-center gap-3">
@@ -356,9 +379,7 @@ export default function PackageDetails() {
           </div>
         </aside>
 
-        {/* Main */}
         <main className="flex flex-1 flex-col overflow-y-auto bg-[#f6f7f8]">
-          {/* Header */}
           <header className="sticky top-0 z-40 border-b border-[#e0e8dc] bg-[#fdfdfc]/80 px-4 py-4 backdrop-blur-md md:px-8">
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 md:gap-6">
               <div className="flex items-center gap-4">
@@ -376,19 +397,34 @@ export default function PackageDetails() {
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#94a3b8]">
                     Package Details
                   </p>
-                  <h2 className="text-lg font-bold text-[#2d3b2a]">{pkg.title}</h2>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h2 className="text-lg font-bold text-[#2d3b2a]">{pkg.title}</h2>
+
+                    {numReviews > 0 ? (
+                      <div className="flex items-center gap-1 rounded-full bg-white px-3 py-1 shadow-sm ring-1 ring-black/5">
+                        <span
+                          className="material-symbols-outlined text-[16px] text-yellow-400"
+                          style={{ fontVariationSettings: "'FILL' 1" }}
+                        >
+                          star
+                        </span>
+                        <span className="text-xs font-bold text-[#2d3b2a]">
+                          {averageRating.toFixed(1)}
+                        </span>
+                        <span className="text-[10px] text-[#6b7280]">
+                          ({numReviews})
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#6b7280] shadow-sm ring-1 ring-black/5">
+                        No ratings yet
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 md:gap-4">
-                <button
-                  className="relative rounded-full p-2 text-[#6b7280] transition-colors hover:bg-blue-50 hover:text-blue-600"
-                  type="button"
-                  aria-label="Notifications"
-                >
-                  <span className="material-symbols-outlined">notifications</span>
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-red-500" />
-                </button>
                 <div className="hidden h-8 w-px bg-[#e0e8dc] md:block" />
                 <Link
                   to="/bookings"
@@ -400,11 +436,8 @@ export default function PackageDetails() {
             </div>
           </header>
 
-          {/* Content */}
           <div className="mx-auto flex w-full max-w-7xl gap-8 px-4 py-8 md:px-8">
-            {/* Left */}
             <div className="flex-1">
-              {/* Hero */}
               <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
                 <img
                   src={cover}
@@ -425,9 +458,32 @@ export default function PackageDetails() {
                     </span>
                   </div>
 
-                  <h1 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
-                    {pkg.title}
-                  </h1>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
+                      {pkg.title}
+                    </h1>
+
+                    {numReviews > 0 ? (
+                      <div className="flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 backdrop-blur-md">
+                        <span
+                          className="material-symbols-outlined text-[18px] text-yellow-400"
+                          style={{ fontVariationSettings: "'FILL' 1" }}
+                        >
+                          star
+                        </span>
+                        <span className="text-xs font-bold text-[#2d3b2a]">
+                          {averageRating.toFixed(1)}
+                        </span>
+                        <span className="text-[10px] text-[#6b7280]">
+                          ({numReviews})
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#6b7280] backdrop-blur-md">
+                        No ratings yet
+                      </div>
+                    )}
+                  </div>
 
                   <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-white/90">
                     <span className="flex items-center gap-1">
@@ -454,7 +510,6 @@ export default function PackageDetails() {
                 </div>
               </div>
 
-              {/* Quick stats */}
               <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
                   <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
@@ -505,7 +560,6 @@ export default function PackageDetails() {
                 </div>
               </div>
 
-              {/* Overview */}
               <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
                 <h3 className="mb-3 text-lg font-bold text-[#2d3b2a]">Overview</h3>
                 <p className="text-sm leading-relaxed text-[#6b7280]">
@@ -513,7 +567,6 @@ export default function PackageDetails() {
                 </p>
               </div>
 
-              {/* Highlights */}
               <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
                 <h3 className="mb-4 text-lg font-bold text-[#2d3b2a]">Highlights</h3>
                 <div className="grid gap-3 md:grid-cols-2">
@@ -528,7 +581,6 @@ export default function PackageDetails() {
                 </div>
               </div>
 
-              {/* Itinerary */}
               {Array.isArray(pkg.itinerary) && pkg.itinerary.length > 0 && (
                 <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
                   <div className="mb-5 flex items-center justify-between">
@@ -552,7 +604,9 @@ export default function PackageDetails() {
                           {day.title || `Itinerary Day ${i + 1}`}
                         </p>
                         <p className="mt-1 text-sm leading-relaxed text-[#6b7280]">
-                          {day.details || day.description || "No details available for this day."}
+                          {day.details ||
+                            day.description ||
+                            "No details available for this day."}
                         </p>
                       </div>
                     ))}
@@ -560,7 +614,6 @@ export default function PackageDetails() {
                 </div>
               )}
 
-              {/* Included / Excluded */}
               <div className="mt-6 grid gap-6 md:grid-cols-2">
                 <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
                   <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-[#2d3b2a]">
@@ -599,7 +652,129 @@ export default function PackageDetails() {
                 </div>
               </div>
 
-              {/* Gallery */}
+              <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+                <div className="mb-5 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
+                      Traveler Reviews
+                    </p>
+                    <h3 className="mt-1 text-lg font-bold text-[#2d3b2a]">
+                      Customer Reviews
+                    </h3>
+                  </div>
+
+                  {numReviews > 0 ? (
+                    <div className="flex items-center gap-2 rounded-full bg-[#f8fafc] px-4 py-2">
+                      <span
+                        className="material-symbols-outlined text-[18px] text-yellow-400"
+                        style={{ fontVariationSettings: "'FILL' 1" }}
+                      >
+                        star
+                      </span>
+                      <span className="text-sm font-bold text-[#2d3b2a]">
+                        {averageRating.toFixed(1)}
+                      </span>
+                      <span className="text-xs text-[#6b7280]">
+                        ({numReviews} reviews)
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="rounded-full bg-[#f8fafc] px-4 py-2 text-xs font-semibold text-[#6b7280]">
+                      No ratings yet
+                    </div>
+                  )}
+                </div>
+
+                {reviewsLoading ? (
+                  <div className="space-y-4">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="rounded-xl border border-[#eef2f0] p-4"
+                      >
+                        <div className="mb-3 h-4 w-24 animate-pulse rounded bg-[#e5e7eb]" />
+                        <div className="mb-2 h-3 w-full animate-pulse rounded bg-[#e5e7eb]" />
+                        <div className="h-3 w-2/3 animate-pulse rounded bg-[#e5e7eb]" />
+                      </div>
+                    ))}
+                  </div>
+                ) : reviews.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-[#d9e2ec] bg-[#fcfbf8] p-8 text-center">
+                    <p className="text-sm font-semibold text-[#2d3b2a]">
+                      No reviews yet
+                    </p>
+                    <p className="mt-1 text-sm text-[#6b7280]">
+                      Be the first traveler to rate this package.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {reviews.map((review) => {
+                      const reviewerName =
+                        review?.user?.fullName ||
+                        review?.user?.name ||
+                        review?.user?.username ||
+                        "Traveler";
+
+                      const reviewerInitial = reviewerName.charAt(0).toUpperCase();
+
+                      return (
+                        <div
+                          key={review._id}
+                          className="rounded-xl border border-[#eef2f0] bg-[#fcfbf8] p-4"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#2d3b2a] text-sm font-bold text-white">
+                              {reviewerInitial}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                  <h4 className="text-sm font-bold text-[#2d3b2a]">
+                                    {reviewerName}
+                                  </h4>
+                                  <p className="text-xs text-[#94a3b8]">
+                                    {review?.createdAt
+                                      ? new Date(review.createdAt).toLocaleDateString(
+                                          "en-GB",
+                                          {
+                                            day: "2-digit",
+                                            month: "short",
+                                            year: "numeric",
+                                          }
+                                        )
+                                      : "Recent review"}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center gap-1 rounded-full bg-white px-3 py-1 shadow-sm ring-1 ring-black/5">
+                                  <span
+                                    className="material-symbols-outlined text-[16px] text-yellow-400"
+                                    style={{ fontVariationSettings: "'FILL' 1" }}
+                                  >
+                                    star
+                                  </span>
+                                  <span className="text-xs font-bold text-[#2d3b2a]">
+                                    {Number(review?.rating || 0).toFixed(1)}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <p className="mt-3 text-sm leading-relaxed text-[#6b7280]">
+                                {review?.comment?.trim()
+                                  ? review.comment
+                                  : "The traveler left a rating without a written review."}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               {galleryImages.length > 0 && (
                 <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
                   <h3 className="mb-4 text-lg font-bold text-[#2d3b2a]">Gallery</h3>
@@ -622,10 +797,8 @@ export default function PackageDetails() {
               )}
             </div>
 
-            {/* Right sticky */}
             <div className="hidden w-[340px] shrink-0 lg:block">
               <div className="sticky top-24 space-y-6">
-                {/* Booking card */}
                 <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
                   <div className="mb-6">
                     <p className="text-[10px] font-medium uppercase tracking-widest text-[#6b7280]">
@@ -732,7 +905,7 @@ export default function PackageDetails() {
                     </div>
 
                     <Link
-                      to={`/booking/${packageId}`}
+                      to={`/pay/${packageId}`}
                       state={{
                         packageId,
                         selectedDate,
@@ -756,7 +929,6 @@ export default function PackageDetails() {
                   </div>
                 </div>
 
-                {/* Support card */}
                 <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
                   <h3 className="mb-4 text-base font-bold text-[#2d3b2a]">
                     Why book this trip?
@@ -807,35 +979,55 @@ export default function PackageDetails() {
                   </div>
                 </div>
 
-                {/* Operator */}
                 <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
                   <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
-                    Operated by
+                    Package Rating
                   </p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2d3b2a] text-lg font-bold text-white">
-                      TR
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-[#2d3b2a]">
-                        Travolin Adventures
-                      </p>
-                      <div className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px] text-yellow-400">
-                          star
-                        </span>
-                        <span className="text-xs font-medium text-[#6b7280]">
-                          4.9 trusted rating
-                        </span>
-                      </div>
-                    </div>
+
+                  <div className="mt-3">
+                    {numReviews > 0 ? (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="material-symbols-outlined text-[22px] text-yellow-400"
+                            style={{ fontVariationSettings: "'FILL' 1" }}
+                          >
+                            star
+                          </span>
+                          <span className="text-2xl font-bold text-[#2d3b2a]">
+                            {averageRating.toFixed(1)}
+                          </span>
+                          <span className="text-sm font-medium text-[#6b7280]">
+                            ({numReviews} reviews)
+                          </span>
+                        </div>
+
+                        <p className="mt-2 text-sm text-[#6b7280]">
+                          Travelers who completed this trip rated this package highly.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[22px] text-[#cbd5e1]">
+                            star
+                          </span>
+                          <span className="text-base font-semibold text-[#6b7280]">
+                            No ratings yet
+                          </span>
+                        </div>
+
+                        <p className="mt-2 text-sm text-[#6b7280]">
+                          Be the first traveler to review this package after booking.
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Mobile booking card */}
           <div className="px-4 pb-8 md:px-8 lg:hidden">
             <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
               <div className="mb-4 flex items-end justify-between gap-3">

@@ -12,7 +12,6 @@ import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Destination from "./pages/Destination";
 import User from "./pages/User/User";
-import Userhome from "./pages/User/Userhome";
 import Profile from "./pages/User/profile";
 import ExploreNepal from "./pages/User/ExploreNepal";
 import PackageDetails from "./pages/User/PackageDetails";
@@ -22,12 +21,26 @@ import SavedDestinations from "./pages/User/SavedDestinations";
 import AgencyDashboard from "./pages/Agency/AgencyDashboard";
 import AgencyProfile from "./pages/Agency/AgencyProfile";
 import AddPackageAgency from "./pages/Agency/AddPackage";
+import AgencyGuides from "./pages/Agency/AgencyGuides";
 import AgencyPackages from "./pages/Agency/AgencyPackages";
-
-
-import AddDestination from "./Adminpage/AddDestination";
-import AddPackage from "./Adminpage/Addpackage";
 import AgencyPending from "./pages/Agency/AgencyPending";
+import AddNewGuide from "./pages/Agency/AddNewGuide";
+import AgencyBookings from "./pages/Agency/AgencyBookings";
+import AgencyGuideProfile from "./pages/Agency/AgencyGuideProfile";
+import AgencyPackageDetails from "./pages/Agency/AgencyPackageDetails";
+
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import AdminUsers from "./pages/Admin/AdminUsers";
+import AdminAgencies from "./pages/Admin/AdminAgencies";
+import AdminPayments from "./pages/Admin/AdminPayments";
+import AdminApprovals from "./pages/Admin/AdminApprovals";
+
+
+import PayWithEsewa from "./pages/User/Payment/PayWithEsewa";
+import EsewaSuccess from "./pages/User/Payment/EsewaSuccess";
+import EsewaFailure from "./pages/User/Payment/EsewaFailure";
+
+
 
 // -------- Helpers --------
 const getStoredUser = () => {
@@ -45,7 +58,6 @@ const ProtectedRoute = ({ user, roles, children }) => {
     return <Navigate to="/" replace />;
   }
 
-  //  block unverified agency from agency pages
   if (user.role === "agency" && user.agencyVerified === false) {
     return <Navigate to="/agency/pending" replace />;
   }
@@ -53,13 +65,12 @@ const ProtectedRoute = ({ user, roles, children }) => {
   return children;
 };
 
-//  Logout route component (runs logout then redirects)
+// Logout route component
 const LogoutRoute = ({ onLogout }) => {
   useEffect(() => {
     onLogout();
   }, [onLogout]);
 
-  // After logout, redirect back to the public home page
   return <Navigate to="/" replace />;
 };
 
@@ -67,17 +78,16 @@ function App() {
   const [user, setUser] = useState(getStoredUser());
   const [loading, setLoading] = useState(true);
 
-  //  Central logout function
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
   };
 
-  //  Validate token on refresh using /api/users/me
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
+
       if (!token) {
         setLoading(false);
         return;
@@ -117,32 +127,22 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/*  PUBLIC ROUTES */}
+        {/* PUBLIC ROUTES */}
         <Route path="/" element={<Home user={user} />} />
         <Route path="/destinations" element={<Destination />} />
-
-        {/*  NOTE:
-            This route was pointing to Admin packagelist (DestinationPackages).
-            Keep it ONLY if you really intend it public.
-            Otherwise remove it and use a real public package details page.
-        */}
-        {/* <Route path="/packages/:id" element={<DestinationPackages />} /> */}
-
         <Route path="/explore" element={<ExploreNepal />} />
+        <Route path="/packages/:id" element={<PackageDetails />} />
 
         <Route path="/login" element={<Login setUser={setUser} />} />
-        <Route
-          path="/register"
-          element={!user ? <Register setUser={setUser} /> : <Navigate to="/" replace />}
-        />
+        <Route path="/register" element={<Register setUser={setUser} />} />
 
-        {/*  LOGOUT */}
+        {/* LOGOUT */}
         <Route path="/logout" element={<LogoutRoute onLogout={logout} />} />
 
-        {/*  Agency pending approval */}
+        {/* AGENCY PENDING */}
         <Route path="/agency/pending" element={<AgencyPending />} />
 
-        {/*  USER ROUTES */}
+        {/* USER ROUTES */}
         <Route
           path="/user"
           element={
@@ -151,15 +151,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/userhome"
-          element={
-            <ProtectedRoute user={user} roles={["user"]}>
-              <Userhome />
-            </ProtectedRoute>
-          }
-        />
-        
+
         <Route
           path="/profile"
           element={
@@ -168,28 +160,26 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
-            path="/trips"
-            element={
-              <ProtectedRoute user={user} roles={["user"]}>
-                <MyTrip />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/saved" 
+          path="/trips"
           element={
-          <SavedDestinations />} />
+            <ProtectedRoute user={user} roles={["user"]}>
+              <MyTrip />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-             path="/saved"
-             element={
-               <ProtectedRoute user={user} roles={["user"]}>
-                 <SavedDestinations />
-               </ProtectedRoute>
-                 }
-              />
+        <Route
+          path="/saved"
+          element={
+            <ProtectedRoute user={user} roles={["user"]}>
+              <SavedDestinations />
+            </ProtectedRoute>
+          }
+        />
 
-        {/*  AGENCY ROUTES */}
+        {/* AGENCY ROUTES */}
         <Route
           path="/agency"
           element={
@@ -198,6 +188,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/agency/profile"
           element={
@@ -207,7 +198,6 @@ function App() {
           }
         />
 
-        {/*  NEW: Add Package (Agency) */}
         <Route
           path="/agency/add-package"
           element={
@@ -217,40 +207,116 @@ function App() {
           }
         />
 
-
-        {/*  ADMIN ROUTES */}
         <Route
-          path="/adddestination"
+          path="/agency/packages"
           element={
-            <ProtectedRoute user={user} roles={["admin"]}>
-              <AddDestination />
+            <ProtectedRoute user={user} roles={["agency"]}>
+              <AgencyPackages />
             </ProtectedRoute>
           }
         />
+
         <Route
-          path="/addpackage"
+          path="/agency/guides"
           element={
-            <ProtectedRoute user={user} roles={["admin"]}>
-              <AddPackage />
+            <ProtectedRoute user={user} roles={["agency"]}>
+              <AgencyGuides />
             </ProtectedRoute>
           }
         />
-        <Route path="/packages/:id"
-         element={
-         <PackageDetails />
-         }
-          />
-          
-          <Route
-            path="/agency/packages"
-            element={
-              <ProtectedRoute user={user} roles={["agency"]}>
-                <AgencyPackages />
-              </ProtectedRoute>
-            }
-          />
 
-        {/*  Unknown routes */}
+        <Route
+          path="/agency/guides/add"
+          element={
+            <ProtectedRoute user={user} roles={["agency"]}>
+              <AddNewGuide />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/agency/bookings"
+          element={
+            <ProtectedRoute user={user} roles={["agency"]}>
+              <AgencyBookings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/agency/guides/:id"
+          element={
+            <ProtectedRoute user={user} roles={["agency"]}>
+              <AgencyGuideProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ADMIN ROUTES */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute user={user} roles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute user={user} roles={["admin"]}>
+              <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/agencies"
+          element={
+            <ProtectedRoute user={user} roles={["admin"]}>
+              <AdminAgencies />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/payments"
+          element={
+            <ProtectedRoute user={user} roles={["admin"]}>
+              <AdminPayments />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/approvals"
+          element={
+            <ProtectedRoute user={user} roles={["admin"]}>
+              <AdminApprovals />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/agency/packages/:id"
+          element={
+            <ProtectedRoute user={user} roles={["agency"]}>
+              <AgencyPackageDetails />
+            </ProtectedRoute>
+          }
+        />
+
+       
+
+    
+
+        {/* PAYMENT ROUTES */}
+        <Route path="/pay/:id" element={<PayWithEsewa />} />
+        <Route path="/payment/esewa/success" element={<EsewaSuccess />} />
+        <Route path="/payment/esewa/failure" element={<EsewaFailure />} />
+
+        {/* UNKNOWN ROUTES */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

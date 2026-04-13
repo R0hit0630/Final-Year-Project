@@ -33,7 +33,7 @@ const Login = ({ setUser }) => {
       localStorage.setItem("user", JSON.stringify(userObj));
       setUser(userObj);
 
-      // ✅ Redirect by role (MATCH YOUR APP ROUTES)
+      //  Redirect by role (MATCH YOUR APP ROUTES)
       if (res.data.role === "agency") {
         if (res.data.agencyVerified) {
           navigate("/agency"); // AgencyDashboard
@@ -41,7 +41,7 @@ const Login = ({ setUser }) => {
           navigate("/agency/pending"); // AgencyPending
         }
       } else if (res.data.role === "admin") {
-        navigate("/adddestination"); // your admin landing page
+        navigate("/admin/dashboard"); // your admin landing page
       } else {
         navigate("/explore"); // normal user: go to Explore page
       }

@@ -1,8 +1,11 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function AgencyPackages() {
   const navigate = useNavigate();
+  const [packages, setPackages] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const COLORS = {
     primary: "#1978e5",
@@ -18,96 +21,61 @@ export default function AgencyPackages() {
       { label: "Overview", icon: "dashboard", to: "/agency", active: false },
       { label: "My Packages", icon: "hiking", to: "/agency/packages", active: true },
       { label: "Bookings", icon: "book_online", to: "/agency/bookings", active: false },
-      { label: "Guides", icon: "groups", to: "/agency/guides", active: false },
       { label: "Earnings", icon: "payments", to: "/agency/earnings", active: false },
+      { label: "Guides", icon: "person", to: "/agency/guides", active: false },
       { label: "Profile", icon: "settings_account_box", to: "/agency/profile", active: false },
     ],
     []
   );
 
-  const packages = useMemo(
-    () => [
-      {
-        id: 1,
-        title: "Everest Base Camp Trek",
-        days: "14 Days",
-        location: "Everest Region",
-        price: "$2,499",
-        img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBxCx4lvlP0Kh_rRW8w6KC_xBqq44gkDYPeJW7IO7qKmEd-jAvpG7SCpkyWgkktoeaKVUEcP1l51Qtf9q4jNUh-m_L7KaVuNwmXH9XHUkCBocupQ_-Z086lJjyCfllbGWCkY9K-_KP8bhp_iINwSrGKQu97TFQXQqEb5GZox5lVnAN61ousBbMVrw6pMiobdJywo6maGNNpBZOZNKMhKLRgQut5EsBSXqdwRrM7w4j8Han3fqGv1XmJGQtHwjnxPuVSgFInbgKvMNPB",
-        status: "High Demand",
-        pct: 85,
-        next: "Oct 12",
-        bookings: 148,
-        rating: 4.9,
-      },
-      {
-        id: 2,
-        title: "Annapurna Circuit",
-        days: "18 Days",
-        location: "Annapurna Region",
-        price: "$1,950",
-        img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAWxTB4cgJvHHA2IV1YoQ_Z67y3iGbI3wxkglhG3eC3YxI1ybS73mm55bmsJs0CcMNFRpcW_vSc2VefCR-2XGpxstaetQS6nnq41ZZoGAmVggeToEtyj3qcIBvexSSxhPyNsfiZODWx-RchpgzbDvnTH3CR5tsNfcArNC1GYcaAvoYg84iE6oYP4BOlnCXJLZ7SLCubMp2RsjMkVdZj1DALtNtK2Md-oCiaMhEOVreSOKu1XYOdcpM0W2_uHFWzzWT63WLZmbLyTPM7",
-        status: "Steady",
-        pct: 62,
-        next: "Oct 15",
-        bookings: 96,
-        rating: 4.7,
-      },
-      {
-        id: 3,
-        title: "Langtang Valley Trek",
-        days: "10 Days",
-        location: "Langtang Region",
-        price: "$1,250",
-        img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCLhk_Z58zuE39eSVkG25SOFsTt_0jCU4sxYwbJaylC_cLN4qWv2LHJ-UAq1Y8bmvzkE_sIB8w4mWUtWO3Ge_eNydGZ-E35qriWWk5HMiyQY9HKbyl5QW-mJCN-3y-hV3zR3yw4kaZ39acLrhOmmVdmWfzJ7GuU4VVeOXyFlwBj_BrKflsckmabvdts1CRHyue-0FZngB__W1DdI6IPb43dvvqXvC0S0oqWYTdMC3ndZadrfo9g6d0YblFEAG0ybtPwft1oi3y2DHMy",
-        status: "Filling Fast",
-        pct: 45,
-        next: "Nov 01",
-        bookings: 54,
-        rating: 4.6,
-      },
-      {
-        id: 4,
-        title: "Manaslu Circuit Trek",
-        days: "16 Days",
-        location: "Manaslu Region",
-        price: "$2,150",
-        img: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80",
-        status: "High Demand",
-        pct: 78,
-        next: "Oct 20",
-        bookings: 122,
-        rating: 4.8,
-      },
-      {
-        id: 5,
-        title: "Mardi Himal Trek",
-        days: "7 Days",
-        location: "Pokhara",
-        price: "$899",
-        img: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
-        status: "Steady",
-        pct: 58,
-        next: "Oct 10",
-        bookings: 71,
-        rating: 4.5,
-      },
-      {
-        id: 6,
-        title: "Upper Mustang Jeep Tour",
-        days: "9 Days",
-        location: "Mustang",
-        price: "$1,799",
-        img: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
-        status: "Filling Fast",
-        pct: 49,
-        next: "Nov 05",
-        bookings: 43,
-        rating: 4.7,
-      },
-    ],
-    []
-  );
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await axios.get("http://localhost:5000/api/packages/mine", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const rawPackages = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.packages)
+          ? res.data.packages
+          : [];
+
+        const mappedPackages = rawPackages.map((p) => ({
+          id: p._id,
+          title: p.title || "Untitled Package",
+          days: `${p.days || 0} Days`,
+          location: p.region || "Unknown Region",
+          price: `$${Number(p.price || 0).toLocaleString()}`,
+          img:
+            p.images && p.images.length > 0
+              ? p.images[0].startsWith("http")
+                ? p.images[0]
+                : `http://localhost:5000${p.images[0]}`
+              : "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80",
+          status: p.isActive ? "Active" : "Inactive",
+          pct: 60,
+          bookings: 0,
+          rating: 4.5,
+          difficulty: p.difficulty || "Moderate",
+          type: p.type || "Package",
+        }));
+
+        setPackages(mappedPackages);
+      } catch (err) {
+        console.error("Error fetching packages:", err);
+        setPackages([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPackages();
+  }, []);
 
   const paperTextureStyle = useMemo(
     () => ({
@@ -118,41 +86,51 @@ export default function AgencyPackages() {
   );
 
   const pkgStatusBadge = (status) => {
-    if (status === "High Demand")
+    if (status === "Active")
       return "bg-emerald-500/10 text-emerald-700 border-emerald-500/20";
-    if (status === "Steady")
-      return "bg-blue-500/10 text-blue-700 border-blue-500/20";
-    return "bg-yellow-500/10 text-yellow-800 border-yellow-500/20";
+    if (status === "Inactive")
+      return "bg-red-500/10 text-red-700 border-red-500/20";
+    return "bg-blue-500/10 text-blue-700 border-blue-500/20";
   };
 
   const summaryStats = useMemo(
     () => [
       {
         label: "Total Packages",
-        value: "24",
-        sub: "18 Active",
+        value: packages.length.toString(),
+        sub: `${packages.filter((p) => p.status === "Active").length} Active`,
         icon: "hiking",
       },
       {
         label: "Total Bookings",
-        value: "1,248",
-        sub: "+12% this month",
+        value: packages.reduce((sum, p) => sum + (p.bookings || 0), 0).toString(),
+        sub: "All Packages",
         icon: "book_online",
       },
       {
         label: "Avg. Rating",
-        value: "4.8",
+        value: packages.length
+          ? (
+              packages.reduce((sum, p) => sum + (Number(p.rating) || 0), 0) /
+              packages.length
+            ).toFixed(1)
+          : "0.0",
         sub: "/ 5.0",
         icon: "star",
       },
       {
         label: "Revenue Potential",
-        value: "$42.5k",
-        sub: "Monthly",
+        value: `$${packages
+          .reduce((sum, p) => {
+            const amount = Number(String(p.price).replace(/[^0-9.]/g, "")) || 0;
+            return sum + amount;
+          }, 0)
+          .toLocaleString()}`,
+        sub: "Package Total",
         icon: "payments",
       },
     ],
-    []
+    [packages]
   );
 
   const StatCard = ({ item }) => (
@@ -188,6 +166,10 @@ export default function AgencyPackages() {
           {p.days}
         </div>
 
+        <div className="absolute left-3 top-3 rounded-lg border border-white/10 bg-white/20 px-2 py-1 text-xs font-bold text-white backdrop-blur-sm">
+          {p.type}
+        </div>
+
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-white/70">
             {p.location}
@@ -199,7 +181,7 @@ export default function AgencyPackages() {
       <div className="p-5">
         <div className="mb-4 flex items-center justify-between">
           <span className="text-xs font-bold uppercase text-[#6b7280]">
-            Booking Status
+            Package Status
           </span>
           <span
             className={[
@@ -220,7 +202,7 @@ export default function AgencyPackages() {
 
         <div className="mb-4 flex justify-between text-xs">
           <span className="text-[#2d3b2a]">{p.pct}% Full</span>
-          <span className="text-[#6b7280]">Next Dep: {p.next}</span>
+          <span className="text-[#6b7280]">Difficulty: {p.difficulty}</span>
         </div>
 
         <div className="mb-4 grid grid-cols-3 gap-3 rounded-xl bg-[#f8fafc] p-3">
@@ -242,6 +224,7 @@ export default function AgencyPackages() {
           <button
             className="flex-1 rounded-lg border border-gray-200 bg-white py-2 text-xs font-bold text-[#2d3b2a] transition-colors hover:bg-gray-50"
             type="button"
+            onClick={() => navigate(`/agency/packages/${p.id}`)}
           >
             Edit Details
           </button>
@@ -254,8 +237,9 @@ export default function AgencyPackages() {
               borderColor: "rgba(25,120,229,0.25)",
             }}
             type="button"
+            onClick={() => navigate(`/agency/packages/${p.id}`)}
           >
-            Manage Dates
+            View Package
           </button>
         </div>
       </div>
@@ -265,7 +249,6 @@ export default function AgencyPackages() {
   return (
     <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
       <div className="flex h-full w-full bg-[#fcfbf8]" style={paperTextureStyle}>
-        {/* Sidebar */}
         <aside className="hidden w-64 flex-col justify-between border-r border-[#e0e8dc] bg-[#fdfdfc]/80 backdrop-blur-sm lg:flex">
           <div className="flex h-full flex-col p-6">
             <div className="mb-10 flex items-center gap-3">
@@ -342,9 +325,7 @@ export default function AgencyPackages() {
           </div>
         </aside>
 
-        {/* Main */}
         <main className="flex flex-1 flex-col overflow-y-auto">
-          {/* Mobile Top Bar */}
           <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-4 shadow-sm backdrop-blur-md lg:hidden">
             <div className="flex items-center gap-2">
               <span
@@ -361,7 +342,6 @@ export default function AgencyPackages() {
           </div>
 
           <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 lg:py-10">
-            {/* Header */}
             <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
                 <h1 className="tracking-tight text-3xl font-bold text-[#2d3b2a]">
@@ -388,14 +368,12 @@ export default function AgencyPackages() {
               </div>
             </div>
 
-            {/* Summary cards */}
             <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
               {summaryStats.map((s) => (
                 <StatCard key={s.label} item={s} />
               ))}
             </div>
 
-            {/* Packages grid */}
             <div className="mb-10">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-[#2d3b2a]">
@@ -417,14 +395,40 @@ export default function AgencyPackages() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {packages.map((p) => (
-                  <PackageCard key={p.id} p={p} />
-                ))}
-              </div>
+              {loading ? (
+                <div className="rounded-2xl border border-black/5 bg-white p-10 text-center shadow-sm">
+                  <p className="text-sm font-medium text-[#6b7280]">Loading packages...</p>
+                </div>
+              ) : packages.length === 0 ? (
+                <div className="rounded-2xl border border-black/5 bg-white p-10 text-center shadow-sm">
+                  <span
+                    className="material-symbols-outlined mb-3 text-5xl"
+                    style={{ color: COLORS.primary }}
+                  >
+                    hiking
+                  </span>
+                  <h3 className="text-lg font-bold text-[#2d3b2a]">No packages found</h3>
+                  <p className="mt-2 text-sm text-[#6b7280]">
+                    Start by creating your first travel package.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/agency/add-package")}
+                    className="mt-5 rounded-lg px-4 py-2 text-sm font-bold text-white"
+                    style={{ backgroundColor: COLORS.primary }}
+                  >
+                    Add Package
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  {packages.map((p) => (
+                    <PackageCard key={p.id} p={p} />
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Footer */}
             <div className="mt-16 border-t border-[#e0e8dc] pb-8 pt-10 text-center">
               <p className="text-sm font-medium italic text-gray-400">
                 "The journey of a thousand miles begins with a single step."

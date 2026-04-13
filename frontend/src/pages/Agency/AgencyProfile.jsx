@@ -17,11 +17,12 @@ export default function AgencyProfile() {
 
   const sidebar = useMemo(
     () => [
-      { label: "Overview", icon: "dashboard", to: "/agency" },
-      { label: "My Packages", icon: "hiking", to: "/agency/packages" },
-      { label: "Bookings", icon: "book_online", to: "/agency/bookings" },
-      { label: "Guides", icon: "groups", to: "/agency/guides" },
-      { label: "Profile", icon: "settings_account_box", to: "/agency/profile", active: true },
+      { label: "Overview", icon: "dashboard", to: "/agency", active: false },
+      { label: "My Packages", icon: "hiking", to: "/agency/packages", active: true },
+      { label: "Bookings", icon: "book_online", to: "/agency/bookings", active: false },
+      { label: "Earnings", icon: "payments", to: "/agency/earnings", active: false },
+      { label: "Guides", icon: "person", to: "/agency/guides", active: false },
+      { label: "Profile", icon: "settings_account_box", to: "/agency/profile", active: false },
     ],
     []
   );
@@ -34,10 +35,10 @@ export default function AgencyProfile() {
     []
   );
 
-  // ✅ Edit Mode controls inputs
+  //  Edit Mode controls inputs
   const [editMode, setEditMode] = useState(true);
 
-  // ✅ Form state
+  //  Form state
   const [logo, setLogo] = useState(
     "https://lh3.googleusercontent.com/aida-public/AB6AXuBv5cRvMY3Y1duu7_mqX4yGdtkq8hLjd7F2MWWbrxUiEYLR7ACb9_WpRAQDRA1i-nfBrrt7AWJrIKWgoFL6vXK9nmNa7Xx6U-ouFwn1JaB6JtbwbjAOvrB3UCMvcSodjNYzIRFzg40W6onxqocvKUA9Jjr7U8YMFcbQQhwtTQxZirmliaSD4lbz4FrGB6Fqi68Q9lmPo_OPnKLhoj9a3nOxtLm-k3whu_Eiasizlk-9SwO5NES13rYYXjbUqCMDDE6JCeme3iAMfowo"
   );

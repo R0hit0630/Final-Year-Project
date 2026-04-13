@@ -1,6 +1,6 @@
 import User from "../models/user.js";
 
-// ✅ GET /api/users/me
+//GET /api/users/me
 export const getMyProfile = async (req, res) => {
   try {
     const u = req.user; // set by protect middleware
@@ -34,7 +34,7 @@ export const getMyProfile = async (req, res) => {
   }
 };
 
-// ✅ PUT /api/users/me
+//  PUT /api/users/me
 export const updateMyProfile = async (req, res) => {
   try {
     const {
