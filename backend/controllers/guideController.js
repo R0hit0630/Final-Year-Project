@@ -1,4 +1,5 @@
 import Guide from "../models/Guide.js";
+import Booking from "../models/Booking.js";
 
 // CREATE GUIDE
 export const createGuide = async (req, res) => {
@@ -64,8 +65,9 @@ export const createGuide = async (req, res) => {
 // GET ALL GUIDES OF LOGGED-IN AGENCY
 export const getMyGuides = async (req, res) => {
   try {
-    const guides = await Guide.find({ agency: req.user._id })
-      .sort({ createdAt: -1 });
+    const guides = await Guide.find({ agency: req.user._id }).sort({
+      createdAt: -1,
+    });
 
     res.status(200).json(guides);
   } catch (error) {
@@ -113,6 +115,8 @@ export const updateGuide = async (req, res) => {
       skills,
       photo,
       isActive,
+      leaveStartDate,
+      leaveEndDate,
     } = req.body;
 
     const guide = await Guide.findOne({
@@ -138,6 +142,54 @@ export const updateGuide = async (req, res) => {
 
     if (typeof isActive === "boolean") {
       guide.isActive = isActive;
+    }
+
+    const hasLeaveDates =
+      leaveStartDate !== undefined || leaveEndDate !== undefined;
+
+    if (hasLeaveDates) {
+      const nextLeaveStart = leaveStartDate ? new Date(leaveStartDate) : null;
+      const nextLeaveEnd = leaveEndDate ? new Date(leaveEndDate) : null;
+
+      if ((nextLeaveStart && !nextLeaveEnd) || (!nextLeaveStart && nextLeaveEnd)) {
+        return res.status(400).json({
+          message: "Both leave start date and leave end date are required",
+        });
+      }
+
+      if (nextLeaveStart && nextLeaveEnd) {
+        if (Number.isNaN(nextLeaveStart.getTime()) || Number.isNaN(nextLeaveEnd.getTime())) {
+          return res.status(400).json({
+            message: "Invalid leave dates",
+          });
+        }
+
+        if (nextLeaveStart > nextLeaveEnd) {
+          return res.status(400).json({
+            message: "Leave end date must be after leave start date",
+          });
+        }
+
+        const conflictingBooking = await Booking.findOne({
+          guide: guide._id,
+          status: { $in: ["pending", "confirmed", "ongoing"] },
+          startDate: { $lte: nextLeaveEnd },
+          endDate: { $gte: nextLeaveStart },
+        });
+
+        if (conflictingBooking) {
+          return res.status(400).json({
+            message:
+              "Guide already has an assigned trip during this leave period",
+          });
+        }
+
+        guide.leaveStartDate = nextLeaveStart;
+        guide.leaveEndDate = nextLeaveEnd;
+      } else {
+        guide.leaveStartDate = null;
+        guide.leaveEndDate = null;
+      }
     }
 
     await guide.save();

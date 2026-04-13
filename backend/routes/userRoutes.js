@@ -1,14 +1,19 @@
 import express from "express";
-import { protect } from "../middleware/auth.js";
-import {
-  getMyProfile,
-  updateMyProfile,
-} from "../controllers/userProfileController.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 
+import { protect } from "../middleware/auth.js";
+import User from "../models/user.js";
+import {
+  getMyProfile,
+  updateMyProfile,
+  getMyAgencyProfile,
+  updateMyAgencyProfile,
+} from "../controllers/userProfileController.js";
+
 const router = express.Router();
+
 const uploadDir = "uploads";
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
@@ -36,13 +41,39 @@ const avatarUpload = multer({
   },
 });
 
+// AVATAR
 router.put("/me/avatar", protect, avatarUpload.single("avatar"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const filePath = `/uploads/${req.file.filename}`;
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.avatar = filePath;
+    await user.save();
+
+    return res.json({
+      message: "Avatar updated successfully",
+      avatar: filePath,
+    });
+  } catch (err) {
+    console.error("avatar upload error:", err.message);
+    return res.status(500).json({ message: "Server error" });
+  }
 });
 
-// GET /api/users/me
+// USER PROFILE
 router.get("/me", protect, getMyProfile);
-
-// PUT /api/users/me
 router.put("/me", protect, updateMyProfile);
+
+// AGENCY PROFILE
+router.get("/agency/me", protect, getMyAgencyProfile);
+router.put("/agency/me", protect, updateMyAgencyProfile);
 
 export default router;

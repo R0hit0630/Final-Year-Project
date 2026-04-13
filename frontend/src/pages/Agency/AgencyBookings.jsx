@@ -125,7 +125,7 @@ export default function AgencyBookings() {
       );
 
       alert("Guide assigned successfully");
-      fetchData();
+      await fetchData();
     } catch (error) {
       console.error("Assign guide error:", error);
       alert(error?.response?.data?.message || "Failed to assign guide");
@@ -229,6 +229,68 @@ export default function AgencyBookings() {
     return `$${Number(amount).toLocaleString()}`;
   };
 
+  const isCurrentlyOnLeave = (guide) => {
+    if (!guide?.leaveStartDate || !guide?.leaveEndDate) return false;
+    const now = new Date();
+    const start = new Date(guide.leaveStartDate);
+    const end = new Date(guide.leaveEndDate);
+    return now >= start && now <= end;
+  };
+
+  const getGuideConflictStatus = (guide, booking) => {
+    if (!guide) {
+      return { available: false, reason: "Invalid guide" };
+    }
+
+    if (!guide.isActive) {
+      return { available: false, reason: "Inactive" };
+    }
+
+    const bookingStart = booking?.startDate ? new Date(booking.startDate) : null;
+    const bookingEnd = booking?.endDate ? new Date(booking.endDate) : null;
+
+    if (!bookingStart || !bookingEnd) {
+      return { available: false, reason: "Invalid trip dates" };
+    }
+
+    if (guide.leaveStartDate && guide.leaveEndDate) {
+      const leaveStart = new Date(guide.leaveStartDate);
+      const leaveEnd = new Date(guide.leaveEndDate);
+
+      if (bookingStart <= leaveEnd && bookingEnd >= leaveStart) {
+        return { available: false, reason: "On leave" };
+      }
+    }
+
+    const hasConflict = bookings.some((otherBooking) => {
+      if (!otherBooking?._id || otherBooking._id === booking._id) return false;
+      if (!otherBooking.guide?._id) return false;
+      if (otherBooking.guide._id !== guide._id) return false;
+      if (!["pending", "confirmed", "ongoing"].includes(otherBooking.status)) {
+        return false;
+      }
+
+      const otherStart = otherBooking.startDate
+        ? new Date(otherBooking.startDate)
+        : null;
+      const otherEnd = otherBooking.endDate ? new Date(otherBooking.endDate) : null;
+
+      if (!otherStart || !otherEnd) return false;
+
+      return otherStart <= bookingEnd && otherEnd >= bookingStart;
+    });
+
+    if (hasConflict) {
+      return { available: false, reason: "Busy on another trip" };
+    }
+
+    return { available: true, reason: "Available" };
+  };
+
+  const getAvailableGuidesForBooking = (booking) => {
+    return guides.filter((guide) => getGuideConflictStatus(guide, booking).available);
+  };
+
   return (
     <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
       <div className="flex h-full w-full bg-[#fcfbf8]" style={paperTextureStyle}>
@@ -263,13 +325,17 @@ export default function AgencyBookings() {
                   to={i.to}
                   className={[
                     "group flex items-center gap-3 rounded-xl px-4 py-3 transition-all",
-                    i.active ? "bg-[#1978e5]/10 hover:bg-[#1978e5]/20" : "hover:bg-[#f0f4ee]",
+                    i.active
+                      ? "bg-[#1978e5]/10 hover:bg-[#1978e5]/20"
+                      : "hover:bg-[#f0f4ee]",
                   ].join(" ")}
                 >
                   <span
                     className={[
                       "material-symbols-outlined transition-colors",
-                      i.active ? "text-[#1978e5]" : "text-[#6b7280] group-hover:text-[#1978e5]",
+                      i.active
+                        ? "text-[#1978e5]"
+                        : "text-[#6b7280] group-hover:text-[#1978e5]",
                     ].join(" ")}
                   >
                     {i.icon}
@@ -419,6 +485,9 @@ export default function AgencyBookings() {
                           Travel Date
                         </th>
                         <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
+                          End Date
+                        </th>
+                        <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
                           Travelers
                         </th>
                         <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
@@ -440,122 +509,215 @@ export default function AgencyBookings() {
                     </thead>
 
                     <tbody className="text-sm">
-                      {bookings.map((row) => (
-                        <tr key={row._id} className="border-b border-gray-100 last:border-0">
-                          <td className="py-4">
-                            <div>
-                              <p className="font-semibold text-[#2d3b2a]">
-                                {row.user?.name || row.user?.username || "User"}
-                              </p>
-                              <p className="text-xs text-[#6b7280]">
-                                {row.user?.email || "-"}
-                              </p>
-                              <p className="text-xs text-[#94a3b8]">
-                                {row.user?.phone || "-"}
-                              </p>
-                            </div>
-                          </td>
+                      {bookings.map((row) => {
+                        const availableGuides = getAvailableGuidesForBooking(row);
 
-                          <td className="py-4 font-medium text-[#2d3b2a]">
-                            {row.package?.title || row.package?.name || "Package"}
-                          </td>
-
-                          <td className="py-4 text-[#4b5563]">
-                            {formatDate(row.createdAt)}
-                          </td>
-                          <td className="py-4 text-[#4b5563]">
-                            {formatDate(row.startDate)}
-                          </td>
-                          <td className="py-4 text-[#4b5563]">{row.travelers}</td>
-                          <td className="py-4 font-semibold text-[#2d3b2a]">
-                            {formatPrice(row.totalPrice)}
-                          </td>
-
-                          <td className="py-4">
-                            <span
-                              className={[
-                                "rounded-full border px-3 py-1 text-xs font-bold capitalize",
-                                getPaymentBadge(row.paymentStatus),
-                              ].join(" ")}
-                            >
-                              {row.paymentStatus}
-                            </span>
-                          </td>
-
-                          <td className="py-4">
-                            <span
-                              className={[
-                                "rounded-full border px-3 py-1 text-xs font-bold capitalize",
-                                getBookingBadge(row.status),
-                              ].join(" ")}
-                            >
-                              {row.status}
-                            </span>
-                          </td>
-
-                          <td className="py-4">
-                            {row.guideAssigned && row.guide ? (
+                        return (
+                          <tr
+                            key={row._id}
+                            className="border-b border-gray-100 last:border-0"
+                          >
+                            <td className="py-4">
                               <div>
                                 <p className="font-semibold text-[#2d3b2a]">
-                                  {row.guide?.name || row.guide?.fullName || "Assigned"}
+                                  {row.user?.name || row.user?.username || "User"}
                                 </p>
                                 <p className="text-xs text-[#6b7280]">
-                                  {row.guide?.email || ""}
+                                  {row.user?.email || "-"}
+                                </p>
+                                <p className="text-xs text-[#94a3b8]">
+                                  {row.user?.phone || "-"}
                                 </p>
                               </div>
-                            ) : (
-                              <span className="text-xs font-medium text-amber-600">
-                                Not assigned
+                            </td>
+
+                            <td className="py-4 font-medium text-[#2d3b2a]">
+                              {row.package?.title || row.package?.name || "Package"}
+                            </td>
+
+                            <td className="py-4 text-[#4b5563]">
+                              {formatDate(row.createdAt)}
+                            </td>
+
+                            <td className="py-4 text-[#4b5563]">
+                              {formatDate(row.startDate)}
+                            </td>
+
+                            <td className="py-4 text-[#4b5563]">
+                              {formatDate(row.endDate)}
+                            </td>
+
+                            <td className="py-4 text-[#4b5563]">{row.travelers}</td>
+
+                            <td className="py-4 font-semibold text-[#2d3b2a]">
+                              {formatPrice(row.totalPrice)}
+                            </td>
+
+                            <td className="py-4">
+                              <span
+                                className={[
+                                  "rounded-full border px-3 py-1 text-xs font-bold capitalize",
+                                  getPaymentBadge(row.paymentStatus),
+                                ].join(" ")}
+                              >
+                                {row.paymentStatus}
                               </span>
-                            )}
-                          </td>
+                            </td>
 
-                          <td className="py-4 text-right">
-                            {row.paymentStatus === "paid" && row.status === "confirmed" ? (
-                              <div className="flex items-center justify-end gap-2">
-                                <select
-                                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-[#2d3b2a] outline-none"
-                                  value={selectedGuides[row._id] || ""}
-                                  onChange={(e) =>
-                                    handleGuideSelect(row._id, e.target.value)
-                                  }
-                                  disabled={guides.length === 0}
-                                >
-                                  <option value="">
-                                    {guides.length === 0 ? "No guides found" : "Select Guide"}
-                                  </option>
-                                  {guides.map((guide) => (
-                                    <option key={guide._id} value={guide._id}>
-                                      {guide.name || guide.fullName || "Guide"}
-                                    </option>
-                                  ))}
-                                </select>
+                            <td className="py-4">
+                              <span
+                                className={[
+                                  "rounded-full border px-3 py-1 text-xs font-bold capitalize",
+                                  getBookingBadge(row.status),
+                                ].join(" ")}
+                              >
+                                {row.status}
+                              </span>
+                            </td>
 
+                            <td className="py-4">
+                              {row.guideAssigned && row.guide ? (
+                                <div>
+                                  <p className="font-semibold text-[#2d3b2a]">
+                                    {row.guide?.name || row.guide?.fullName || "Assigned"}
+                                  </p>
+                                  <p className="text-xs text-[#6b7280]">
+                                    {row.guide?.email || ""}
+                                  </p>
+                                  {isCurrentlyOnLeave(row.guide) && (
+                                    <p className="text-xs font-medium text-yellow-700">
+                                      Currently on leave
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs font-medium text-amber-600">
+                                  Not assigned
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="py-4 text-right">
+                              {row.paymentStatus === "paid" &&
+                              row.status === "confirmed" &&
+                              !row.guideAssigned ? (
+                                <div className="flex flex-col items-end gap-2">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <select
+                                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-[#2d3b2a] outline-none"
+                                      value={selectedGuides[row._id] || ""}
+                                      onChange={(e) =>
+                                        handleGuideSelect(row._id, e.target.value)
+                                      }
+                                      disabled={availableGuides.length === 0}
+                                    >
+                                      <option value="">
+                                        {availableGuides.length === 0
+                                          ? "No available guides"
+                                          : "Select Guide"}
+                                      </option>
+
+                                      {availableGuides.map((guide) => (
+                                        <option key={guide._id} value={guide._id}>
+                                          {guide.name || guide.fullName || "Guide"}
+                                        </option>
+                                      ))}
+                                    </select>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAssignGuide(row._id)}
+                                      disabled={
+                                        assigningId === row._id ||
+                                        availableGuides.length === 0 ||
+                                        !selectedGuides[row._id]
+                                      }
+                                      className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      {assigningId === row._id ? "Assigning..." : "Assign"}
+                                    </button>
+                                  </div>
+
+                                  {availableGuides.length === 0 && (
+                                    <span className="text-xs font-medium text-red-600">
+                                      No guides available for these dates
+                                    </span>
+                                  )}
+                                </div>
+                              ) : row.guideAssigned ? (
+                                <span className="text-xs font-semibold text-emerald-600">
+                                  Guide assigned
+                                </span>
+                              ) : (
                                 <button
                                   type="button"
-                                  onClick={() => handleAssignGuide(row._id)}
-                                  disabled={assigningId === row._id || guides.length === 0}
-                                  className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-[#2d3b2a] transition-colors hover:bg-gray-50"
                                 >
-                                  {assigningId === row._id ? "Assigning..." : "Assign"}
+                                  View
                                 </button>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-[#2d3b2a] transition-colors hover:bg-gray-50"
-                              >
-                                View
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               )}
             </div>
+
+            {guides.length > 0 && (
+              <div className="mt-8 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-lg font-bold text-[#2d3b2a]">
+                  Guide Availability Overview
+                </h3>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {guides.map((guide) => {
+                    const currentlyOnLeave = isCurrentlyOnLeave(guide);
+
+                    return (
+                      <div
+                        key={guide._id}
+                        className="rounded-xl border border-gray-200 bg-[#fcfbf8] p-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-[#2d3b2a]">
+                              {guide.name || guide.fullName || "Guide"}
+                            </p>
+                            <p className="text-xs text-[#6b7280]">
+                              {guide.email || "-"}
+                            </p>
+                          </div>
+
+                          {!guide.isActive ? (
+                            <span className="rounded-full border border-red-200 bg-red-50 px-2 py-1 text-xs font-bold text-red-700">
+                              Inactive
+                            </span>
+                          ) : currentlyOnLeave ? (
+                            <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700">
+                              On Leave
+                            </span>
+                          ) : (
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">
+                              Available
+                            </span>
+                          )}
+                        </div>
+
+                        {guide.leaveStartDate && guide.leaveEndDate && (
+                          <p className="mt-2 text-xs text-[#6b7280]">
+                            Leave: {formatDate(guide.leaveStartDate)} -{" "}
+                            {formatDate(guide.leaveEndDate)}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="mt-8 flex flex-col gap-2 border-t border-[#e5e7eb] pt-6 text-sm text-[#6b7280] sm:flex-row sm:items-center sm:justify-between">
               <p>Agency booking management overview</p>

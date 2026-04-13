@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-//Emergency contacts schema (for Profile page)
+// Emergency contacts schema
 const emergencyContactSchema = new mongoose.Schema(
   {
     name: { type: String, trim: true, required: true },
@@ -46,15 +46,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       minlength: 6,
-      select: false, // hide password by default
+      select: false,
     },
 
-    // account enable/disable
     isActive: { type: Boolean, default: true },
 
-   
-    //  PROFILE PAGE FIELDS
-  
+    // USER PROFILE
     fullName: { type: String, trim: true, default: "" },
     phone: { type: String, trim: true, default: "" },
     location: { type: String, trim: true, default: "" },
@@ -74,22 +71,23 @@ const userSchema = new mongoose.Schema(
 
     emergencyContacts: [emergencyContactSchema],
 
-   
-    // AGENCY FIELDS
-    // (only meaningful when role === "agency")
+    // AGENCY PROFILE
     agencyName: { type: String, trim: true, default: "" },
     agencyAddress: { type: String, trim: true, default: "" },
     agencyPhone: { type: String, trim: true, default: "" },
     agencyLogo: { type: String, trim: true, default: "" },
 
-    // controlled by admin
+    tagline: { type: String, trim: true, default: "" },
+    about: { type: String, trim: true, default: "" },
+    instagram: { type: String, trim: true, default: "" },
+    tripadvisor: { type: String, trim: true, default: "" },
+
     agencyVerified: { type: Boolean, default: false },
     agencyVerifiedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
 
-//  Hash password
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
 
@@ -97,7 +95,6 @@ userSchema.pre("save", async function () {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-//  Compare password
 userSchema.methods.matchPassword = function (enteredPassword) {
   return bcrypt.compare(enteredPassword, this.password);
 };

@@ -10,6 +10,7 @@ export default function AgencyGuides() {
   const [region, setRegion] = useState("All Regions");
   const [expertise, setExpertise] = useState("All Expertise");
   const [loading, setLoading] = useState(true);
+  const [leaveDrafts, setLeaveDrafts] = useState({});
 
   const COLORS = {
     primary: "#1978e5",
@@ -49,14 +50,26 @@ export default function AgencyGuides() {
     };
   };
 
+  const toInputDate = (date) => {
+    if (!date) return "";
+    return new Date(date).toISOString().slice(0, 10);
+  };
+
   const fetchGuides = async () => {
     try {
       setLoading(true);
       const res = await axios.get("http://localhost:5000/api/guides/mine", getAuthConfig());
-      console.log("GET /api/guides/mine =>", res.data);
 
       if (Array.isArray(res.data)) {
         setGuides(res.data);
+        const initialDrafts = {};
+        res.data.forEach((guide) => {
+          initialDrafts[guide._id] = {
+            leaveStartDate: toInputDate(guide.leaveStartDate),
+            leaveEndDate: toInputDate(guide.leaveEndDate),
+          };
+        });
+        setLeaveDrafts(initialDrafts);
       } else {
         setGuides([]);
       }
@@ -71,6 +84,83 @@ export default function AgencyGuides() {
   useEffect(() => {
     fetchGuides();
   }, []);
+
+  const handleLeaveChange = (guideId, field, value) => {
+    setLeaveDrafts((prev) => ({
+      ...prev,
+      [guideId]: {
+        ...prev[guideId],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSaveLeave = async (guide) => {
+    try {
+      const token = localStorage.getItem("token");
+      const draft = leaveDrafts[guide._id] || {
+        leaveStartDate: "",
+        leaveEndDate: "",
+      };
+
+      if (!draft.leaveStartDate || !draft.leaveEndDate) {
+        alert("Please select both leave start and leave end dates");
+        return;
+      }
+
+      await axios.put(
+        `http://localhost:5000/api/guides/${guide._id}`,
+        {
+          leaveStartDate: draft.leaveStartDate,
+          leaveEndDate: draft.leaveEndDate,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      alert("Leave dates saved successfully");
+      await fetchGuides();
+    } catch (error) {
+      console.error("Save leave error:", error);
+      alert(error?.response?.data?.message || "Failed to save leave dates");
+    }
+  };
+
+  const handleClearLeave = async (guide) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      await axios.put(
+        `http://localhost:5000/api/guides/${guide._id}`,
+        {
+          leaveStartDate: null,
+          leaveEndDate: null,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      alert("Leave cleared successfully");
+      await fetchGuides();
+    } catch (error) {
+      console.error("Clear leave error:", error);
+      alert(error?.response?.data?.message || "Failed to clear leave");
+    }
+  };
+
+  const isCurrentlyOnLeave = (guide) => {
+    if (!guide.leaveStartDate || !guide.leaveEndDate) return false;
+    const now = new Date();
+    const start = new Date(guide.leaveStartDate);
+    const end = new Date(guide.leaveEndDate);
+    return now >= start && now <= end;
+  };
 
   const filteredGuides = useMemo(() => {
     return guides.filter((guide) => {
@@ -106,6 +196,8 @@ export default function AgencyGuides() {
     return {
       totalGuides: filteredGuides.length,
       activeGuides: filteredGuides.filter((g) => g.isActive).length,
+      onLeaveGuides: filteredGuides.filter((g) => isCurrentlyOnLeave(g)).length,
+      inactiveGuides: filteredGuides.filter((g) => !g.isActive).length,
     };
   }, [filteredGuides]);
 
@@ -119,12 +211,11 @@ export default function AgencyGuides() {
         year: "numeric",
       }),
       clients: index + 2,
-      status:
-        index % 3 === 0
-          ? "Confirmed"
-          : index % 3 === 1
-          ? "Pending"
-          : "Not Assigned",
+      status: isCurrentlyOnLeave(guide)
+        ? "On Leave"
+        : !guide.isActive
+        ? "Inactive"
+        : "Available",
     }));
   }, [filteredGuides]);
 
@@ -144,18 +235,41 @@ export default function AgencyGuides() {
         deltaUp: true,
         icon: "verified",
       },
+      {
+        label: "On Leave",
+        value: stats.onLeaveGuides,
+        delta: "Auto",
+        deltaUp: true,
+        icon: "event_busy",
+      },
+      {
+        label: "Inactive",
+        value: stats.inactiveGuides,
+        delta: "Status",
+        deltaUp: false,
+        icon: "block",
+      },
     ],
     [stats]
   );
 
   const getAssignmentBadge = (status) => {
-    if (status === "Confirmed") {
-      return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
+    if (status === "On Leave") {
+      return "bg-yellow-500/10 text-yellow-700 border-yellow-500/20";
     }
-    if (status === "Pending") {
-      return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+    if (status === "Inactive") {
+      return "bg-red-500/10 text-red-700 border-red-500/20";
     }
-    return "bg-yellow-500/10 text-yellow-700 border-yellow-500/20";
+    return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "-";
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
   };
 
   const StatCard = ({ item }) => (
@@ -193,68 +307,145 @@ export default function AgencyGuides() {
     </div>
   );
 
-  const GuideCard = ({ guide }) => (
-    <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
-      <div className="relative h-52 overflow-hidden">
-        <img
-          src={guide.photo || "https://via.placeholder.com/400x300?text=Guide"}
-          alt={guide.fullName || "Guide"}
-          className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
-        />
+  const GuideCard = ({ guide }) => {
+    const currentlyOnLeave = isCurrentlyOnLeave(guide);
 
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-          <h3 className="text-lg font-bold text-white">
-            {guide.fullName || "Unnamed Guide"}
-          </h3>
-          <p className="text-sm text-white/90">
-            {guide.region || "Unknown Region"}
-          </p>
+    const statusLabel = !guide.isActive
+      ? "Inactive"
+      : currentlyOnLeave
+      ? "On Leave"
+      : "Available";
+
+    const statusClass = !guide.isActive
+      ? "bg-red-500/10 text-red-700 border-red-500/20"
+      : currentlyOnLeave
+      ? "bg-yellow-500/10 text-yellow-700 border-yellow-500/20"
+      : "bg-emerald-500/10 text-emerald-700 border-emerald-500/20";
+
+    const draft = leaveDrafts[guide._id] || {
+      leaveStartDate: "",
+      leaveEndDate: "",
+    };
+
+    return (
+      <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+        <div className="relative h-52 overflow-hidden">
+          <img
+            src={guide.photo || "https://via.placeholder.com/400x300?text=Guide"}
+            alt={guide.fullName || "Guide"}
+            className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+          />
+
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+            <h3 className="text-lg font-bold text-white">
+              {guide.fullName || "Unnamed Guide"}
+            </h3>
+            <p className="text-sm text-white/90">
+              {guide.region || "Unknown Region"}
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <span className="text-xs font-bold uppercase text-[#6b7280]">
-            Experience
-          </span>
-          <span className="rounded-lg bg-[#1978e5]/10 px-2 py-1 text-xs font-bold text-[#1978e5]">
-            {guide.experience || "N/A"}
-          </span>
-        </div>
-
-        <div className="mb-2 text-sm font-medium text-[#4b5563]">
-          {guide.specialization || "No specialization"}
-        </div>
-
-        <div className="mb-5 flex flex-wrap gap-2">
-          {Array.isArray(guide.skills) && guide.skills.length > 0 ? (
-            guide.skills.slice(0, 3).map((skill, index) => (
-              <span
-                key={`${skill}-${index}`}
-                className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-[#4b5563]"
-              >
-                {skill}
-              </span>
-            ))
-          ) : (
-            <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-[#4b5563]">
-              No skills
+        <div className="p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <span className="text-xs font-bold uppercase text-[#6b7280]">
+              Experience
             </span>
-          )}
-        </div>
+            <span className="rounded-lg bg-[#1978e5]/10 px-2 py-1 text-xs font-bold text-[#1978e5]">
+              {guide.experience || "N/A"}
+            </span>
+          </div>
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => navigate(`/agency/guides/${guide._id}`)}
-            className="flex-1 rounded-lg border border-gray-200 bg-white py-2 text-xs font-bold text-[#2d3b2a] transition-colors hover:bg-gray-50"
-          >
-            View Profile
-          </button>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <span
+              className={[
+                "rounded-full border px-3 py-1 text-xs font-bold",
+                statusClass,
+              ].join(" ")}
+            >
+              {statusLabel}
+            </span>
+
+            {guide.leaveStartDate && guide.leaveEndDate && (
+              <span className="text-[11px] font-medium text-[#6b7280]">
+                {formatDate(guide.leaveStartDate)} - {formatDate(guide.leaveEndDate)}
+              </span>
+            )}
+          </div>
+
+          <div className="mb-2 text-sm font-medium text-[#4b5563]">
+            {guide.specialization || "No specialization"}
+          </div>
+
+          <div className="mb-5 flex flex-wrap gap-2">
+            {Array.isArray(guide.skills) && guide.skills.length > 0 ? (
+              guide.skills.slice(0, 3).map((skill, index) => (
+                <span
+                  key={`${skill}-${index}`}
+                  className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-[#4b5563]"
+                >
+                  {skill}
+                </span>
+              ))
+            ) : (
+              <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-[#4b5563]">
+                No skills
+              </span>
+            )}
+          </div>
+
+          <div className="mb-4 grid grid-cols-1 gap-2">
+            <input
+              type="date"
+              value={draft.leaveStartDate}
+              onChange={(e) =>
+                handleLeaveChange(guide._id, "leaveStartDate", e.target.value)
+              }
+              disabled={!guide.isActive}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-[#2d3b2a] outline-none disabled:cursor-not-allowed disabled:bg-gray-100"
+            />
+            <input
+              type="date"
+              value={draft.leaveEndDate}
+              onChange={(e) =>
+                handleLeaveChange(guide._id, "leaveEndDate", e.target.value)
+              }
+              disabled={!guide.isActive}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-[#2d3b2a] outline-none disabled:cursor-not-allowed disabled:bg-gray-100"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => navigate(`/agency/guides/${guide._id}`)}
+              className="flex-1 rounded-lg border border-gray-200 bg-white py-2 text-xs font-bold text-[#2d3b2a] transition-colors hover:bg-gray-50"
+            >
+              View
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSaveLeave(guide)}
+              disabled={!guide.isActive}
+              className="flex-1 rounded-lg bg-blue-600 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+            >
+              Save Leave
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleClearLeave(guide)}
+              disabled={!guide.isActive}
+              className="flex-1 rounded-lg bg-yellow-600 py-2 text-xs font-bold text-white transition-colors hover:bg-yellow-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+            >
+              Clear
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
@@ -355,7 +546,7 @@ export default function AgencyGuides() {
                   Agency Guides
                 </h1>
                 <p className="mt-1 text-[#6b7280]">
-                  Manage guide expertise, profiles, and trip assignments.
+                  Manage guide expertise, profiles, and leave schedules.
                 </p>
               </div>
 
@@ -375,7 +566,7 @@ export default function AgencyGuides() {
               </div>
             </div>
 
-            <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2">
+            <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
               {statCards.map((item) => (
                 <StatCard key={item.label} item={item} />
               ))}
@@ -453,7 +644,7 @@ export default function AgencyGuides() {
                   <p className="text-[#6b7280]">No guides found.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                   {filteredGuides.map((guide) => (
                     <GuideCard key={guide._id} guide={guide} />
                   ))}
@@ -470,25 +661,8 @@ export default function AgencyGuides() {
                   >
                     calendar_month
                   </span>
-                  Recent Guide Assignments
+                  Guide Status Overview
                 </h3>
-
-                <div className="flex gap-2">
-                  <button
-                    className="rounded p-1 text-[#6b7280] transition-colors hover:bg-gray-100 hover:text-[#2d3b2a]"
-                    type="button"
-                    aria-label="Filter"
-                  >
-                    <span className="material-symbols-outlined">filter_list</span>
-                  </button>
-                  <button
-                    className="rounded p-1 text-[#6b7280] transition-colors hover:bg-gray-100 hover:text-[#2d3b2a]"
-                    type="button"
-                    aria-label="More"
-                  >
-                    <span className="material-symbols-outlined">more_horiz</span>
-                  </button>
-                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -502,16 +676,13 @@ export default function AgencyGuides() {
                         Region
                       </th>
                       <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                        Trip Date
+                        Dates
                       </th>
                       <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
                         Clients
                       </th>
                       <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
                         Status
-                      </th>
-                      <th className="pb-4 text-right text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                        Action
                       </th>
                     </tr>
                   </thead>
@@ -523,7 +694,9 @@ export default function AgencyGuides() {
                           key={`${row.guide}-${row.date}-${index}`}
                           className="border-b border-gray-100 last:border-0"
                         >
-                          <td className="py-4 font-semibold text-[#2d3b2a]">{row.guide}</td>
+                          <td className="py-4 font-semibold text-[#2d3b2a]">
+                            {row.guide}
+                          </td>
                           <td className="py-4 text-[#4b5563]">{row.region}</td>
                           <td className="py-4 text-[#4b5563]">{row.date}</td>
                           <td className="py-4 text-[#4b5563]">{row.clients}</td>
@@ -537,20 +710,12 @@ export default function AgencyGuides() {
                               {row.status}
                             </span>
                           </td>
-                          <td className="py-4 text-right">
-                            <button
-                              type="button"
-                              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-[#2d3b2a] transition-colors hover:bg-gray-50"
-                            >
-                              View
-                            </button>
-                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="6" className="py-6 text-center text-[#6b7280]">
-                          No recent assignments found.
+                        <td colSpan="5" className="py-6 text-center text-[#6b7280]">
+                          No guide status found.
                         </td>
                       </tr>
                     )}
@@ -561,7 +726,7 @@ export default function AgencyGuides() {
 
             <div className="mt-8 flex flex-col gap-2 border-t border-[#e5e7eb] pt-6 text-sm text-[#6b7280] sm:flex-row sm:items-center sm:justify-between">
               <p>Agency guide management overview</p>
-              <p>Connected to existing backend data</p>
+              <p>Leave works automatically by date range</p>
             </div>
           </div>
         </main>

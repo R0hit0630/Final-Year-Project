@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import defaultAvatar from "../../assets/default-avatar.jpg";
@@ -27,12 +27,20 @@ export default function MyTrips() {
   const [error, setError] = useState("");
 
   const [reviewTrip, setReviewTrip] = useState(null);
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState("");
+
+  const [packageRating, setPackageRating] = useState(0);
+  const [guideRating, setGuideRating] = useState(0);
+
+  const [packageHoverRating, setPackageHoverRating] = useState(0);
+  const [guideHoverRating, setGuideHoverRating] = useState(0);
+
+  const [packageComment, setPackageComment] = useState("");
+  const [guideComment, setGuideComment] = useState("");
+
   const [submittingReview, setSubmittingReview] = useState(false);
 
   const token = localStorage.getItem("token");
+  const autoOpenedReviewRef = useRef(false);
 
   const navItems = useMemo(
     () => [
@@ -82,6 +90,52 @@ export default function MyTrips() {
   useEffect(() => {
     fetchData();
   }, [apiBase, token]);
+
+  const canReviewTrip = (trip) =>
+    String(trip?.status || "").toLowerCase() === "completed" && !trip?.isReviewed;
+
+  const hasReviewedTrip = (trip) =>
+    String(trip?.status || "").toLowerCase() === "completed" && !!trip?.isReviewed;
+
+  const openReviewModal = (trip) => {
+    setReviewTrip(trip);
+    setPackageRating(0);
+    setGuideRating(0);
+    setPackageHoverRating(0);
+    setGuideHoverRating(0);
+    setPackageComment("");
+    setGuideComment("");
+  };
+
+  const closeReviewModal = () => {
+    if (submittingReview) return;
+    setReviewTrip(null);
+    setPackageRating(0);
+    setGuideRating(0);
+    setPackageHoverRating(0);
+    setGuideHoverRating(0);
+    setPackageComment("");
+    setGuideComment("");
+  };
+
+  useEffect(() => {
+    if (loading) return;
+    if (reviewTrip) return;
+    if (autoOpenedReviewRef.current) return;
+
+    const firstUnreviewedCompletedTrip = pastTrips.find((trip) => canReviewTrip(trip));
+
+    if (firstUnreviewedCompletedTrip) {
+      setShowPastBookings(true);
+      openReviewModal(firstUnreviewedCompletedTrip);
+      autoOpenedReviewRef.current = true;
+      return;
+    }
+
+    if (pastTrips.length > 0) {
+      setShowPastBookings(true);
+    }
+  }, [loading, pastTrips, reviewTrip]);
 
   const fullName =
     userData?.fullName ||
@@ -139,6 +193,9 @@ export default function MyTrips() {
   const getStatusBadgeClasses = (status) => {
     const value = String(status || "").toLowerCase();
 
+    if (value === "ongoing") {
+      return "bg-purple-100 text-purple-700";
+    }
     if (value === "confirmed") {
       return "bg-emerald-100 text-emerald-700";
     }
@@ -153,6 +210,42 @@ export default function MyTrips() {
     }
 
     return "bg-slate-100 text-slate-700";
+  };
+
+  const getStatusTextClasses = (status) => {
+    const value = String(status || "").toLowerCase();
+
+    if (value === "ongoing") return "text-purple-600";
+    if (value === "confirmed") return "text-emerald-600";
+    if (value === "completed") return "text-blue-600";
+    if (value === "pending") return "text-amber-600";
+    if (value === "cancelled") return "text-red-600";
+
+    return "text-slate-600";
+  };
+
+  const getStatusIconBgClasses = (status) => {
+    const value = String(status || "").toLowerCase();
+
+    if (value === "ongoing") return "bg-purple-50";
+    if (value === "confirmed") return "bg-emerald-50";
+    if (value === "completed") return "bg-blue-50";
+    if (value === "pending") return "bg-amber-50";
+    if (value === "cancelled") return "bg-red-50";
+
+    return "bg-slate-50";
+  };
+
+  const getStatusIconClasses = (status) => {
+    const value = String(status || "").toLowerCase();
+
+    if (value === "ongoing") return "text-purple-600";
+    if (value === "confirmed") return "text-emerald-600";
+    if (value === "completed") return "text-blue-600";
+    if (value === "pending") return "text-amber-600";
+    if (value === "cancelled") return "text-red-600";
+
+    return "text-slate-600";
   };
 
   const displayStatus = (status) => {
@@ -175,27 +268,6 @@ export default function MyTrips() {
     return defaultAvatar;
   };
 
-  const canReviewTrip = (trip) =>
-    String(trip?.status || "").toLowerCase() === "completed" && !trip?.isReviewed;
-
-  const hasReviewedTrip = (trip) =>
-    String(trip?.status || "").toLowerCase() === "completed" && !!trip?.isReviewed;
-
-  const openReviewModal = (trip) => {
-    setReviewTrip(trip);
-    setRating(0);
-    setHoverRating(0);
-    setComment("");
-  };
-
-  const closeReviewModal = () => {
-    if (submittingReview) return;
-    setReviewTrip(null);
-    setRating(0);
-    setHoverRating(0);
-    setComment("");
-  };
-
   const markTripReviewedLocally = (tripId) => {
     setActiveTrip((prev) =>
       prev && prev._id === tripId ? { ...prev, isReviewed: true } : prev
@@ -211,8 +283,13 @@ export default function MyTrips() {
   const handleSubmitReview = async () => {
     if (!reviewTrip?._id) return;
 
-    if (!rating) {
-      alert("Please select a rating.");
+    if (!packageRating) {
+      alert("Please rate the package.");
+      return;
+    }
+
+    if (reviewTrip?.guide && !guideRating) {
+      alert("Please rate the guide.");
       return;
     }
 
@@ -223,8 +300,10 @@ export default function MyTrips() {
         `${apiBase}/api/reviews`,
         {
           bookingId: reviewTrip._id,
-          rating,
-          comment,
+          packageRating,
+          packageComment,
+          guideRating: reviewTrip?.guide ? guideRating : null,
+          guideComment: reviewTrip?.guide ? guideComment : "",
         },
         {
           headers: {
@@ -242,6 +321,44 @@ export default function MyTrips() {
     } finally {
       setSubmittingReview(false);
     }
+  };
+
+  const renderStars = (
+    currentRating,
+    currentHover,
+    setRating,
+    setHover,
+    keyPrefix
+  ) => {
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => {
+          const active = star <= (currentHover || currentRating);
+
+          return (
+            <button
+              key={`${keyPrefix}-${star}`}
+              type="button"
+              onClick={() => setRating(star)}
+              onMouseEnter={() => setHover(star)}
+              onMouseLeave={() => setHover(0)}
+              className="transition hover:scale-110"
+            >
+              <span
+                className={`material-symbols-outlined text-[32px] ${
+                  active ? "text-yellow-400" : "text-[#d1d5db]"
+                }`}
+                style={{
+                  fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0",
+                }}
+              >
+                star
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    );
   };
 
   if (loading) {
@@ -526,12 +643,24 @@ export default function MyTrips() {
                           <p className="text-xs font-bold uppercase text-[#6b7280]">
                             Booking Status
                           </p>
-                          <h3 className="mt-2 text-lg font-bold text-emerald-600">
+                          <h3
+                            className={`mt-2 text-lg font-bold ${getStatusTextClasses(
+                              activeTrip.status
+                            )}`}
+                          >
                             {displayStatus(activeTrip.status)}
                           </h3>
                         </div>
-                        <div className="rounded-xl bg-emerald-50 p-3">
-                          <span className="material-symbols-outlined text-emerald-600">
+                        <div
+                          className={`rounded-xl p-3 ${getStatusIconBgClasses(
+                            activeTrip.status
+                          )}`}
+                        >
+                          <span
+                            className={`material-symbols-outlined ${getStatusIconClasses(
+                              activeTrip.status
+                            )}`}
+                          >
                             verified
                           </span>
                         </div>
@@ -898,7 +1027,7 @@ export default function MyTrips() {
 
       {reviewTrip && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-xl font-bold text-[#2d3b2a]">
@@ -921,54 +1050,67 @@ export default function MyTrips() {
               </button>
             </div>
 
-            <div className="mb-5">
-              <p className="mb-3 text-sm font-semibold text-[#2d3b2a]">
-                Your Rating
-              </p>
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => {
-                  const active = star <= (hoverRating || rating);
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-[#e0e8dc] p-5">
+                <p className="mb-3 text-base font-bold text-[#2d3b2a]">
+                  Rate Package
+                </p>
 
-                  return (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setRating(star)}
-                      onMouseEnter={() => setHoverRating(star)}
-                      onMouseLeave={() => setHoverRating(0)}
-                      className="transition hover:scale-110"
-                    >
-                      <span
-                        className={`material-symbols-outlined text-[32px] ${
-                          active ? "text-yellow-400" : "text-[#d1d5db]"
-                        }`}
-                        style={{
-                          fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0",
-                        }}
-                      >
-                        star
-                      </span>
-                    </button>
-                  );
-                })}
+                {renderStars(
+                  packageRating,
+                  packageHoverRating,
+                  setPackageRating,
+                  setPackageHoverRating,
+                  "package"
+                )}
+
+                <div className="mt-4">
+                  <label className="mb-2 block text-sm font-semibold text-[#2d3b2a]">
+                    Package Comment
+                  </label>
+                  <textarea
+                    value={packageComment}
+                    onChange={(e) => setPackageComment(e.target.value)}
+                    rows={4}
+                    maxLength={500}
+                    placeholder="Write about the package, itinerary, activities, and overall experience..."
+                    className="w-full rounded-xl border border-[#e0e8dc] px-4 py-3 text-sm text-[#2d3b2a] outline-none transition focus:border-[#1978e5]"
+                  />
+                </div>
               </div>
+
+              {reviewTrip?.guide && (
+                <div className="rounded-2xl border border-[#e0e8dc] p-5">
+                  <p className="mb-3 text-base font-bold text-[#2d3b2a]">
+                    Rate Guide
+                  </p>
+
+                  {renderStars(
+                    guideRating,
+                    guideHoverRating,
+                    setGuideRating,
+                    setGuideHoverRating,
+                    "guide"
+                  )}
+
+                  <div className="mt-4">
+                    <label className="mb-2 block text-sm font-semibold text-[#2d3b2a]">
+                      Guide Comment
+                    </label>
+                    <textarea
+                      value={guideComment}
+                      onChange={(e) => setGuideComment(e.target.value)}
+                      rows={4}
+                      maxLength={500}
+                      placeholder="Write about the guide’s behavior, helpfulness, and support..."
+                      className="w-full rounded-xl border border-[#e0e8dc] px-4 py-3 text-sm text-[#2d3b2a] outline-none transition focus:border-[#1978e5]"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="mb-6">
-              <label className="mb-2 block text-sm font-semibold text-[#2d3b2a]">
-                Comment
-              </label>
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={5}
-                maxLength={500}
-                placeholder="Write about your experience..."
-                className="w-full rounded-xl border border-[#e0e8dc] px-4 py-3 text-sm text-[#2d3b2a] outline-none transition focus:border-[#1978e5]"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-3">
+            <div className="mt-6 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={closeReviewModal}

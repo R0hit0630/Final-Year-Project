@@ -6,7 +6,12 @@ import User from "../models/user.js";
 
 // helper: recalculate package rating
 const updatePackageRating = async (packageId) => {
-  const reviews = await Review.find({ package: packageId });
+  if (!packageId) return;
+
+  const reviews = await Review.find({
+    package: packageId,
+    type: "package",
+  });
 
   const numReviews = reviews.length;
   const averageRating =
@@ -24,7 +29,10 @@ const updatePackageRating = async (packageId) => {
 const updateGuideRating = async (guideId) => {
   if (!guideId) return;
 
-  const reviews = await Review.find({ guide: guideId });
+  const reviews = await Review.find({
+    guide: guideId,
+    type: "guide",
+  });
 
   const numReviews = reviews.length;
   const averageRating =
@@ -59,11 +67,17 @@ const updateAgencyRating = async (agencyId) => {
 // CREATE REVIEW
 export const createReview = async (req, res) => {
   try {
-    const { bookingId, rating, comment } = req.body;
+    const {
+      bookingId,
+      packageRating,
+      packageComment,
+      guideRating,
+      guideComment,
+    } = req.body;
 
-    if (!bookingId || !rating) {
+    if (!bookingId) {
       return res.status(400).json({
-        message: "Booking ID and rating are required",
+        message: "Booking ID is required",
       });
     }
 
@@ -75,50 +89,125 @@ export const createReview = async (req, res) => {
       });
     }
 
-    // make sure logged-in user owns this booking
     if (booking.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         message: "Not authorized to review this booking",
       });
     }
 
-    // only completed booking can be reviewed
     if (booking.status !== "completed") {
       return res.status(400).json({
         message: "Only completed bookings can be reviewed",
       });
     }
 
-    // prevent duplicate review
-    const existingReview = await Review.findOne({ booking: bookingId });
-    if (existingReview) {
+    if (booking.isReviewed) {
       return res.status(400).json({
         message: "You have already reviewed this booking",
       });
     }
 
-    const newReview = await Review.create({
-      user: req.user._id,
+    const pkg = await Package.findById(booking.package).select("agency");
+
+    if (!pkg) {
+      return res.status(404).json({
+        message: "Package not found for this booking",
+      });
+    }
+
+    const createdReviews = [];
+
+    // package review is required
+    const parsedPackageRating = Number(packageRating);
+    if (
+      Number.isNaN(parsedPackageRating) ||
+      parsedPackageRating < 1 ||
+      parsedPackageRating > 5
+    ) {
+      return res.status(400).json({
+        message: "Package rating must be between 1 and 5",
+      });
+    }
+
+    const existingPackageReview = await Review.findOne({
       booking: booking._id,
-      package: booking.package,
-      agency: booking.agency,
-      guide: booking.guide || null,
-      rating,
-      comment: comment || "",
+      user: req.user._id,
+      type: "package",
     });
 
-    // mark booking reviewed
+    if (existingPackageReview) {
+      return res.status(400).json({
+        message: "Package review already exists for this booking",
+      });
+    }
+
+    const packageReview = await Review.create({
+      user: req.user._id,
+      booking: booking._id,
+      type: "package",
+      package: booking.package,
+      agency: pkg.agency || null,
+      guide: null,
+      rating: parsedPackageRating,
+      comment: packageComment || "",
+    });
+
+    createdReviews.push(packageReview);
+
+    // guide review is optional if no guide assigned, otherwise required
+    if (booking.guide) {
+      const parsedGuideRating = Number(guideRating);
+
+      if (
+        Number.isNaN(parsedGuideRating) ||
+        parsedGuideRating < 1 ||
+        parsedGuideRating > 5
+      ) {
+        return res.status(400).json({
+          message: "Guide rating must be between 1 and 5",
+        });
+      }
+
+      const existingGuideReview = await Review.findOne({
+        booking: booking._id,
+        user: req.user._id,
+        type: "guide",
+      });
+
+      if (existingGuideReview) {
+        return res.status(400).json({
+          message: "Guide review already exists for this booking",
+        });
+      }
+
+      const guideReview = await Review.create({
+        user: req.user._id,
+        booking: booking._id,
+        type: "guide",
+        package: null,
+        agency: pkg.agency || null,
+        guide: booking.guide,
+        rating: parsedGuideRating,
+        comment: guideComment || "",
+      });
+
+      createdReviews.push(guideReview);
+    }
+
     booking.isReviewed = true;
     await booking.save();
 
-    // update averages
     await updatePackageRating(booking.package);
-    if (booking.guide) await updateGuideRating(booking.guide);
-    if (booking.agency) await updateAgencyRating(booking.agency);
+    if (booking.guide) {
+      await updateGuideRating(booking.guide);
+    }
+    if (pkg.agency) {
+      await updateAgencyRating(pkg.agency);
+    }
 
     res.status(201).json({
       message: "Review submitted successfully",
-      review: newReview,
+      reviews: createdReviews,
     });
   } catch (error) {
     console.error("createReview error:", error);
@@ -131,7 +220,10 @@ export const createReview = async (req, res) => {
 // GET PACKAGE REVIEWS
 export const getPackageReviews = async (req, res) => {
   try {
-    const reviews = await Review.find({ package: req.params.packageId })
+    const reviews = await Review.find({
+      package: req.params.packageId,
+      type: "package",
+    })
       .populate("user", "name username email")
       .sort({ createdAt: -1 });
 
@@ -147,7 +239,10 @@ export const getPackageReviews = async (req, res) => {
 // GET GUIDE REVIEWS
 export const getGuideReviews = async (req, res) => {
   try {
-    const reviews = await Review.find({ guide: req.params.guideId })
+    const reviews = await Review.find({
+      guide: req.params.guideId,
+      type: "guide",
+    })
       .populate("user", "name username email")
       .sort({ createdAt: -1 });
 

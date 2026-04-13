@@ -30,6 +30,8 @@ const bookingSchema = new mongoose.Schema(
 
     endDate: {
       type: Date,
+      required: true,
+      index: true,
     },
 
     totalPrice: {
@@ -46,7 +48,7 @@ const bookingSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending", "confirmed", "cancelled", "completed"],
+      enum: ["pending", "confirmed", "ongoing", "cancelled", "completed"],
       default: "pending",
       index: true,
     },
@@ -81,9 +83,9 @@ const bookingSchema = new mongoose.Schema(
     },
 
     isReviewed: {
-    type: Boolean,
-    default: false,
-},
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

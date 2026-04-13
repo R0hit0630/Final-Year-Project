@@ -1,9 +1,14 @@
 // src/Pages/AgencyProfile.jsx
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function AgencyProfile() {
-  // ✅ Same palette as your previous light page
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+
+  const API_BASE = "http://localhost:5000";
+
   const COLORS = {
     primary: "#1978e5",
     primaryDark: "#3fa10e",
@@ -15,14 +20,35 @@ export default function AgencyProfile() {
     muted: "#6b7280",
   };
 
+  const FALLBACK_LOGO =
+    "data:image/svg+xml;utf8," +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
+        <rect width="220" height="220" rx="28" fill="#f3f6f1"/>
+        <circle cx="110" cy="88" r="34" fill="#dbe7f7"/>
+        <rect x="50" y="138" width="120" height="18" rx="9" fill="#dbe7f7"/>
+        <rect x="68" y="165" width="84" height="14" rx="7" fill="#e5edf9"/>
+      </svg>
+    `);
+
+  const FALLBACK_GUIDE =
+    "data:image/svg+xml;utf8," +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140">
+        <rect width="140" height="140" rx="70" fill="#f3f6f1"/>
+        <circle cx="70" cy="52" r="24" fill="#dbe7f7"/>
+        <rect x="32" y="88" width="76" height="20" rx="10" fill="#dbe7f7"/>
+      </svg>
+    `);
+
   const sidebar = useMemo(
     () => [
       { label: "Overview", icon: "dashboard", to: "/agency", active: false },
-      { label: "My Packages", icon: "hiking", to: "/agency/packages", active: true },
+      { label: "My Packages", icon: "hiking", to: "/agency/packages", active: false },
       { label: "Bookings", icon: "book_online", to: "/agency/bookings", active: false },
       { label: "Earnings", icon: "payments", to: "/agency/earnings", active: false },
       { label: "Guides", icon: "person", to: "/agency/guides", active: false },
-      { label: "Profile", icon: "settings_account_box", to: "/agency/profile", active: false },
+      { label: "Profile", icon: "settings_account_box", to: "/agency/profile", active: true },
     ],
     []
   );
@@ -35,74 +61,269 @@ export default function AgencyProfile() {
     []
   );
 
-  //  Edit Mode controls inputs
+  const initialForm = {
+    agencyName: "",
+    tagline: "",
+    about: "",
+    email: "",
+    phone: "",
+    address: "",
+    instagram: "",
+    tripadvisor: "",
+  };
+
   const [editMode, setEditMode] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
-  //  Form state
-  const [logo, setLogo] = useState(
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBv5cRvMY3Y1duu7_mqX4yGdtkq8hLjd7F2MWWbrxUiEYLR7ACb9_WpRAQDRA1i-nfBrrt7AWJrIKWgoFL6vXK9nmNa7Xx6U-ouFwn1JaB6JtbwbjAOvrB3UCMvcSodjNYzIRFzg40W6onxqocvKUA9Jjr7U8YMFcbQQhwtTQxZirmliaSD4lbz4FrGB6Fqi68Q9lmPo_OPnKLhoj9a3nOxtLm-k3whu_Eiasizlk-9SwO5NES13rYYXjbUqCMDDE6JCeme3iAMfowo"
-  );
+  const [logo, setLogo] = useState("");
+  const [initialLogo, setInitialLogo] = useState("");
 
-  const [form, setForm] = useState({
-    agencyName: "Summit Treks",
-    tagline: "Premium Himalayan Bookings Since 2010",
-    about:
-      "Founded by veteran Sherpa guides, Summit Treks specializes in high-altitude expeditions and sustainable trekking experiences across the Nepal Himalayas. We prioritize safety, eco-friendly practices, and authentic cultural immersion for every adventurer.",
-    email: "info@summittreks.com",
-    phone: "+977 1-4423567",
-    address: "Thamel Marg, Kathmandu 44600",
-    instagram: "@summittreks_official",
-    tripadvisor: "tripadvisor.com/summittreks",
+  const [form, setForm] = useState(initialForm);
+  const [initialSavedForm, setInitialSavedForm] = useState(initialForm);
+
+  const [verified, setVerified] = useState(false);
+  const [stats, setStats] = useState({
+    avgRating: 0,
+    totalBookings: 0,
   });
 
   const [credentials] = useState([
-    { title: "Ministry of Tourism License", meta: "Exp: Dec 2024 • PDF", icon: "description" },
-    { title: "Liability Insurance", meta: "Exp: Oct 2024 • PDF", icon: "security" },
-    { title: "VAT Registration", meta: "Permanent • JPG", icon: "id_card" },
+    { title: "Ministry of Tourism License", meta: "Uploaded via admin or later sync", icon: "description" },
+    { title: "Liability Insurance", meta: "Uploaded via admin or later sync", icon: "security" },
+    { title: "VAT Registration", meta: "Uploaded via admin or later sync", icon: "id_card" },
   ]);
 
-  const [personnel] = useState([
-    {
-      name: "Pasang Sherpa",
-      tag: "UIAGM Certified",
-      role: "Lead Guide",
-      ring: "ring-[#1978e5]/30",
-      avatar:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuCkq9GNaKqpDGcO3Q-iAHqaeaD-csCI09AA3Bi4WJwN8C59IqduOnyy6oGmD7fdoPbPowH7nR4oixmPYoBdqY5ufKzo-dJMWHY-s7hpmgOeSc26MxvMaiiTlNxLLTzHtW-PZkwqiW7Q9UxVPgh-05xx1LKg6hNJ7guUXp48VAfDTLKQwOHDPIlrQhAQ_zKXMXnR9Z1IT-iFv0nlzfs0O-Lvmv6rdrzXmZ9_ZV3gqPxLQwy2sOAt4x-JxNhKbdbO6E0hwyV-KKwc17AV",
-    },
-    {
-      name: "Lakpa Dorje",
-      tag: "High Altitude",
-      role: "Senior Guide",
-      ring: "ring-blue-500/30",
-      avatar:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuAF4lpmnU0L8RO6wxoVwHDstMYGlm13mtYnFtnz-YlEKe7jAiC2PEUUIdJlIiLl3IQyAqv4PeFeiAWh7voi8N1umHEzA9zLBIo0-Q_E14Thmz4Q-wPNX5oXl33U6ACotgzNlWqfjBBiDzqTQLxtb6LGgq2I97xZnvOFeX6waFoCHYL34KT5iGnVLQe1xejvim5igT-ORIMYqinzn1lwbTTTkAnOghcmAM4IrQ2kjQ0SDhj71e_pC40ob7k86mDBM7ODnSANwQ6Gni5C",
-    },
-  ]);
+  const [personnel, setPersonnel] = useState([]);
 
-  const setField = (key, value) => setForm((p) => ({ ...p, [key]: value }));
+  const token = localStorage.getItem("token");
 
-  const onLogoChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setLogo(url);
+  const authConfig = useMemo(
+    () => ({
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+    [token]
+  );
+
+  const normalizeImageUrl = (value) => {
+    if (!value) return "";
+    if (value.startsWith("data:image")) return value;
+    if (value.startsWith("blob:")) return value;
+    if (value.startsWith("http://") || value.startsWith("https://")) return value;
+    if (value.startsWith("/uploads/")) return `${API_BASE}${value}`;
+    if (value.startsWith("uploads/")) return `${API_BASE}/${value}`;
+    if (value.startsWith("/")) return `${API_BASE}${value}`;
+    return `${API_BASE}/${value}`;
   };
 
-  const onSave = () => {
-    // later: call API here
-    console.log("SAVE AGENCY PROFILE", { ...form, logo });
-    alert("Saved (demo). Connect API later.");
+  const setField = (key, value) => {
+    if (key === "about" && value.length > 500) return;
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const fetchAgencyProfile = async () => {
+    const res = await axios.get(`${API_BASE}/api/users/agency/me`, authConfig);
+    const data = res.data || {};
+
+    const mappedForm = {
+      agencyName: data.agencyName || "",
+      tagline: data.tagline || "",
+      about: data.about || "",
+      email: data.email || "",
+      phone: data.phone || "",
+      address: data.address || "",
+      instagram: data.instagram || "",
+      tripadvisor: data.tripadvisor || "",
+    };
+
+    const mappedLogo = normalizeImageUrl(data.logo || "");
+
+    setForm(mappedForm);
+    setInitialSavedForm(mappedForm);
+    setLogo(mappedLogo || FALLBACK_LOGO);
+    setInitialLogo(mappedLogo || FALLBACK_LOGO);
+    setVerified(Boolean(data.isVerified));
+  };
+
+  const fetchAgencyStats = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/api/bookings/agency/stats`, authConfig);
+      setStats({
+        avgRating: Number(res.data?.avgRating || 0),
+        totalBookings: Number(res.data?.totalBookings || 0),
+      });
+    } catch (error) {
+      console.error("Failed to load agency stats:", error);
+      setStats({
+        avgRating: 0,
+        totalBookings: 0,
+      });
+    }
+  };
+
+  const fetchGuides = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/api/guides/mine`, authConfig);
+      const guides = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.guides)
+        ? res.data.guides
+        : [];
+
+      const mapped = guides.slice(0, 4).map((guide, index) => ({
+        name: guide.name || guide.fullName || "Guide",
+        tag: guide.specialization || guide.expertise || guide.language || "Agency Guide",
+        role: guide.role || "Guide",
+        ring: index % 2 === 0 ? "ring-[#1978e5]/30" : "ring-blue-500/30",
+        avatar: normalizeImageUrl(guide.avatar || guide.image || guide.photo || "") || FALLBACK_GUIDE,
+      }));
+
+      setPersonnel(mapped);
+    } catch (error) {
+      console.error("Failed to load guides:", error);
+      setPersonnel([]);
+    }
+  };
+
+  useEffect(() => {
+    const loadAll = async () => {
+      try {
+        setLoading(true);
+        await Promise.all([fetchAgencyProfile(), fetchAgencyStats(), fetchGuides()]);
+      } catch (error) {
+        console.error("Failed to load agency profile page:", error);
+        alert(error?.response?.data?.message || "Failed to load agency profile");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (token) {
+      loadAll();
+    } else {
+      navigate("/login");
+    }
+  }, [token]);
+
+  const onLogoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    let previewUrl = "";
+
+    try {
+      setUploadingLogo(true);
+
+      previewUrl = URL.createObjectURL(file);
+      setLogo(previewUrl);
+
+      const body = new FormData();
+      body.append("image", file);
+
+
+      const uploadRes = await axios.post(`${API_BASE}/api/upload`, body, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const uploadedPath =
+        uploadRes.data?.url ||
+        uploadRes.data?.imageUrl ||
+        uploadRes.data?.image ||
+        uploadRes.data?.path ||
+        uploadRes.data?.filePath ||
+        uploadRes.data?.filename ||
+        "";
+
+      if (!uploadedPath) {
+        throw new Error("Upload succeeded but no file path returned");
+      }
+
+      const finalLogo = normalizeImageUrl(uploadedPath);
+      setLogo(finalLogo);
+    } catch (error) {
+      console.error("Logo upload failed:", error);
+      alert(error?.response?.data?.message || error.message || "Failed to upload logo");
+      setLogo(initialLogo || FALLBACK_LOGO);
+    } finally {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setUploadingLogo(false);
+    }
+  };
+
+  const onSave = async () => {
+    try {
+      setSaving(true);
+
+      const cleanLogo =
+        logo.startsWith("blob:") || logo.startsWith("data:image")
+          ? ""
+          : logo.replace(API_BASE, "");
+
+      const payload = {
+        agencyName: form.agencyName,
+        tagline: form.tagline,
+        about: form.about,
+        phone: form.phone,
+        address: form.address,
+        instagram: form.instagram,
+        tripadvisor: form.tripadvisor,
+        logo: cleanLogo,
+      };
+
+      const res = await axios.put(`${API_BASE}/api/users/agency/me`, payload, authConfig);
+
+      setInitialSavedForm({ ...form });
+      setInitialLogo(logo || FALLBACK_LOGO);
+      setVerified(Boolean(res.data?.agency?.isVerified ?? verified));
+
+      alert(res.data?.message || "Agency profile updated successfully");
+    } catch (error) {
+      console.error("Save agency profile failed:", error);
+      alert(error?.response?.data?.message || "Failed to save profile");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const onDiscard = () => {
-    // You can reset to initial values if you want
-    alert("Discarded (demo).");
+    setForm(initialSavedForm);
+    setLogo(initialLogo || FALLBACK_LOGO);
   };
 
-  const Input = ({ label, icon, type = "text", value, onChange, accentTextClass = "" }) => (
+  const onLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
+  const formatBookings = (count) => {
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}k`;
+    }
+    return String(count);
+  };
+
+  const Input = ({
+    label,
+    icon,
+    type = "text",
+    value,
+    onChange,
+    accentTextClass = "",
+    disabled = false,
+  }) => (
     <div>
-      <label className="mb-1 block text-xs font-bold uppercase text-[#6b7280]">{label}</label>
+      <label className="mb-1 block text-xs font-bold uppercase text-[#6b7280]">
+        {label}
+      </label>
       <div className="relative">
         {icon && (
           <span className="material-symbols-outlined absolute left-3 top-2.5 text-[#94a3b8] text-sm">
@@ -111,13 +332,15 @@ export default function AgencyProfile() {
         )}
         <input
           type={type}
-          disabled={!editMode}
+          disabled={disabled || !editMode}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={[
             "w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-[#2d3b2a] outline-none transition-all",
             icon ? "pl-9" : "",
-            editMode ? "focus:border-[#1978e5] focus:ring-[#1978e5]" : "opacity-80 cursor-not-allowed bg-gray-50",
+            editMode && !disabled
+              ? "focus:border-[#1978e5] focus:ring-[#1978e5]"
+              : "opacity-80 cursor-not-allowed bg-gray-50",
             accentTextClass,
           ].join(" ")}
         />
@@ -125,13 +348,35 @@ export default function AgencyProfile() {
     </div>
   );
 
+  if (loading) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: COLORS.bgLight }}
+      >
+        <div className="rounded-2xl bg-white px-8 py-6 shadow-sm border border-gray-100 text-center">
+          <div className="text-lg font-bold text-[#2d3b2a]">Loading profile...</div>
+          <div className="mt-2 text-sm text-[#6b7280]">Please wait</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-screen w-full overflow-hidden" style={{ background: COLORS.bgLight, color: COLORS.secondary }}>
-      <div className="flex h-full w-full" style={{ background: COLORS.paper, ...paperTextureStyle }}>
-        {/* Sidebar */}
+    <div
+      className="h-screen w-full overflow-hidden"
+      style={{ background: COLORS.bgLight, color: COLORS.secondary }}
+    >
+      <div
+        className="flex h-full w-full"
+        style={{ background: COLORS.paper, ...paperTextureStyle }}
+      >
         <aside
           className="hidden w-64 flex-col justify-between border-r lg:flex"
-          style={{ borderColor: COLORS.border, background: "rgba(253,253,252,0.8)" }}
+          style={{
+            borderColor: COLORS.border,
+            background: "rgba(253,253,252,0.8)",
+          }}
         >
           <div className="flex h-full flex-col p-6">
             <div className="mb-10 flex items-center gap-3">
@@ -139,11 +384,23 @@ export default function AgencyProfile() {
                 className="relative h-12 w-12 overflow-hidden rounded-xl border shadow-sm bg-white"
                 style={{ borderColor: COLORS.border }}
               >
-                <img alt="Agency Logo" className="h-full w-full object-cover" src={logo} />
+                <img
+                  alt="Agency Logo"
+                  className="h-full w-full object-cover"
+                  src={logo || FALLBACK_LOGO}
+                  onError={(e) => {
+                    e.currentTarget.src = FALLBACK_LOGO;
+                  }}
+                />
               </div>
               <div className="flex flex-col">
-                <h1 className="text-base font-bold leading-tight">Summit Treks</h1>
-                <p className="text-xs font-medium uppercase tracking-wider" style={{ color: COLORS.primary }}>
+                <h1 className="text-base font-bold leading-tight">
+                  {form.agencyName || "Agency"}
+                </h1>
+                <p
+                  className="text-xs font-medium uppercase tracking-wider"
+                  style={{ color: COLORS.primary }}
+                >
                   Partner Agency
                 </p>
               </div>
@@ -156,13 +413,17 @@ export default function AgencyProfile() {
                   to={i.to}
                   className={[
                     "group flex items-center gap-3 rounded-xl px-4 py-3 transition-all",
-                    i.active ? "bg-[#1978e5]/10 hover:bg-[#1978e5]/20" : "hover:bg-[#f0f4ee]",
+                    i.active
+                      ? "bg-[#1978e5]/10 hover:bg-[#1978e5]/20"
+                      : "hover:bg-[#f0f4ee]",
                   ].join(" ")}
                 >
                   <span
                     className={[
                       "material-symbols-outlined transition-colors",
-                      i.active ? "text-[#1978e5]" : "text-[#6b7280] group-hover:text-[#1978e5]",
+                      i.active
+                        ? "text-[#1978e5]"
+                        : "text-[#6b7280] group-hover:text-[#1978e5]",
                     ].join(" ")}
                   >
                     {i.icon}
@@ -182,9 +443,10 @@ export default function AgencyProfile() {
             </nav>
 
             <div className="mt-auto pt-6">
-              <Link
-                to="/logout"
-                className="group flex items-center gap-3 rounded-xl border border-transparent px-4 py-3 hover:border-[#e0e8dc] hover:bg-white hover:shadow-sm transition-all"
+              <button
+                type="button"
+                onClick={onLogout}
+                className="group flex w-full items-center gap-3 rounded-xl border border-transparent px-4 py-3 hover:border-[#e0e8dc] hover:bg-white hover:shadow-sm transition-all"
               >
                 <span className="material-symbols-outlined text-[#6b7280] group-hover:text-red-500 transition-colors">
                   logout
@@ -192,17 +454,18 @@ export default function AgencyProfile() {
                 <span className="text-sm font-medium text-[#4b5563] group-hover:text-red-500">
                   Log Out
                 </span>
-              </Link>
+              </button>
             </div>
           </div>
         </aside>
 
-        {/* Main */}
         <main className="flex flex-1 flex-col overflow-y-auto">
-          {/* Mobile top */}
           <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-4 backdrop-blur-md shadow-sm lg:hidden">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-3xl" style={{ color: COLORS.primary }}>
+              <span
+                className="material-symbols-outlined text-3xl"
+                style={{ color: COLORS.primary }}
+              >
                 terrain
               </span>
               <span className="text-lg font-bold">Travolin</span>
@@ -213,17 +476,17 @@ export default function AgencyProfile() {
           </div>
 
           <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 lg:py-10">
-            {/* Header */}
             <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Agency Profile</h1>
+                <h1 className="text-3xl font-bold tracking-tight">
+                  Agency Profile
+                </h1>
                 <p className="mt-1" style={{ color: COLORS.muted }}>
                   Manage your public presence and verification details.
                 </p>
               </div>
 
               <div className="flex items-center gap-3">
-                {/* Edit Mode ONLY (Preview removed) */}
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     className="sr-only peer"
@@ -236,45 +499,60 @@ export default function AgencyProfile() {
                                peer-checked:bg-[#1978e5] after:content-[''] after:absolute after:top-[2px] after:left-[2px]
                                after:h-5 after:w-5 after:rounded-full after:bg-white after:border after:border-gray-300 after:transition-all peer-checked:after:translate-x-full"
                   />
-                  <span className="ml-3 text-sm font-bold text-[#2d3b2a]">Edit Mode</span>
+                  <span className="ml-3 text-sm font-bold text-[#2d3b2a]">
+                    Edit Mode
+                  </span>
                 </label>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-              {/* Left / Main */}
               <div className="space-y-8 lg:col-span-2">
-                {/* Hero / Profile */}
                 <div className="rounded-2xl border border-black/5 bg-white p-8 shadow-sm relative overflow-hidden">
-                  <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full blur-3xl" style={{ background: "rgba(25,120,229,0.10)" }} />
+                  <div
+                    className="absolute -right-24 -top-24 h-72 w-72 rounded-full blur-3xl"
+                    style={{ background: "rgba(25,120,229,0.10)" }}
+                  />
 
                   <div className="relative z-10 flex flex-col items-start gap-8 md:flex-row">
-                    {/* Logo */}
                     <div className="shrink-0">
                       <div className="relative group">
                         <div className="h-32 w-32 overflow-hidden rounded-2xl border-2 border-gray-200 shadow-sm bg-white">
-                          <img alt="Logo" className="h-full w-full object-cover" src={logo} />
+                          <img
+                            alt="Logo"
+                            className="h-full w-full object-cover"
+                            src={logo || FALLBACK_LOGO}
+                            onError={(e) => {
+                              e.currentTarget.src = FALLBACK_LOGO;
+                            }}
+                          />
                         </div>
 
-                        {/* Upload overlay */}
                         <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-2xl bg-black/50 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
-                          <span className="material-symbols-outlined text-white">photo_camera</span>
+                          <span className="material-symbols-outlined text-white">
+                            {uploadingLogo ? "hourglass_top" : "photo_camera"}
+                          </span>
                           <input
+                            ref={fileInputRef}
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            disabled={!editMode}
+                            disabled={!editMode || uploadingLogo}
                             onChange={onLogoChange}
                           />
                         </label>
 
-                        <div className="absolute -bottom-2 -right-2 rounded-lg p-1.5 text-white shadow-lg" style={{ background: COLORS.primary }}>
-                          <span className="material-symbols-outlined text-sm block">edit</span>
+                        <div
+                          className="absolute -bottom-2 -right-2 rounded-lg p-1.5 text-white shadow-lg"
+                          style={{ background: COLORS.primary }}
+                        >
+                          <span className="material-symbols-outlined text-sm block">
+                            edit
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Main fields */}
                     <div className="w-full space-y-5">
                       <div>
                         <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-[#6b7280]">
@@ -286,7 +564,9 @@ export default function AgencyProfile() {
                           onChange={(e) => setField("agencyName", e.target.value)}
                           className={[
                             "w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-lg font-bold outline-none transition-all",
-                            editMode ? "focus:border-[#1978e5] focus:ring-[#1978e5]" : "opacity-80 cursor-not-allowed bg-gray-50",
+                            editMode
+                              ? "focus:border-[#1978e5] focus:ring-[#1978e5]"
+                              : "opacity-80 cursor-not-allowed bg-gray-50",
                           ].join(" ")}
                         />
                       </div>
@@ -301,17 +581,21 @@ export default function AgencyProfile() {
                           onChange={(e) => setField("tagline", e.target.value)}
                           className={[
                             "w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm italic outline-none transition-all",
-                            editMode ? "focus:border-[#1978e5] focus:ring-[#1978e5]" : "opacity-80 cursor-not-allowed bg-gray-50",
+                            editMode
+                              ? "focus:border-[#1978e5] focus:ring-[#1978e5]"
+                              : "opacity-80 cursor-not-allowed bg-gray-50",
                           ].join(" ")}
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* About */}
                   <div className="mt-8">
                     <label className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                      <span className="material-symbols-outlined text-sm" style={{ color: COLORS.primary }}>
+                      <span
+                        className="material-symbols-outlined text-sm"
+                        style={{ color: COLORS.primary }}
+                      >
                         history_edu
                       </span>
                       About Us
@@ -324,7 +608,9 @@ export default function AgencyProfile() {
                       onChange={(e) => setField("about", e.target.value)}
                       className={[
                         "w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm leading-relaxed text-[#2d3b2a] outline-none transition-all",
-                        editMode ? "focus:border-[#1978e5] focus:ring-[#1978e5]" : "opacity-80 cursor-not-allowed bg-gray-50",
+                        editMode
+                          ? "focus:border-[#1978e5] focus:ring-[#1978e5]"
+                          : "opacity-80 cursor-not-allowed bg-gray-50",
                       ].join(" ")}
                     />
                     <div className="mt-2 flex justify-end text-xs text-[#94a3b8]">
@@ -333,26 +619,48 @@ export default function AgencyProfile() {
                   </div>
                 </div>
 
-                {/* Contact + Social */}
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                   <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
                     <h3 className="mb-6 flex items-center gap-2 text-lg font-bold">
-                      <span className="material-symbols-outlined" style={{ color: COLORS.primary }}>
+                      <span
+                        className="material-symbols-outlined"
+                        style={{ color: COLORS.primary }}
+                      >
                         contact_page
                       </span>
                       Contact Details
                     </h3>
 
                     <div className="space-y-4">
-                      <Input label="Official Email" icon="mail" type="email" value={form.email} onChange={(v) => setField("email", v)} />
-                      <Input label="Phone Number" icon="call" type="tel" value={form.phone} onChange={(v) => setField("phone", v)} />
-                      <Input label="Head Office" icon="location_on" value={form.address} onChange={(v) => setField("address", v)} />
+                      <Input
+                        label="Official Email"
+                        icon="mail"
+                        type="email"
+                        value={form.email}
+                        onChange={(v) => setField("email", v)}
+                        disabled
+                      />
+                      <Input
+                        label="Phone Number"
+                        icon="call"
+                        type="tel"
+                        value={form.phone}
+                        onChange={(v) => setField("phone", v)}
+                      />
+                      <Input
+                        label="Head Office"
+                        icon="location_on"
+                        value={form.address}
+                        onChange={(v) => setField("address", v)}
+                      />
                     </div>
                   </div>
 
                   <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
                     <h3 className="mb-6 flex items-center gap-2 text-lg font-bold">
-                      <span className="material-symbols-outlined text-purple-500">share</span>
+                      <span className="material-symbols-outlined text-purple-500">
+                        share
+                      </span>
                       Social Presence
                     </h3>
 
@@ -374,50 +682,82 @@ export default function AgencyProfile() {
                       <button
                         type="button"
                         className="w-full rounded-lg border border-dashed px-3 py-2 text-xs font-bold transition-colors"
-                        style={{ borderColor: COLORS.primary, color: COLORS.primary, background: "rgba(25,120,229,0.04)" }}
+                        style={{
+                          borderColor: COLORS.primary,
+                          color: COLORS.primary,
+                          background: "rgba(25,120,229,0.04)",
+                        }}
                       >
-                        <span className="material-symbols-outlined text-sm align-[-3px] mr-1">add</span>
+                        <span className="material-symbols-outlined text-sm align-[-3px] mr-1">
+                          add
+                        </span>
                         Add Another Platform
                       </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Personnel */}
                 <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
                   <div className="mb-6 flex items-center justify-between">
                     <h3 className="flex items-center gap-2 text-lg font-bold">
-                      <span className="material-symbols-outlined text-blue-500">groups</span>
+                      <span className="material-symbols-outlined text-blue-500">
+                        groups
+                      </span>
                       Key Personnel
                     </h3>
-                    <button type="button" className="text-xs font-bold hover:underline" style={{ color: COLORS.primary }}>
+                    <Link
+                      to="/agency/guides"
+                      className="text-xs font-bold hover:underline"
+                      style={{ color: COLORS.primary }}
+                    >
                       Manage All Guides
-                    </button>
+                    </Link>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {personnel.map((p) => (
-                      <div key={p.name} className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4">
-                        <img alt={p.name} src={p.avatar} className={`h-12 w-12 rounded-full object-cover ring-2 ${p.ring}`} />
-                        <div>
-                          <h4 className="text-sm font-bold">{p.name}</h4>
-                          <div className="mt-1 flex items-center gap-2">
-                            <span
-                              className="rounded border px-2 py-0.5 text-[10px] font-bold"
-                              style={{ borderColor: "rgba(25,120,229,0.25)", background: "rgba(25,120,229,0.07)", color: COLORS.primary }}
-                            >
-                              {p.tag}
-                            </span>
-                            <span className="text-[10px] text-[#6b7280]">{p.role}</span>
+                    {personnel.length > 0 ? (
+                      personnel.map((p) => (
+                        <div
+                          key={`${p.name}-${p.role}`}
+                          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4"
+                        >
+                          <img
+                            alt={p.name}
+                            src={p.avatar || FALLBACK_GUIDE}
+                            onError={(e) => {
+                              e.currentTarget.src = FALLBACK_GUIDE;
+                            }}
+                            className={`h-12 w-12 rounded-full object-cover ring-2 ${p.ring}`}
+                          />
+                          <div>
+                            <h4 className="text-sm font-bold">{p.name}</h4>
+                            <div className="mt-1 flex items-center gap-2 flex-wrap">
+                              <span
+                                className="rounded border px-2 py-0.5 text-[10px] font-bold"
+                                style={{
+                                  borderColor: "rgba(25,120,229,0.25)",
+                                  background: "rgba(25,120,229,0.07)",
+                                  color: COLORS.primary,
+                                }}
+                              >
+                                {p.tag}
+                              </span>
+                              <span className="text-[10px] text-[#6b7280]">
+                                {p.role}
+                              </span>
+                            </div>
                           </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="md:col-span-2 rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-[#6b7280]">
+                        No guides found yet.
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
 
-                {/* ✅ Actions (match screenshot: big pill buttons) */}
-                <div className="mt-10 flex justify-end gap-6 pb-2">
+                <div className="mt-10 flex justify-end gap-6 pb-2 flex-wrap">
                   <button
                     type="button"
                     onClick={onDiscard}
@@ -430,69 +770,111 @@ export default function AgencyProfile() {
                   <button
                     type="button"
                     onClick={onSave}
+                    disabled={saving}
                     className="h-14 min-w-[220px] rounded-2xl text-base font-bold text-white
-                               shadow-lg transition-all hover:brightness-95"
+                               shadow-lg transition-all hover:brightness-95 disabled:opacity-70"
                     style={{
                       background: "#1978e5",
                       boxShadow: "0 14px 30px rgba(25,120,229,0.25)",
                     }}
                   >
-                    Save Profile
+                    {saving ? "Saving..." : "Save Profile"}
                   </button>
                 </div>
               </div>
 
-              {/* Right / Sidebar cards */}
               <div className="space-y-6 lg:col-span-1">
-                {/* Verified */}
                 <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
                   <div className="flex flex-col items-center text-center">
                     <div
                       className="mb-4 flex h-16 w-16 items-center justify-center rounded-full"
-                      style={{ background: "rgba(25,120,229,0.08)", border: "1px solid rgba(25,120,229,0.25)" }}
+                      style={{
+                        background: "rgba(25,120,229,0.08)",
+                        border: "1px solid rgba(25,120,229,0.25)",
+                      }}
                     >
-                      <span className="material-symbols-outlined text-3xl" style={{ color: COLORS.primary }}>
+                      <span
+                        className="material-symbols-outlined text-3xl"
+                        style={{ color: COLORS.primary }}
+                      >
                         verified
                       </span>
                     </div>
-                    <h3 className="mb-1 text-lg font-bold">Verified Partner</h3>
+                    <h3 className="mb-1 text-lg font-bold">
+                      {verified ? "Verified Partner" : "Partner Agency"}
+                    </h3>
                     <p className="mb-4 text-xs" style={{ color: COLORS.muted }}>
-                      Your agency meets all Travolin safety and quality standards.
+                      {verified
+                        ? "Your agency meets all Travolin safety and quality standards."
+                        : "Your agency verification is pending admin approval."}
                     </p>
 
                     <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
-                      <div className="h-full w-full rounded-full" style={{ background: COLORS.primary }} />
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          background: COLORS.primary,
+                          width: verified ? "100%" : "55%",
+                        }}
+                      />
                     </div>
-                    <span className="text-xs font-bold" style={{ color: COLORS.primary }}>
-                      Verification Status: Active
+                    <span
+                      className="text-xs font-bold"
+                      style={{ color: COLORS.primary }}
+                    >
+                      Verification Status: {verified ? "Active" : "Pending"}
                     </span>
                   </div>
                 </div>
 
-                {/* Credentials */}
                 <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
                   <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-sm font-bold uppercase tracking-wide" style={{ color: COLORS.muted }}>
+                    <h3
+                      className="text-sm font-bold uppercase tracking-wide"
+                      style={{ color: COLORS.muted }}
+                    >
                       Credentials
                     </h3>
-                    <button type="button" className="transition-colors" style={{ color: COLORS.primary }}>
-                      <span className="material-symbols-outlined text-sm">add_circle</span>
+                    <button
+                      type="button"
+                      className="transition-colors"
+                      style={{ color: COLORS.primary }}
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        add_circle
+                      </span>
                     </button>
                   </div>
 
                   <div className="space-y-4">
                     {credentials.map((c) => (
-                      <div key={c.title} className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-3 transition-all hover:bg-gray-50">
+                      <div
+                        key={c.title}
+                        className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-3 transition-all hover:bg-gray-50"
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ background: "rgba(25,120,229,0.08)", color: COLORS.primary }}>
-                            <span className="material-symbols-outlined text-xl">{c.icon}</span>
+                          <div
+                            className="flex h-10 w-10 items-center justify-center rounded-lg"
+                            style={{
+                              background: "rgba(25,120,229,0.08)",
+                              color: COLORS.primary,
+                            }}
+                          >
+                            <span className="material-symbols-outlined text-xl">
+                              {c.icon}
+                            </span>
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-bold">{c.title}</p>
                             <p className="text-xs text-[#94a3b8]">{c.meta}</p>
                           </div>
-                          <button type="button" className="text-[#94a3b8] hover:text-[#2d3b2a] transition-colors">
-                            <span className="material-symbols-outlined">more_vert</span>
+                          <button
+                            type="button"
+                            className="text-[#94a3b8] hover:text-[#2d3b2a] transition-colors"
+                          >
+                            <span className="material-symbols-outlined">
+                              more_vert
+                            </span>
                           </button>
                         </div>
 
@@ -502,32 +884,46 @@ export default function AgencyProfile() {
                   </div>
                 </div>
 
-                {/* Snapshot */}
                 <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-                  <h4 className="mb-4 text-xs font-bold uppercase tracking-wider" style={{ color: COLORS.muted }}>
+                  <h4
+                    className="mb-4 text-xs font-bold uppercase tracking-wider"
+                    style={{ color: COLORS.muted }}
+                  >
                     Performance Snapshot
                   </h4>
 
                   <div className="grid grid-cols-2 gap-4 text-center">
                     <div className="rounded-xl border border-gray-200 bg-white p-3">
-                      <div className="text-2xl font-bold">4.8</div>
-                      <div className="mt-1 text-[10px] uppercase text-[#94a3b8]">Avg Rating</div>
+                      <div className="text-2xl font-bold">
+                        {Number(stats.avgRating || 0).toFixed(1)}
+                      </div>
+                      <div className="mt-1 text-[10px] uppercase text-[#94a3b8]">
+                        Avg Rating
+                      </div>
                     </div>
                     <div className="rounded-xl border border-gray-200 bg-white p-3">
-                      <div className="text-2xl font-bold">1.2k</div>
-                      <div className="mt-1 text-[10px] uppercase text-[#94a3b8]">Bookings</div>
+                      <div className="text-2xl font-bold">
+                        {formatBookings(stats.totalBookings)}
+                      </div>
+                      <div className="mt-1 text-[10px] uppercase text-[#94a3b8]">
+                        Bookings
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="mt-16 border-t pb-8 pt-10 text-center" style={{ borderColor: COLORS.border }}>
+            <div
+              className="mt-16 border-t pb-8 pt-10 text-center"
+              style={{ borderColor: COLORS.border }}
+            >
               <p className="text-sm font-medium italic text-gray-400">
                 "The journey of a thousand miles begins with a single step."
               </p>
-              <p className="mt-2 text-xs text-gray-300">© 2023 Travolin. Partner Agency Portal.</p>
+              <p className="mt-2 text-xs text-gray-300">
+                © 2023 Travolin. Partner Agency Portal.
+              </p>
             </div>
           </div>
         </main>
