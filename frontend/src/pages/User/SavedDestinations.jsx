@@ -147,7 +147,7 @@ function SavedPackageCard({ pkg, onRemove }) {
               Starting from
             </span>
             <span className="text-xl font-bold text-[#2d3b2a]">
-              ${pkg.price.toLocaleString()}
+              Rs. {pkg.price.toLocaleString()}
             </span>
           </div>
 
@@ -225,7 +225,7 @@ export default function SavedDestinations() {
         setLoading(true);
         setError("");
 
-        const res = await fetch(`${API}/api/packages`);
+        const res = await fetch(`${API}/api/packages/public`);
         if (!res.ok) throw new Error("Failed to fetch packages");
 
         const data = await res.json();

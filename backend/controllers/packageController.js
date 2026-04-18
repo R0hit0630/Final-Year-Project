@@ -42,7 +42,21 @@ const normalizeItinerary = (itinerary) => {
   }));
 };
 
-// ================= PUBLIC =================
+const formatPackageForClient = (pkg) => {
+  const obj = pkg.toObject ? pkg.toObject({ virtuals: true }) : pkg;
+
+  return {
+    ...obj,
+    rating: Number(obj.averageRating ?? obj.rating ?? 0),
+    reviewsCount: Number(obj.numReviews ?? obj.reviewsCount ?? 0),
+    reviews: Number(obj.numReviews ?? obj.reviews ?? 0),
+    activities: Array.isArray(obj.activities)
+      ? obj.activities
+      : obj.type
+      ? [obj.type]
+      : [],
+  };
+};
 
 // GET /api/packages/public?q=&region=&type=&maxPrice=&minDays=&maxDays=&sort=
 export const getPublicPackages = async (req, res) => {
@@ -97,7 +111,7 @@ export const getPublicPackages = async (req, res) => {
 
     const packages = await query;
 
-    return res.status(200).json(packages);
+    return res.status(200).json(packages.map(formatPackageForClient));
   } catch (err) {
     console.error("getPublicPackages error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -111,7 +125,7 @@ export const getAllPackages = async (req, res) => {
       .populate("agency", "username email")
       .sort({ createdAt: -1 });
 
-    return res.status(200).json(items);
+    return res.status(200).json(items.map(formatPackageForClient));
   } catch (err) {
     console.error("getAllPackages error:", err);
     return res.status(500).json({ message: err.message || "Server error" });
@@ -157,7 +171,7 @@ export const comparePackages = async (req, res) => {
 
     return res.status(200).json({
       count: packages.length,
-      packages,
+      packages: packages.map(formatPackageForClient),
     });
   } catch (err) {
     console.error("comparePackages error:", err);
@@ -177,14 +191,12 @@ export const getSinglePackage = async (req, res) => {
       return res.status(404).json({ message: "Package not found" });
     }
 
-    return res.status(200).json(item);
+    return res.status(200).json(formatPackageForClient(item));
   } catch (err) {
     console.error("getSinglePackage error:", err);
     return res.status(400).json({ message: "Invalid package ID" });
   }
 };
-
-// ================= AGENCY =================
 
 // GET /api/packages/mine
 export const getMyPackages = async (req, res) => {
@@ -194,7 +206,7 @@ export const getMyPackages = async (req, res) => {
       isActive: true,
     }).sort({ createdAt: -1 });
 
-    return res.status(200).json(packages);
+    return res.status(200).json(packages.map(formatPackageForClient));
   } catch (err) {
     console.error("getMyPackages error:", err);
     return res.status(500).json({ message: err.message || "Server error" });
@@ -214,7 +226,7 @@ export const getMySinglePackage = async (req, res) => {
       return res.status(404).json({ message: "Package not found" });
     }
 
-    return res.status(200).json(pkg);
+    return res.status(200).json(formatPackageForClient(pkg));
   } catch (err) {
     console.error("getMySinglePackage error:", err);
     return res.status(500).json({ message: err.message || "Server error" });
@@ -309,11 +321,13 @@ export const createPackage = async (req, res) => {
       minGroupSize: minG,
       maxGroupSize: maxG,
       images: imageUrls,
+      averageRating: 0,
+      numReviews: 0,
     });
 
     return res.status(201).json({
       message: "Package created successfully",
-      package: pkg,
+      package: formatPackageForClient(pkg),
     });
   } catch (err) {
     console.error("createPackage error:", err);
@@ -442,7 +456,7 @@ export const updatePackage = async (req, res) => {
 
     return res.status(200).json({
       message: "Package updated successfully",
-      package: pkg,
+      package: formatPackageForClient(pkg),
     });
   } catch (err) {
     console.error("updatePackage error:", err);

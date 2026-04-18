@@ -55,10 +55,7 @@ const reviewSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// one package review per booking per user
-reviewSchema.index(
-  { booking: 1, user: 1, type: 1 },
-  { unique: true }
-);
+// one package review and one guide review per booking per user
+reviewSchema.index({ booking: 1, user: 1, type: 1 }, { unique: true });
 
 export default mongoose.model("Review", reviewSchema);

@@ -87,7 +87,6 @@ const packageSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Stored as number. Frontend can show NPR / Rs.
     price: {
       type: Number,
       required: true,
@@ -131,6 +130,8 @@ const packageSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0,
+      max: 5,
+      index: true,
     },
 
     numReviews: {
@@ -161,7 +162,23 @@ const packageSchema = new mongoose.Schema(
       index: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
+
+packageSchema.virtual("rating").get(function () {
+  return this.averageRating ?? 0;
+});
+
+packageSchema.virtual("reviewsCount").get(function () {
+  return this.numReviews ?? 0;
+});
+
+packageSchema.virtual("activities").get(function () {
+  return this.type ? [this.type] : [];
+});
 
 export default mongoose.model("Package", packageSchema);

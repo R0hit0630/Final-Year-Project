@@ -17,8 +17,6 @@ const router = express.Router();
 
 // PUBLIC
 router.get("/public", getPublicPackages);
-
-// COMPARE (must be before /:id)
 router.get("/compare", comparePackages);
 
 // AGENCY

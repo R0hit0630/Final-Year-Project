@@ -42,6 +42,8 @@ const buildImageUrl = (imgPath) => {
   return `${API}${imgPath}`;
 };
 
+const formatCurrency = (amount) => `Rs. ${Number(amount || 0).toLocaleString()}`;
+
 const durationRange = (label) => {
   if (label === "1-5") return [1, 5];
   if (label === "6-10") return [6, 10];
@@ -201,25 +203,25 @@ function FilterSection({
 
       <div className="mb-6">
         <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#6b7280]">
-          Budget (USD)
+          Budget (NPR)
         </h4>
         <div className="px-1">
           <input
             className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-[#e0e8dc] accent-blue-600"
-            max="5000"
-            min="200"
+            max="500000"
+            min="5000"
             type="range"
             value={budget}
             onChange={(e) => setBudget(Number(e.target.value))}
             aria-label="Budget slider"
           />
           <div className="mt-2 flex justify-between text-[10px] font-bold text-[#94a3b8]">
-            <span>$200</span>
+            <span>Rs. 5,000</span>
             <span className="text-blue-600">
-              ${budget.toLocaleString()}
-              {budget >= 5000 ? "+" : ""}
+              {formatCurrency(budget)}
+              {budget >= 500000 ? "+" : ""}
             </span>
-            <span>$5,000+</span>
+            <span>Rs. 500,000+</span>
           </div>
         </div>
       </div>
@@ -430,7 +432,7 @@ function PackageCard({
               Starting from
             </span>
             <span className="text-xl font-bold text-[#2d3b2a]">
-              ${pkg.price.toLocaleString()}
+              {formatCurrency(pkg.price)}
             </span>
           </div>
 
@@ -579,7 +581,7 @@ export default function ExploreNepal() {
   const [selectedRegions, setSelectedRegions] = useState(new Set());
   const [selectedActivities, setSelectedActivities] = useState(new Set());
   const [selectedDifficulties, setSelectedDifficulties] = useState(new Set());
-  const [budget, setBudget] = useState(5000);
+  const [budget, setBudget] = useState(500000);
   const [duration, setDuration] = useState("6-10");
   const [durationEnabled, setDurationEnabled] = useState(false);
   const [sortBy, setSortBy] = useState("Popularity");
@@ -602,7 +604,7 @@ export default function ExploreNepal() {
     setSelectedRegions(new Set());
     setSelectedActivities(new Set());
     setSelectedDifficulties(new Set());
-    setBudget(5000);
+    setBudget(500000);
     setDuration("6-10");
     setDurationEnabled(false);
     setSortBy("Popularity");

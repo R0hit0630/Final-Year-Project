@@ -35,10 +35,32 @@ const guideSchema = new mongoose.Schema(
       default: null,
     },
 
-    averageRating: { type: Number, default: 0 },
-    numReviews: { type: Number, default: 0 },
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+
+    numReviews: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
+
+guideSchema.virtual("rating").get(function () {
+  return this.averageRating ?? 0;
+});
+
+guideSchema.virtual("reviewsCount").get(function () {
+  return this.numReviews ?? 0;
+});
 
 export default mongoose.model("Guide", guideSchema);

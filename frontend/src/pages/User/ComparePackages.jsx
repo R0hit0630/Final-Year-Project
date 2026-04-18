@@ -295,7 +295,7 @@ export default function ComparePackages() {
     },
     {
       label: "Price",
-      render: (pkg) => `$${Number(pkg.price || 0).toLocaleString()}`,
+      render: (pkg) => `Rs. ${Number(pkg.price || 0).toLocaleString()}`,
     },
     {
       label: "Duration",
