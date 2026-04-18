@@ -1,5 +1,4 @@
-// src/pages/Agency/AddPackage.jsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -18,6 +17,8 @@ export default function AddPackage() {
     muted2: "#94a3b8",
   };
 
+  const API_BASE = import.meta?.env?.VITE_API_URL || "http://localhost:5000";
+
   const sidebar = useMemo(
     () => [
       { label: "Overview", icon: "dashboard", to: "/agency" },
@@ -30,65 +31,95 @@ export default function AddPackage() {
     []
   );
 
-  // -----------------------
-  // Form state
-  // -----------------------
+  const regions = [
+    "Koshi Province",
+    "Madhesh Province",
+    "Bagmati Province",
+    "Gandaki Province",
+    "Lumbini Province",
+    "Karnali Province",
+    "Sudurpashchim Province",
+
+    "Himalayan Region (Himal)",
+    "Hilly Region (Pahad)",
+    "Terai Region",
+
+    "Eastern Development Region (Purbanchal)",
+    "Central Development Region (Madhyamanchal)",
+    "Western Development Region (Pashchimanchal)",
+    "Mid-Western Development Region (Madhya Pashchimanchal)",
+    "Far-Western Development Region (Sudur Pashchimanchal)",
+
+    "Everest Region (Khumbu)",
+    "Annapurna Region",
+    "Langtang Region",
+    "Manaslu Region",
+    "Mustang Region",
+    "Dolpo Region",
+  ];
+
+  const types = [
+    "Adventure Experiences",
+    "Spiritual & Wellness Experiences",
+    "Cultural & Heritage Experiences",
+    "Nature & Wildlife Experiences",
+    "Outdoor & Recreational Experiences",
+    "Culinary Experiences",
+    "Luxury & Leisure Experiences",
+    "Family & Leisure Experiences",
+    "Photography & Scenic Experiences",
+    "Volunteer & Educational Experiences",
+    "Urban & Lifestyle Experiences",
+  ];
+
   const [title, setTitle] = useState("");
-  const [region, setRegion] = useState("Everest Region");
-  const [type, setType] = useState("High Altitude Trekking");
+  const [region, setRegion] = useState(regions[0]);
+  const [type, setType] = useState(types[0]);
   const [price, setPrice] = useState("");
   const [days, setDays] = useState("");
   const [difficulty, setDifficulty] = useState("Hard");
   const [description, setDescription] = useState("");
   const [confirmSafety, setConfirmSafety] = useState(true);
 
-  // ✅ group size range
   const [minGroupSize, setMinGroupSize] = useState(1);
   const [maxGroupSize, setMaxGroupSize] = useState(10);
 
-  const regions = [
-    "Everest Region",
-    "Annapurna Circuit",
-    "Mustang Kingdom",
-    "Langtang Valley",
-    "Chitwan National Park",
-  ];
-  const types = [
-    "High Altitude Trekking",
-    "Luxury Safari",
-    "Cultural Immersion",
-    "Spiritual Retreat",
-  ];
-
   const [itinerary, setItinerary] = useState([
-    { title: "Kathmandu Arrival & Briefing", details: "" },
-    {
-      title: "Charter Flight to Pokhara",
-      details:
-        "Transfer to the domestic terminal for a breathtaking 25-minute flight past the Annapurna and Manaslu ranges...",
-    },
+    { title: "Arrival and welcome briefing", details: "" },
   ]);
 
-  // -----------------------
-  // Images
-  // -----------------------
-  const [images, setImages] = useState([]); // File[]
-  const [imagePreviews, setImagePreviews] = useState([]); // string[]
+  const [images, setImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const getToken = () => {
+    try {
+      const u = JSON.parse(localStorage.getItem("user") || "null");
+      if (u?.token) return u.token;
+    } catch {
+      // ignore
+    }
+    return localStorage.getItem("token") || "";
+  };
+
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [imagePreviews]);
 
   const onPickImages = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    // max 6 images
     const next = [...images, ...files].slice(0, 6);
 
-    // cleanup old previews to avoid memory leaks
     imagePreviews.forEach((url) => URL.revokeObjectURL(url));
-
     setImages(next);
     setImagePreviews(next.map((f) => URL.createObjectURL(f)));
 
-    // allow picking same file again
     e.target.value = "";
   };
 
@@ -98,74 +129,97 @@ export default function AddPackage() {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // -----------------------
-  // Submit (ONE endpoint: /api/packages with FormData)
-  // -----------------------
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const uploadImages = async (files, token) => {
+    const fd = new FormData();
+    files.forEach((file) => fd.append("images", file));
 
-  const API_BASE = import.meta?.env?.VITE_API_URL || "http://localhost:5000";
+    const res = await axios.post(`${API_BASE}/api/upload/multiple`, fd, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-  const getToken = () => {
-    try {
-      const u = JSON.parse(localStorage.getItem("user") || "null");
-      if (u?.token) return u.token;
-    } catch {
-      // ignore
-    }
-    const t = localStorage.getItem("token");
-    return t || "";
+    return res?.data?.imageUrls || [];
   };
 
   const handleLaunch = async () => {
     setError("");
 
-    if (!confirmSafety) return;
-    if (!title.trim()) return setError("Please enter expedition title.");
-    if (!price || Number(price) <= 0) return setError("Please enter valid price.");
-    if (!days || Number(days) <= 0) return setError("Please enter valid duration (days).");
-    if (!images.length) return setError("Please select at least 1 image (max 6).");
+    if (!confirmSafety) {
+      return setError("Please confirm the safety and sustainability standards.");
+    }
+
+    if (!title.trim()) {
+      return setError("Please enter package title.");
+    }
+
+    if (!price || Number(price) <= 0) {
+      return setError("Please enter a valid package price.");
+    }
+
+    if (!days || Number(days) <= 0) {
+      return setError("Please enter valid duration in days.");
+    }
+
+    if (!images.length) {
+      return setError("Please select at least 1 image.");
+    }
 
     const minG = Number(minGroupSize);
     const maxG = Number(maxGroupSize);
-    if (!Number.isFinite(minG) || minG < 1) return setError("Min group size must be >= 1.");
-    if (!Number.isFinite(maxG) || maxG < minG)
-      return setError("Max group size must be >= min group size.");
+
+    if (!Number.isFinite(minG) || minG < 1) {
+      return setError("Minimum group size must be at least 1.");
+    }
+
+    if (!Number.isFinite(maxG) || maxG < minG) {
+      return setError("Maximum group size must be greater than or equal to minimum group size.");
+    }
 
     const token = getToken();
-    if (!token) return setError("You are not logged in. Please login as agency.");
+    if (!token) {
+      return setError("You are not logged in. Please login as agency.");
+    }
 
     try {
       setSaving(true);
 
-      const fd = new FormData();
+      const uploadedImageUrls = await uploadImages(images, token);
 
-      // ✅ files must be appended with key "images"
-      images.forEach((file) => fd.append("images", file));
+      if (!uploadedImageUrls.length) {
+        throw new Error("Image upload failed");
+      }
 
-      // ✅ fields
-      fd.append("title", title);
-      fd.append("region", region);
-      fd.append("type", type);
-      fd.append("price", String(Number(price)));
-      fd.append("days", String(Number(days)));
-      fd.append("difficulty", difficulty);
-      fd.append("description", description || "");
+      await axios.post(
+        `${API_BASE}/api/packages`,
+        {
+          title: title.trim(),
+          region,
+          type,
+          price: Number(price),
+          days: Number(days),
+          difficulty,
+          description: description.trim(),
+          minGroupSize: minG,
+          maxGroupSize: maxG,
+          itinerary,
+          images: uploadedImageUrls,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      // ✅ group size range
-      fd.append("minGroupSize", String(minG));
-      fd.append("maxGroupSize", String(maxG));
-
-      // ✅ itinerary as JSON string
-      fd.append("itinerary", JSON.stringify(itinerary || []));
-
-      await axios.post(`${API_BASE}/api/packages`, fd, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      alert("Expedition launched successfully!");
+      navigate("/agency/packages", { replace: true });
     } catch (err) {
       console.error("LAUNCH ERROR:", err);
-      setError(err?.response?.data?.message || "Failed to launch expedition.");
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to launch package."
+      );
     } finally {
       setSaving(false);
     }
@@ -212,6 +266,7 @@ export default function AddPackage() {
                   </span>
                 </Link>
               ))}
+
               <div className="group flex items-center gap-3 rounded-xl px-4 py-3 bg-[#1978e5]/10">
                 <span className="material-symbols-outlined text-[#1978e5]">
                   add_circle
@@ -238,14 +293,12 @@ export default function AddPackage() {
           </div>
         </aside>
 
-        {/* Main */}
         <main className="flex flex-1 flex-col overflow-y-auto">
-          {/* Header */}
           <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-[#e0e8dc] px-6 md:px-8 py-5">
             <div className="mx-auto flex max-w-5xl items-center justify-between">
               <div>
                 <h2 className="text-2xl md:text-3xl font-bold text-[#2d3b2a] tracking-tight">
-                  Craft a New Expedition
+                  Craft a New Package
                 </h2>
                 <p className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-[#94a3b8]">
                   Design a premium journey through Nepal
@@ -265,7 +318,6 @@ export default function AddPackage() {
             </div>
           </header>
 
-          {/* Content */}
           <div className="mx-auto w-full max-w-5xl px-6 md:px-8 py-10 pb-20 space-y-8">
             {error && (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
@@ -273,21 +325,20 @@ export default function AddPackage() {
               </div>
             )}
 
-            {/* Basic Info */}
             <section className="rounded-2xl border border-black/5 bg-white p-8 shadow-sm">
               <div className="mb-6 border-b border-gray-100 pb-4">
                 <h3 className="text-lg font-bold text-[#2d3b2a]">
                   Basic Information
                 </h3>
                 <p className="text-sm text-[#94a3b8]">
-                  Define the core identity of your expedition
+                  Define the core identity of your package
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-[#6b7280] mb-2">
-                    Expedition Title
+                    Package Title
                   </label>
                   <input
                     value={title}
@@ -333,7 +384,6 @@ export default function AddPackage() {
               </div>
             </section>
 
-            {/* Logistics */}
             <section className="rounded-2xl border border-black/5 bg-white p-8 shadow-sm">
               <div className="mb-6 border-b border-gray-100 pb-4">
                 <h3 className="text-lg font-bold text-[#2d3b2a]">
@@ -347,18 +397,18 @@ export default function AddPackage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-[#6b7280] mb-2">
-                    Base Price (USD)
+                    Base Price (NPR)
                   </label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8] text-sm">
-                      $
+                      Rs
                     </span>
                     <input
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       type="number"
-                      className="w-full rounded-xl border border-gray-200 bg-white pl-8 pr-4 py-3 text-sm"
-                      placeholder="1299"
+                      className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-3 text-sm"
+                      placeholder="25000"
                     />
                   </div>
                 </div>
@@ -372,7 +422,7 @@ export default function AddPackage() {
                     onChange={(e) => setDays(e.target.value)}
                     type="number"
                     className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm"
-                    placeholder="14"
+                    placeholder="5"
                   />
                 </div>
 
@@ -403,7 +453,6 @@ export default function AddPackage() {
                   </div>
                 </div>
 
-                {/* ✅ NEW: Group size range */}
                 <div className="md:col-span-3">
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-[#6b7280] mb-2">
                     Group Size Range
@@ -438,34 +487,28 @@ export default function AddPackage() {
                       />
                     </div>
                   </div>
-
-                  <p className="mt-3 text-xs text-[#94a3b8]">
-                    Example: Solo = 1–1, Couple = 2–2, Small group = 2–6, Large group = 7–15
-                  </p>
                 </div>
               </div>
             </section>
 
-            {/* Narrative */}
             <section className="rounded-2xl border border-black/5 bg-white p-8 shadow-sm">
               <div className="mb-6 border-b border-gray-100 pb-4">
-                <h3 className="text-lg font-bold text-[#2d3b2a]">The Narrative</h3>
-                <p className="text-sm text-[#94a3b8]">Tell the story of this journey</p>
+                <h3 className="text-lg font-bold text-[#2d3b2a]">Description</h3>
+                <p className="text-sm text-[#94a3b8]">Tell the story of this package</p>
               </div>
 
               <label className="block text-[11px] font-bold uppercase tracking-wider text-[#6b7280] mb-2">
-                Expedition Description
+                Package Description
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={6}
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-4 text-sm leading-relaxed"
-                placeholder="Describe the atmosphere, the spiritual essence, and the physical challenges..."
+                placeholder="Describe the journey, activities, scenery, highlights and experience..."
               />
             </section>
 
-            {/* Images */}
             <section className="rounded-2xl border border-black/5 bg-white p-8 shadow-sm">
               <div className="mb-6 border-b border-gray-100 pb-4">
                 <h3 className="text-lg font-bold text-[#2d3b2a]">Images</h3>
@@ -520,7 +563,6 @@ export default function AddPackage() {
               )}
             </section>
 
-            {/* Itinerary */}
             <section className="rounded-2xl border border-black/5 bg-white p-8 shadow-sm">
               <div className="mb-6 flex items-center justify-between border-b border-gray-100 pb-4">
                 <div>
@@ -530,9 +572,7 @@ export default function AddPackage() {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setItinerary((prev) => [...prev, { title: "", details: "" }])
-                  }
+                  onClick={() => setItinerary((prev) => [...prev, { title: "", details: "" }])}
                   className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
                   style={{ color: COLORS.primary }}
                 >
@@ -548,7 +588,7 @@ export default function AddPackage() {
                     className="rounded-2xl border border-gray-200 bg-[#f8fafc] p-5"
                   >
                     <div className="mb-3 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 w-full">
                         <div
                           className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
                           style={{ backgroundColor: COLORS.secondary }}
@@ -598,7 +638,6 @@ export default function AddPackage() {
               </div>
             </section>
 
-            {/* Confirm + Actions */}
             <section className="rounded-2xl border border-black/5 bg-white p-8 shadow-sm">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
@@ -608,7 +647,7 @@ export default function AddPackage() {
                   className="mt-1 h-4 w-4 rounded border-gray-300 text-[#1978e5] focus:ring-[#1978e5]/30"
                 />
                 <span className="text-sm text-[#4b5563]">
-                  I confirm this expedition meets Travolin's safety and eco-sustainability
+                  I confirm this package meets Travolin's safety and eco-sustainability
                   standards.
                 </span>
               </label>
@@ -630,7 +669,7 @@ export default function AddPackage() {
                   style={{ backgroundColor: COLORS.secondary }}
                   disabled={!confirmSafety || saving}
                 >
-                  {saving ? "Launching..." : "Launch Expedition"}
+                  {saving ? "Launching..." : "Launch Package"}
                 </button>
               </div>
             </section>

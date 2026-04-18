@@ -19,16 +19,13 @@ const storage = multer.diskStorage({
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(
       null,
-      file.fieldname +
-        "-" +
-        uniqueSuffix +
-        path.extname(file.originalname)
+      `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`
     );
   },
 });
 
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image/")) {
+  if (file.mimetype && file.mimetype.startsWith("image/")) {
     cb(null, true);
   } else {
     cb(new Error("Only image files are allowed"), false);
@@ -41,6 +38,7 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 },
 });
 
+// single
 router.post("/", upload.single("image"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: "No image uploaded" });
@@ -48,9 +46,27 @@ router.post("/", upload.single("image"), (req, res) => {
 
   const imageUrl = `http://localhost:5000/uploads/${req.file.filename}`;
 
-  res.status(200).json({
+  return res.status(200).json({
     message: "Image uploaded successfully",
     imageUrl,
+  });
+});
+
+// multiple
+router.post("/multiple", upload.array("images", 6), (req, res) => {
+  const files = req.files || [];
+
+  if (!files.length) {
+    return res.status(400).json({ message: "No images uploaded" });
+  }
+
+  const imageUrls = files.map(
+    (file) => `http://localhost:5000/uploads/${file.filename}`
+  );
+
+  return res.status(200).json({
+    message: "Images uploaded successfully",
+    imageUrls,
   });
 });
 

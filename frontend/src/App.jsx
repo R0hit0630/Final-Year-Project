@@ -17,6 +17,7 @@ import ExploreNepal from "./pages/User/ExploreNepal";
 import PackageDetails from "./pages/User/PackageDetails";
 import MyTrip from "./pages/User/MyTrip";
 import SavedDestinations from "./pages/User/SavedDestinations";
+import ComparePackages from "./pages/User/ComparePackages";
 
 import AgencyDashboard from "./pages/Agency/AgencyDashboard";
 import AgencyProfile from "./pages/Agency/AgencyProfile";
@@ -175,6 +176,14 @@ function App() {
           element={
             <ProtectedRoute user={user} roles={["user"]}>
               <SavedDestinations />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/compare-packages"
+          element={
+            <ProtectedRoute roles={["user"]}>
+              <ComparePackages />
             </ProtectedRoute>
           }
         />

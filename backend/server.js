@@ -5,7 +5,6 @@ import path from "path";
 
 import authRoutes from "./routes/auth.js";
 import { connectDB } from "./config/db.js";
-import destinationRoutes from "./routes/destination.routes.js";
 import packageRoutes from "./routes/package.routes.js";
 import bookingroutes from "./routes/bookingRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -30,7 +29,6 @@ app.use(express.json());
 
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-app.use("/api/destinations", destinationRoutes);
 app.use("/api/packages", packageRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
