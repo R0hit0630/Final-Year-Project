@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
 const getToken = () => localStorage.getItem("token") || "";
 
 export default function PayWithEsewa() {
@@ -15,7 +14,7 @@ export default function PayWithEsewa() {
 
   useEffect(() => {
     if (!state?.packageId || !state?.selectedDate || !state?.groupSize || !state?.total) {
-      navigate(`/packagedetails/${id}`);
+      navigate(`/packages/${id}`);
     }
   }, [state, id, navigate]);
 
@@ -109,22 +108,24 @@ export default function PayWithEsewa() {
 
           <div className="flex justify-between">
             <span>Subtotal</span>
-            <span className="font-semibold">${Number(state.subtotal || 0).toLocaleString()}</span>
+            <span className="font-semibold">रु {Number(state.subtotal || 0).toLocaleString()}</span>
           </div>
 
           <div className="flex justify-between">
             <span>Service Fee</span>
-            <span className="font-semibold">${Number(state.serviceFee || 0).toLocaleString()}</span>
+            <span className="font-semibold">रु {Number(state.serviceFee || 0).toLocaleString()}</span>
           </div>
 
           <div className="border-t pt-4 flex justify-between text-lg">
             <span className="font-bold text-[#2d3b2a]">Total</span>
-            <span className="font-bold text-green-600">${Number(state.total || 0).toLocaleString()}</span>
+            <span className="font-bold text-green-600">रु {Number(state.total || 0).toLocaleString()}</span>
           </div>
         </div>
 
         {error ? (
-          <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
+          <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+            {error}
+          </p>
         ) : null}
 
         <button

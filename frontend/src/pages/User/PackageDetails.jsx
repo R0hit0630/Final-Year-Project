@@ -427,7 +427,7 @@ export default function PackageDetails() {
               <div className="flex items-center gap-2 md:gap-4">
                 <div className="hidden h-8 w-px bg-[#e0e8dc] md:block" />
                 <Link
-                  to="/bookings"
+                  to="/trips"
                   className="rounded-lg bg-[#2d3b2a] px-4 py-2 text-sm font-semibold text-white transition-all hover:opacity-90"
                 >
                   My Bookings
@@ -805,7 +805,7 @@ export default function PackageDetails() {
                       Starting From
                     </p>
                     <h2 className="mt-1 text-3xl font-bold text-[#2d3b2a]">
-                      ${Number(pkg.price || 0).toLocaleString()}
+                      रु {Number(pkg.price || 0).toLocaleString()}
                     </h2>
                     <p className="text-xs text-[#6b7280]">per person</p>
                   </div>
@@ -880,17 +880,17 @@ export default function PackageDetails() {
                     <div className="rounded-xl bg-[#f6f7f8] p-4">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-[#6b7280]">
-                          ${Number(pkg.price || 0).toLocaleString()} × {groupSize}
+                          रु {Number(pkg.price || 0).toLocaleString()} × {groupSize}
                         </span>
                         <span className="font-semibold text-[#2d3b2a]">
-                          ${subtotal.toLocaleString()}
+                          रु {subtotal.toLocaleString()}
                         </span>
                       </div>
 
                       <div className="mt-2 flex items-center justify-between text-sm">
                         <span className="text-[#6b7280]">Service Fee</span>
                         <span className="font-semibold text-[#2d3b2a]">
-                          ${serviceFee}
+                          रु {serviceFee}
                         </span>
                       </div>
 
@@ -898,14 +898,14 @@ export default function PackageDetails() {
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-[#2d3b2a]">Total</span>
                           <span className="text-lg font-bold text-blue-600">
-                            ${total.toLocaleString()}
+                            रु {total.toLocaleString()}
                           </span>
                         </div>
                       </div>
                     </div>
 
                     <Link
-                      to={`/pay/${packageId}`}
+                      to={getToken() ? `/pay/${packageId}` : "/login"}
                       state={{
                         packageId,
                         selectedDate,
@@ -1036,13 +1036,13 @@ export default function PackageDetails() {
                     Starting From
                   </p>
                   <h2 className="mt-1 text-2xl font-bold text-[#2d3b2a]">
-                    ${Number(pkg.price || 0).toLocaleString()}
+                    रु {Number(pkg.price || 0).toLocaleString()}
                   </h2>
                   <p className="text-xs text-[#6b7280]">per person</p>
                 </div>
 
                 <Link
-                  to={`/booking/${packageId}`}
+                  to={getToken() ? `/pay/${packageId}` : "/login"}
                   state={{
                     packageId,
                     selectedDate,
