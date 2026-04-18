@@ -2,6 +2,73 @@ import Booking from "../models/Booking.js";
 import Guide from "../models/Guide.js";
 import Package from "../models/Package.js";
 
+// GET /api/bookings/my-trips
+export const getMyTrips = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const bookings = await Booking.find({ user: userId })
+      .populate("package")
+      .populate("guide")
+      .sort({ createdAt: -1 });
+
+    let activeTrip = null;
+    const pastTrips = [];
+    const today = new Date();
+
+    for (const booking of bookings) {
+      const startDate = booking.startDate ? new Date(booking.startDate) : null;
+      const endDate = booking.endDate ? new Date(booking.endDate) : null;
+      let status = String(booking.status || "").toLowerCase();
+
+      // Auto update to ongoing
+      if (
+        startDate &&
+        endDate &&
+        startDate <= today &&
+        endDate >= today &&
+        status === "confirmed"
+      ) {
+        booking.status = "ongoing";
+        await booking.save();
+        status = "ongoing";
+      }
+
+      // Auto update to completed
+      if (
+        endDate &&
+        endDate < today &&
+        status !== "completed" &&
+        status !== "cancelled"
+      ) {
+        booking.status = "completed";
+        await booking.save();
+        status = "completed";
+      }
+
+      if (["pending", "confirmed", "ongoing"].includes(status)) {
+        if (!activeTrip) {
+          activeTrip = booking;
+        }
+      }
+
+      if (status === "completed") {
+        pastTrips.push(booking);
+      }
+    }
+
+    return res.json({
+      activeTrip,
+      pastTrips,
+    });
+  } catch (error) {
+    console.error("getMyTrips error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch trips",
+    });
+  }
+};
+
 export const assignGuide = async (req, res) => {
   try {
     const { guideId } = req.body;
@@ -67,13 +134,14 @@ export const assignGuide = async (req, res) => {
 
     booking.guide = guide._id;
     booking.guideAssigned = true;
+    booking.status = "confirmed";
 
     await booking.save();
 
     const updatedBooking = await Booking.findById(booking._id)
       .populate("user", "username fullName email phone")
       .populate("package", "title region price days agency")
-      .populate("guide", "name fullName email phone");
+      .populate("guide", "name fullName email phone averageRating numReviews");
 
     return res.json({
       message: "Guide assigned successfully",

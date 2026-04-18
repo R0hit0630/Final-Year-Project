@@ -1,10 +1,10 @@
-// src/pages/User/ExploreNepal.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import defaultAvatar from "../../assets/default-avatar.jpg";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const PAGE_SIZE = 6;
+const MAX_COMPARE = 4;
 
 const norm = (value) => (value ?? "").toString().trim().toLowerCase();
 const uniqSorted = (arr) => Array.from(new Set(arr.filter(Boolean))).sort();
@@ -22,6 +22,15 @@ const getToken = () => localStorage.getItem("token") || "";
 const getStoredFavorites = () => {
   try {
     return JSON.parse(localStorage.getItem("favoritePackages") || "[]");
+  } catch {
+    return [];
+  }
+};
+
+const getStoredCompareIds = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("comparePackages") || "[]");
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
@@ -300,7 +309,13 @@ function FilterSection({
   );
 }
 
-function PackageCard({ pkg, isFavorite, onToggleFavorite }) {
+function PackageCard({
+  pkg,
+  isFavorite,
+  onToggleFavorite,
+  isCompared,
+  onToggleCompare,
+}) {
   const tags = Array.isArray(pkg.tags) ? pkg.tags : [];
 
   const tagClasses = {
@@ -310,7 +325,11 @@ function PackageCard({ pkg, isFavorite, onToggleFavorite }) {
   };
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5 transition-all hover:shadow-md">
+    <div
+      className={`group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 transition-all hover:shadow-md ${
+        isCompared ? "ring-blue-500" : "ring-black/5"
+      }`}
+    >
       <div className="relative aspect-[16/10] overflow-hidden">
         <img
           alt={pkg.title}
@@ -335,18 +354,33 @@ function PackageCard({ pkg, isFavorite, onToggleFavorite }) {
           ))}
         </div>
 
-        <button
-          className={`absolute right-3 top-3 h-8 w-8 rounded-full backdrop-blur-md transition-all ${
-            isFavorite
-              ? "bg-white text-red-500"
-              : "bg-white/20 text-white hover:bg-white hover:text-red-500"
-          }`}
-          type="button"
-          onClick={() => onToggleFavorite(pkg.id)}
-          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-        >
-          <span className="material-symbols-outlined text-[20px]">favorite</span>
-        </button>
+        <div className="absolute right-3 top-3 flex items-center gap-2">
+          <button
+            className={`h-8 w-8 rounded-full backdrop-blur-md transition-all ${
+              isFavorite
+                ? "bg-white text-red-500"
+                : "bg-white/20 text-white hover:bg-white hover:text-red-500"
+            }`}
+            type="button"
+            onClick={() => onToggleFavorite(pkg.id)}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          >
+            <span className="material-symbols-outlined text-[20px]">favorite</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onToggleCompare(pkg.id)}
+            className={`rounded-full px-3 py-1 text-[11px] font-bold backdrop-blur-md transition-all ${
+              isCompared
+                ? "bg-blue-600 text-white"
+                : "bg-white/90 text-[#2d3b2a] hover:bg-white"
+            }`}
+            aria-label={isCompared ? "Remove from compare" : "Add to compare"}
+          >
+            {isCompared ? "Selected" : "Compare"}
+          </button>
+        </div>
 
         <div className="absolute bottom-3 left-3 flex items-center gap-3">
           <div className="flex items-center gap-1 rounded-md bg-black/40 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-md">
@@ -530,6 +564,8 @@ function Pagination({ page, totalPages, setPage }) {
 }
 
 export default function ExploreNepal() {
+  const navigate = useNavigate();
+
   const [allPackages, setAllPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -550,6 +586,7 @@ export default function ExploreNepal() {
   const [page, setPage] = useState(1);
 
   const [favoriteIds, setFavoriteIds] = useState(new Set(getStoredFavorites()));
+  const [compareIds, setCompareIds] = useState(new Set(getStoredCompareIds()));
 
   const toggleSet = (setter) => (value) => {
     setter((prev) => {
@@ -581,6 +618,41 @@ export default function ExploreNepal() {
       localStorage.setItem("favoritePackages", JSON.stringify([...next]));
       return next;
     });
+  };
+
+  const handleToggleCompare = (id) => {
+    setCompareIds((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        if (next.size >= MAX_COMPARE) {
+          window.alert(`You can compare up to ${MAX_COMPARE} packages only.`);
+          return prev;
+        }
+        next.add(id);
+      }
+
+      localStorage.setItem("comparePackages", JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  const handleCompareNow = () => {
+    const ids = [...compareIds];
+
+    if (ids.length < 2) {
+      window.alert("Please select at least 2 packages to compare.");
+      return;
+    }
+
+    navigate(`/compare-packages?ids=${ids.join(",")}`);
+  };
+
+  const handleClearCompare = () => {
+    setCompareIds(new Set());
+    localStorage.removeItem("comparePackages");
   };
 
   useEffect(() => {
@@ -778,7 +850,16 @@ export default function ExploreNepal() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedQ, selectedRegions, selectedActivities, selectedDifficulties, budget, duration, durationEnabled, sortBy]);
+  }, [
+    debouncedQ,
+    selectedRegions,
+    selectedActivities,
+    selectedDifficulties,
+    budget,
+    duration,
+    durationEnabled,
+    sortBy,
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
@@ -816,7 +897,6 @@ export default function ExploreNepal() {
   return (
     <div className="h-screen w-full overflow-hidden font-['Inter'] text-[#2d3b2a]">
       <div className="flex h-full w-full bg-[#fcfbf8]">
-        {/* Desktop Sidebar */}
         <aside className="hidden w-64 shrink-0 flex-col justify-between border-r border-[#e0e8dc] bg-[#fdfdfc]/80 backdrop-blur-sm lg:flex">
           <div className="flex h-full flex-col p-6">
             <div className="mb-10 flex items-center gap-3">
@@ -888,9 +968,7 @@ export default function ExploreNepal() {
           </div>
         </aside>
 
-        {/* Main */}
         <main className="flex flex-1 flex-col overflow-y-auto bg-[#f6f7f8]">
-          {/* Header */}
           <header className="sticky top-0 z-40 border-b border-[#e0e8dc] bg-[#fdfdfc]/80 px-4 py-4 backdrop-blur-md md:px-8">
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 md:gap-6">
               <div className="relative max-w-2xl flex-1">
@@ -916,7 +994,31 @@ export default function ExploreNepal() {
                   Filters
                 </button>
 
-                
+                {compareIds.size > 0 && (
+                  <div className="hidden items-center gap-2 md:flex">
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
+                      {compareIds.size} selected
+                    </span>
+
+                    {compareIds.size >= 2 && (
+                      <button
+                        type="button"
+                        onClick={handleCompareNow}
+                        className="rounded-lg border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:opacity-90"
+                      >
+                        Compare Now
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleClearCompare}
+                      className="rounded-lg border border-[#e0e8dc] bg-white px-3 py-2 text-sm font-semibold text-[#2d3b2a] transition-all hover:border-blue-500 hover:text-blue-600"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
 
                 <div className="hidden h-8 w-px bg-[#e0e8dc] md:block" />
 
@@ -928,9 +1030,34 @@ export default function ExploreNepal() {
                 </Link>
               </div>
             </div>
+
+            {compareIds.size > 0 && (
+              <div className="mx-auto mt-4 flex max-w-7xl items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 md:hidden">
+                <div className="text-sm font-semibold text-blue-700">
+                  {compareIds.size} package{compareIds.size > 1 ? "s" : ""} selected
+                </div>
+                <div className="flex items-center gap-2">
+                  {compareIds.size >= 2 && (
+                    <button
+                      type="button"
+                      onClick={handleCompareNow}
+                      className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-bold text-white"
+                    >
+                      Compare
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleClearCompare}
+                    className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-[#2d3b2a]"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            )}
           </header>
 
-          {/* Mobile Filters */}
           {mobileFiltersOpen && (
             <div className="border-b border-[#e0e8dc] bg-white px-4 py-4 lg:hidden">
               <FilterSection
@@ -955,9 +1082,7 @@ export default function ExploreNepal() {
             </div>
           )}
 
-          {/* Content */}
           <div className="mx-auto flex w-full max-w-7xl gap-8 px-4 py-8 md:px-8">
-            {/* Desktop Filters */}
             <aside className="hidden w-64 shrink-0 flex-col gap-8 lg:flex">
               <FilterSection
                 regionOptions={regionOptions}
@@ -980,7 +1105,6 @@ export default function ExploreNepal() {
               />
             </aside>
 
-            {/* Results */}
             <div className="flex-1">
               <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
                 <div>
@@ -1041,6 +1165,8 @@ export default function ExploreNepal() {
                         pkg={pkg}
                         isFavorite={favoriteIds.has(pkg.id)}
                         onToggleFavorite={handleToggleFavorite}
+                        isCompared={compareIds.has(pkg.id)}
+                        onToggleCompare={handleToggleCompare}
                       />
                     ))}
                   </div>

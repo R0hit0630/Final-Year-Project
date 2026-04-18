@@ -36,12 +36,9 @@ import AdminAgencies from "./pages/Admin/AdminAgencies";
 import AdminPayments from "./pages/Admin/AdminPayments";
 import AdminApprovals from "./pages/Admin/AdminApprovals";
 
-
 import PayWithEsewa from "./pages/User/Payment/PayWithEsewa";
 import EsewaSuccess from "./pages/User/Payment/EsewaSuccess";
 import EsewaFailure from "./pages/User/Payment/EsewaFailure";
-
-
 
 // -------- Helpers --------
 const getStoredUser = () => {
@@ -82,6 +79,7 @@ function App() {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("comparePackages");
     setUser(null);
   };
 
@@ -179,10 +177,11 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/compare-packages"
           element={
-            <ProtectedRoute roles={["user"]}>
+            <ProtectedRoute user={user} roles={["user"]}>
               <ComparePackages />
             </ProtectedRoute>
           }
@@ -261,6 +260,15 @@ function App() {
           }
         />
 
+        <Route
+          path="/agency/packages/:id"
+          element={
+            <ProtectedRoute user={user} roles={["agency"]}>
+              <AgencyPackageDetails />
+            </ProtectedRoute>
+          }
+        />
+
         {/* ADMIN ROUTES */}
         <Route
           path="/admin/dashboard"
@@ -306,19 +314,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        <Route
-          path="/agency/packages/:id"
-          element={
-            <ProtectedRoute user={user} roles={["agency"]}>
-              <AgencyPackageDetails />
-            </ProtectedRoute>
-          }
-        />
-
-       
-
-    
 
         {/* PAYMENT ROUTES */}
         <Route path="/pay/:id" element={<PayWithEsewa />} />

@@ -8,6 +8,7 @@ import {
   getPublicPackages,
   getSinglePackage,
   updatePackage,
+  comparePackages,
 } from "../controllers/packageController.js";
 import { protect } from "../middleware/auth.js";
 import { requireRole } from "../middleware/role.js";
@@ -16,6 +17,9 @@ const router = express.Router();
 
 // PUBLIC
 router.get("/public", getPublicPackages);
+
+// COMPARE (must be before /:id)
+router.get("/compare", comparePackages);
 
 // AGENCY
 router.get("/mine", protect, requireRole("agency"), getMyPackages);

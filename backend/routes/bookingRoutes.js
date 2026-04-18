@@ -7,22 +7,37 @@ import { assignGuide, getAgencyStats } from "../controllers/bookingController.js
 
 const router = express.Router();
 
-// Auto-complete trips whose end date has already passed
+
+// 🔥 AUTO SYNC STATUS (FIXED)
 const syncCompletedBookings = async () => {
   const now = new Date();
 
+  // Completed
   await Booking.updateMany(
     {
-      status: "confirmed",
+      status: { $in: ["confirmed", "ongoing"] },
       endDate: { $lt: now },
     },
     {
       $set: { status: "completed" },
     }
   );
+
+  // Ongoing
+  await Booking.updateMany(
+    {
+      status: "confirmed",
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+    },
+    {
+      $set: { status: "ongoing" },
+    }
+  );
 };
 
-// Create booking
+
+// ================= CREATE BOOKING =================
 router.post("/", protect, async (req, res) => {
   try {
     const { packageId, travelers, startDate, notes } = req.body;
@@ -81,7 +96,8 @@ router.post("/", protect, async (req, res) => {
   }
 });
 
-// Get all bookings for logged-in user
+
+// ================= MY BOOKINGS =================
 router.get("/my", protect, async (req, res) => {
   try {
     await syncCompletedBookings();
@@ -98,46 +114,39 @@ router.get("/my", protect, async (req, res) => {
   }
 });
 
-// Get current trip + past trips for MyTrips page
+
+// ================= 🔥 FIXED MY TRIPS =================
 router.get("/my-trips", protect, async (req, res) => {
   try {
     await syncCompletedBookings();
-
-    const now = new Date();
 
     const bookings = await Booking.find({
       user: req.user._id,
       status: { $ne: "cancelled" },
     })
       .populate("package", "title region price days difficulty images itinerary")
-      .populate("guide", "name fullName email phone")
-      .sort({ startDate: 1, createdAt: -1 });
+      .populate("guide", "name fullName email phone averageRating numReviews")
+      .sort({ startDate: 1 });
 
     let activeTrip = null;
+    const pastTrips = [];
 
     for (const booking of bookings) {
-      const start = booking.startDate ? new Date(booking.startDate) : null;
-      const end = booking.endDate ? new Date(booking.endDate) : null;
+      const status = String(booking.status || "").toLowerCase();
 
-      const isActive =
-        booking.status === "confirmed" &&
-        start &&
-        end &&
-        start <= now &&
-        end >= now;
-
-      const isUpcoming =
-        booking.status === "confirmed" &&
-        start &&
-        start > now;
-
-      if (isActive || isUpcoming) {
+      // 🔥 ACTIVE TRIP LOGIC
+      if (
+        ["pending", "confirmed", "ongoing"].includes(status) &&
+        !activeTrip
+      ) {
         activeTrip = booking;
-        break;
+      }
+
+      // 🔥 PAST TRIP LOGIC
+      if (status === "completed") {
+        pastTrips.push(booking);
       }
     }
-
-    const pastTrips = bookings.filter((booking) => booking.status === "completed");
 
     return res.json({
       activeTrip,
@@ -149,7 +158,8 @@ router.get("/my-trips", protect, async (req, res) => {
   }
 });
 
-// Get all bookings for logged-in agency only
+
+// ================= AGENCY BOOKINGS =================
 router.get("/agency", protect, requireRole("agency"), async (req, res) => {
   try {
     await syncCompletedBookings();
@@ -176,10 +186,12 @@ router.get("/agency", protect, requireRole("agency"), async (req, res) => {
   }
 });
 
-// Get agency stats for profile page
+
+// ================= AGENCY STATS =================
 router.get("/agency/stats", protect, requireRole("agency"), getAgencyStats);
 
-// Get single booking details for logged-in user
+
+// ================= GET SINGLE BOOKING =================
 router.get("/:id", protect, async (req, res) => {
   try {
     await syncCompletedBookings();
@@ -202,7 +214,9 @@ router.get("/:id", protect, async (req, res) => {
   }
 });
 
-// Assign guide to booking
+
+// ================= ASSIGN GUIDE =================
 router.put("/:id/assign-guide", protect, requireRole("agency"), assignGuide);
+
 
 export default router;

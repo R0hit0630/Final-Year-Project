@@ -48,13 +48,16 @@ function EmptyState() {
         No packages selected
       </h2>
       <p className="mt-2 text-sm text-[#6b7280]">
-        Select at least 2 packages from Explore Nepal to compare them side by side.
+        Select at least 2 packages from Explore Nepal to compare them side by
+        side.
       </p>
       <Link
         to="/explore"
         className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#2d3b2a] px-5 py-3 text-sm font-bold text-white transition-all hover:opacity-90"
       >
-        <span className="material-symbols-outlined text-[18px]">travel_explore</span>
+        <span className="material-symbols-outlined text-[18px]">
+          travel_explore
+        </span>
         Go to Explore
       </Link>
     </div>
@@ -106,7 +109,9 @@ function CompareCard({ pkg, onRemove }) {
             <span className="text-xs font-bold text-[#2d3b2a]">
               {Number(pkg.rating || 0).toFixed(1)}
             </span>
-            <span className="text-[10px] text-[#6b7280]">({pkg.reviews || 0})</span>
+            <span className="text-[10px] text-[#6b7280]">
+              ({pkg.reviews || 0})
+            </span>
           </div>
         </div>
 
@@ -181,45 +186,54 @@ export default function ComparePackages() {
           return;
         }
 
-        const requests = queryIds.map((id) =>
-          fetch(`${API}/api/packages/${id}`).then(async (res) => {
-            if (!res.ok) return null;
-            const data = await res.json();
-            const p = data?.package || data?.data?.package || data?.data || data;
-            if (!p || typeof p !== "object") return null;
+        if (queryIds.length < 2) {
+          setPackages([]);
+          return;
+        }
 
-            return {
-              id: p._id || p.id,
-              title: p.title ?? "",
-              region: p.region ?? "",
-              type: p.type ?? "",
-              days: Number(p.days ?? 0),
-              difficulty: p.difficulty ?? "Moderate",
-              price: Number(p.price ?? 0),
-              rating: Number(p.averageRating ?? p.rating ?? 0),
-              reviews: Number(p.numReviews ?? p.reviewsCount ?? p.reviews ?? 0),
-              minGroupSize: Number(p.minGroupSize ?? 1),
-              maxGroupSize: Number(p.maxGroupSize ?? 10),
-              description: p.description ?? "",
-              itinerary: Array.isArray(p.itinerary) ? p.itinerary : [],
-              includedItems: Array.isArray(p.includedItems) ? p.includedItems : [],
-              excludedItems: Array.isArray(p.excludedItems) ? p.excludedItems : [],
-              activities: Array.isArray(p.activities)
-                ? p.activities
-                : p.type
-                ? [p.type]
-                : [],
-              img: p.images?.[0]
-                ? buildImageUrl(p.images[0])
-                : p.image
-                ? buildImageUrl(p.image)
-                : "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80",
-            };
-          })
+        const res = await fetch(
+          `${API}/api/packages/compare?ids=${queryIds.join(",")}`
         );
 
-        const results = await Promise.all(requests);
-        setPackages(results.filter(Boolean));
+        if (!res.ok) {
+          throw new Error("Failed to fetch compare data");
+        }
+
+        const data = await res.json();
+
+        const mapped = (data.packages || []).map((p) => ({
+          id: p._id || p.id,
+          title: p.title ?? "",
+          region: p.region ?? "",
+          type: p.type ?? "",
+          days: Number(p.days ?? 0),
+          difficulty: p.difficulty ?? "Moderate",
+          price: Number(p.price ?? 0),
+          rating: Number(p.averageRating ?? p.rating ?? 0),
+          reviews: Number(p.numReviews ?? p.reviewsCount ?? p.reviews ?? 0),
+          minGroupSize: Number(p.minGroupSize ?? 1),
+          maxGroupSize: Number(p.maxGroupSize ?? 10),
+          description: p.description ?? "",
+          itinerary: Array.isArray(p.itinerary) ? p.itinerary : [],
+          includedItems: Array.isArray(p.includedItems)
+            ? p.includedItems
+            : [],
+          excludedItems: Array.isArray(p.excludedItems)
+            ? p.excludedItems
+            : [],
+          activities: Array.isArray(p.activities)
+            ? p.activities
+            : p.type
+            ? [p.type]
+            : [],
+          img: p.images?.[0]
+            ? buildImageUrl(p.images[0])
+            : p.image
+            ? buildImageUrl(p.image)
+            : "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80",
+        }));
+
+        setPackages(mapped);
       } catch (err) {
         console.error("Compare fetch error:", err);
         setPackages([]);
@@ -235,7 +249,7 @@ export default function ComparePackages() {
     const current = getStoredCompareIds().filter((pkgId) => pkgId !== id);
     localStorage.setItem("comparePackages", JSON.stringify(current));
 
-    if (current.length === 0) {
+    if (current.length < 2) {
       navigate("/explore");
       return;
     }
@@ -315,13 +329,17 @@ export default function ComparePackages() {
     {
       label: "Included",
       render: (pkg) =>
-        pkg.includedItems?.length ? pkg.includedItems.join(", ") : "Not specified",
+        pkg.includedItems?.length
+          ? pkg.includedItems.join(", ")
+          : "Not specified",
       longText: true,
     },
     {
       label: "Excluded",
       render: (pkg) =>
-        pkg.excludedItems?.length ? pkg.excludedItems.join(", ") : "Not specified",
+        pkg.excludedItems?.length
+          ? pkg.excludedItems.join(", ")
+          : "Not specified",
       longText: true,
     },
     {
@@ -506,7 +524,8 @@ export default function ComparePackages() {
                     Ready to book?
                   </h3>
                   <p className="mt-1 text-sm text-[#6b7280]">
-                    After comparing the packages, open the details page of your preferred option and continue with booking.
+                    After comparing the packages, open the details page of your
+                    preferred option and continue with booking.
                   </p>
 
                   <div className="mt-4 flex flex-wrap gap-3">
@@ -528,7 +547,8 @@ export default function ComparePackages() {
           <footer className="mt-auto border-t border-[#e0e8dc] bg-white/50 px-8 py-8">
             <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row">
               <p className="text-xs text-[#94a3b8]">
-                © {new Date().getFullYear()} Travolin. All adventures curated with ❤️ in Nepal.
+                © {new Date().getFullYear()} Travolin. All adventures curated
+                with ❤️ in Nepal.
               </p>
               <div className="flex items-center gap-6">
                 <a

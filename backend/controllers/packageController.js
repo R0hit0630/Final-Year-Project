@@ -118,6 +118,53 @@ export const getAllPackages = async (req, res) => {
   }
 };
 
+// GET /api/packages/compare?ids=id1,id2,id3
+export const comparePackages = async (req, res) => {
+  try {
+    const { ids } = req.query;
+
+    if (!ids) {
+      return res.status(400).json({ message: "Package IDs are required" });
+    }
+
+    const idArray = ids
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+    if (idArray.length < 2) {
+      return res
+        .status(400)
+        .json({ message: "Select at least 2 packages to compare" });
+    }
+
+    if (idArray.length > 4) {
+      return res
+        .status(400)
+        .json({ message: "You can compare maximum 4 packages" });
+    }
+
+    const packages = await Package.find({
+      _id: { $in: idArray },
+      isActive: true,
+    })
+      .populate("agency", "username email")
+      .sort({ createdAt: -1 });
+
+    if (!packages.length) {
+      return res.status(404).json({ message: "No packages found" });
+    }
+
+    return res.status(200).json({
+      count: packages.length,
+      packages,
+    });
+  } catch (err) {
+    console.error("comparePackages error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 // GET /api/packages/:id
 export const getSinglePackage = async (req, res) => {
   try {
@@ -208,7 +255,9 @@ export const createPackage = async (req, res) => {
     }
 
     if (!TYPE_OPTIONS.includes(type.trim())) {
-      return res.status(400).json({ message: "Invalid experience type selected" });
+      return res
+        .status(400)
+        .json({ message: "Invalid experience type selected" });
     }
 
     const nPrice = Number(price);
@@ -221,17 +270,22 @@ export const createPackage = async (req, res) => {
     }
 
     if (!Number.isFinite(nDays) || nDays <= 0) {
-      return res.status(400).json({ message: "Valid duration in days is required" });
+      return res
+        .status(400)
+        .json({ message: "Valid duration in days is required" });
     }
 
     if (!Number.isFinite(minG) || minG < 1) {
-      return res.status(400).json({ message: "Min group size must be at least 1" });
+      return res
+        .status(400)
+        .json({ message: "Min group size must be at least 1" });
     }
 
     if (!Number.isFinite(maxG) || maxG < minG) {
-      return res
-        .status(400)
-        .json({ message: "Max group size must be greater than or equal to min group size" });
+      return res.status(400).json({
+        message:
+          "Max group size must be greater than or equal to min group size",
+      });
     }
 
     const imageUrls = normalizeImages(images);
@@ -312,7 +366,9 @@ export const updatePackage = async (req, res) => {
     if (type !== undefined) {
       const nextType = String(type).trim();
       if (!TYPE_OPTIONS.includes(nextType)) {
-        return res.status(400).json({ message: "Invalid experience type selected" });
+        return res
+          .status(400)
+          .json({ message: "Invalid experience type selected" });
       }
       pkg.type = nextType;
     }
@@ -328,7 +384,9 @@ export const updatePackage = async (req, res) => {
     if (days !== undefined) {
       const nDays = Number(days);
       if (!Number.isFinite(nDays) || nDays <= 0) {
-        return res.status(400).json({ message: "Valid duration in days is required" });
+        return res
+          .status(400)
+          .json({ message: "Valid duration in days is required" });
       }
       pkg.days = nDays;
     }
@@ -350,13 +408,19 @@ export const updatePackage = async (req, res) => {
       maxGroupSize !== undefined ? Number(maxGroupSize) : pkg.maxGroupSize;
 
     if (!Number.isFinite(nextMinGroupSize) || nextMinGroupSize < 1) {
-      return res.status(400).json({ message: "Min group size must be at least 1" });
-    }
-
-    if (!Number.isFinite(nextMaxGroupSize) || nextMaxGroupSize < nextMinGroupSize) {
       return res
         .status(400)
-        .json({ message: "Max group size must be greater than or equal to min group size" });
+        .json({ message: "Min group size must be at least 1" });
+    }
+
+    if (
+      !Number.isFinite(nextMaxGroupSize) ||
+      nextMaxGroupSize < nextMinGroupSize
+    ) {
+      return res.status(400).json({
+        message:
+          "Max group size must be greater than or equal to min group size",
+      });
     }
 
     pkg.minGroupSize = nextMinGroupSize;
