@@ -1,10 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import bgImage from "../assets/bg.jpg";
+import travelinLogo from "../assets/travolin-logo.png";
 
 const Register = ({ setUser }) => {
   const navigate = useNavigate();
+
+  // Redirect already-logged-in users to their dashboard
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    if (!token || !user) return;
+    if (user.role === "admin") { navigate("/admin/dashboard", { replace: true }); return; }
+    if (user.role === "agency") {
+      navigate(user.agencyVerified ? "/agency" : "/agency/pending", { replace: true });
+      return;
+    }
+    navigate("/explore", { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -96,13 +111,10 @@ const Register = ({ setUser }) => {
         <div className="absolute inset-0 bg-gradient-to-br from-[#0b2545]/85 via-[#0f1923]/70 to-black/60" />
         <div className="relative z-10 p-10 flex flex-col justify-between w-full h-full">
           {/* Top Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <span className="material-symbols-outlined text-[#197fe6] text-[28px] transition-transform group-hover:scale-110">
-              landscape
-            </span>
-            <span className="text-lg font-bold tracking-wide uppercase text-white">
-              Travolin
-            </span>
+          <Link to="/" className="flex items-center group">
+            <div className="bg-white rounded-xl px-2 py-1 shadow-md transition-transform group-hover:scale-105">
+              <img src={travelinLogo} alt="Travolin" className="h-8 w-auto" />
+            </div>
           </Link>
 
           {/* Bottom Text */}
@@ -129,13 +141,8 @@ const Register = ({ setUser }) => {
         <div className="w-full max-w-lg">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
-            <Link to="/" className="inline-flex items-center gap-3">
-              <span className="material-symbols-outlined text-[#197fe6] text-[28px]">
-                landscape
-              </span>
-              <span className="text-lg font-bold tracking-wide uppercase text-[#2d3b2a]">
-                Travolin
-              </span>
+            <Link to="/" className="inline-flex items-center">
+              <img src={travelinLogo} alt="Travolin" className="h-8 w-auto" />
             </Link>
           </div>
 

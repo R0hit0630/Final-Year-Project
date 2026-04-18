@@ -74,6 +74,19 @@ const LogoutRoute = ({ onLogout }) => {
   return <Navigate to="/" replace />;
 };
 
+// Redirects logged-in users away from login/register back to their dashboard
+const PublicRoute = ({ user, children }) => {
+  if (!user) return children;
+  if (user.role === "admin") return <Navigate to="/admin/dashboard" replace />;
+  if (user.role === "agency") {
+    return user.agencyVerified
+      ? <Navigate to="/agency" replace />
+      : <Navigate to="/agency/pending" replace />;
+  }
+  // regular user
+  return <Navigate to="/explore" replace />;
+};
+
 function App() {
   const [user, setUser] = useState(getStoredUser());
   const [loading, setLoading] = useState(true);
@@ -128,15 +141,16 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* PUBLIC ROUTES */}
-        <Route path="/" element={<Home user={user} />} />
-        <Route path="/destinations" element={<Destination />} />
-        <Route path="/about" element={<AboutUS />} />
+        {/* PUBLIC ROUTES - redirect logged-in users to their dashboard */}
+        <Route path="/" element={<PublicRoute user={user}><Home user={user} /></PublicRoute>} />
+        <Route path="/destinations" element={<PublicRoute user={user}><Destination /></PublicRoute>} />
+        <Route path="/about" element={<PublicRoute user={user}><AboutUS /></PublicRoute>} />
         <Route path="/explore" element={<ExploreNepal />} />
         <Route path="/packages/:id" element={<PackageDetails />} />
 
-        <Route path="/login" element={<Login setUser={setUser} />} />
-        <Route path="/register" element={<Register setUser={setUser} />} />
+        {/* AUTH ROUTES - redirect away if already logged in */}
+        <Route path="/login" element={<PublicRoute user={user}><Login setUser={setUser} /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute user={user}><Register setUser={setUser} /></PublicRoute>} />
 
         {/* LOGOUT */}
         <Route path="/logout" element={<LogoutRoute onLogout={logout} />} />

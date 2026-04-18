@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import AgencySidebar from "../../components/AgencySidebar";
+import defaultAvatar from "../../assets/default-avatar.jpg";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const getToken = () => localStorage.getItem("token");
@@ -144,9 +145,14 @@ export default function AgencyGuideProfile() {
                     <div className="flex flex-col gap-6 md:flex-row md:items-center">
                       <div className="h-32 w-32 flex-shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 flex items-center justify-center">
                         {guide.photo ? (
-                          <img src={guide.photo} alt={guide.fullName} className="h-full w-full object-cover" />
+                          <img 
+                            src={guide.photo.startsWith("http") ? guide.photo : `${API_BASE}${guide.photo.startsWith('/') ? '' : '/'}${guide.photo.replace(/\\/g, "/")}`} 
+                            alt={guide.fullName} 
+                            className="h-full w-full object-cover" 
+                            onError={(e) => { e.target.onerror = null; e.target.src = defaultAvatar; }}
+                          />
                         ) : (
-                          <span className="material-symbols-outlined text-5xl text-gray-300">person</span>
+                          <img src={defaultAvatar} alt="Default Guide Avatar" className="h-full w-full object-cover" />
                         )}
                       </div>
 

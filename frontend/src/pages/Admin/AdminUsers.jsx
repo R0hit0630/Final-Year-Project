@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import AdminSidebar from "../../components/AdminSidebar";
+import defaultAvatar from "../../assets/default-avatar.jpg";
 
 export default function AdminUsers() {
   const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -9,6 +10,31 @@ export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetails, setUserDetails] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedUser) {
+      const fetchDetails = async () => {
+        setDetailsLoading(true);
+        try {
+          const token = localStorage.getItem("token");
+          const res = await axios.get(`${apiBase}/api/admin/users/${selectedUser._id}/details`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setUserDetails(res.data.details);
+        } catch (error) {
+          console.error("Fetch details error:", error);
+        } finally {
+          setDetailsLoading(false);
+        }
+      };
+      fetchDetails();
+    } else {
+      setUserDetails(null);
+    }
+  }, [selectedUser, apiBase]);
 
   const COLORS = {
     primary: "#1978e5",
@@ -147,6 +173,13 @@ export default function AdminUsers() {
                       <td className="py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button 
+                            onClick={() => setSelectedUser(user)}
+                            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold hover:bg-gray-50"
+                            title="View User"
+                          >
+                            View
+                          </button>
+                          <button 
                             onClick={() => handleToggleStatus(user._id)}
                             className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold hover:bg-gray-50"
                             title={user.isActive ? "Block User" : "Unblock User"}
@@ -170,6 +203,65 @@ export default function AdminUsers() {
           </div>
         </main>
       </div>
+
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl relative">
+            <button 
+              onClick={() => setSelectedUser(null)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full p-1 transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+            
+            <div className="flex items-center gap-4 mb-6 pr-8">
+              {selectedUser.avatar ? (
+                <img 
+                  src={selectedUser.avatar.startsWith("http") ? selectedUser.avatar : `${apiBase}${selectedUser.avatar.startsWith('/') ? '' : '/'}${selectedUser.avatar.replace(/\\/g, "/")}`} 
+                  alt="User Avatar" 
+                  className="w-16 h-16 rounded-full object-cover border-2 border-primary/20 shadow-sm" 
+                  onError={(e) => { e.target.onerror = null; e.target.src = defaultAvatar; }}
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl border-2 border-primary/20 shadow-sm">
+                  {(selectedUser.fullName || selectedUser.username).charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <h2 className="text-xl font-bold text-[#2d3b2a] truncate max-w-[200px]">{selectedUser.fullName || selectedUser.username}</h2>
+                <p className="text-sm text-gray-500 truncate max-w-[200px]">{selectedUser.email}</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Account Information</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-600">Role:</span> <span className="font-semibold capitalize text-[#2d3b2a]">{selectedUser.role}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600">Joined:</span> <span className="font-semibold text-[#2d3b2a]">{new Date(selectedUser.createdAt).toLocaleDateString()}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600">Status:</span> <span className={`font-semibold ${selectedUser.isActive ? "text-emerald-600" : "text-red-600"}`}>{selectedUser.isActive ? "Active" : "Blocked"}</span></div>
+                </div>
+              </div>
+
+              {detailsLoading ? (
+                <div className="flex justify-center p-6">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                </div>
+              ) : userDetails && (
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                  <h3 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3">Activity Summary</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-blue-700">Packages Booked:</span> 
+                      <span className="font-bold text-lg text-blue-900 bg-blue-100 px-3 py-1 rounded-lg">{userDetails.bookedPackagesCount}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
+import travelinLogo from "../assets/travolin-logo.png";
 
 export default function AdminSidebar() {
   const location = useLocation();
@@ -22,24 +23,14 @@ export default function AdminSidebar() {
 
   return (
     <aside className="hidden w-64 border-r border-[#e0e8dc] bg-white lg:flex lg:flex-col lg:p-6">
-      <div className="mb-10 flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#e0e8dc] bg-white shadow-sm">
-          <span
-            className="material-symbols-outlined text-3xl"
-            style={{ color: COLORS.primary }}
-          >
-            admin_panel_settings
-          </span>
-        </div>
-        <div>
-          <h1 className="text-base font-bold">Travolin Admin</h1>
-          <p
-            className="text-xs uppercase tracking-wider"
-            style={{ color: COLORS.primary }}
-          >
-            Control Panel
-          </p>
-        </div>
+      <div className="mb-10 flex flex-col gap-3">
+        <img src={travelinLogo} alt="Travolin" className="h-10 w-auto" />
+        <p
+          className="text-xs uppercase tracking-wider font-semibold"
+          style={{ color: COLORS.primary }}
+        >
+          Admin Control Panel
+        </p>
       </div>
 
       <nav className="flex flex-col gap-2">

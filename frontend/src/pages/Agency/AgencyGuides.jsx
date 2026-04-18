@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import AgencySidebar from "../../components/AgencySidebar";
+import defaultAvatar from "../../assets/default-avatar.jpg";
 
 export default function AgencyGuides() {
+  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const navigate = useNavigate();
 
   const [guides, setGuides] = useState([]);
@@ -49,7 +51,7 @@ export default function AgencyGuides() {
   const fetchGuides = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:5000/api/guides/mine", getAuthConfig());
+      const res = await axios.get(`${apiBase}/api/guides/mine`, getAuthConfig());
 
       if (Array.isArray(res.data)) {
         setGuides(res.data);
@@ -100,7 +102,7 @@ export default function AgencyGuides() {
       }
 
       await axios.put(
-        `http://localhost:5000/api/guides/${guide._id}`,
+        `${apiBase}/api/guides/${guide._id}`,
         {
           leaveStartDate: draft.leaveStartDate,
           leaveEndDate: draft.leaveEndDate,
@@ -125,7 +127,7 @@ export default function AgencyGuides() {
       const token = localStorage.getItem("token");
 
       await axios.put(
-        `http://localhost:5000/api/guides/${guide._id}`,
+        `${apiBase}/api/guides/${guide._id}`,
         {
           leaveStartDate: null,
           leaveEndDate: null,
@@ -322,9 +324,10 @@ export default function AgencyGuides() {
       <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
         <div className="relative h-52 overflow-hidden">
           <img
-            src={guide.photo || "https://via.placeholder.com/400x300?text=Guide"}
+            src={guide.photo ? (guide.photo.startsWith("http") ? guide.photo : `${apiBase}${guide.photo.startsWith('/') ? '' : '/'}${guide.photo.replace(/\\/g, "/")}`) : defaultAvatar}
             alt={guide.fullName || "Guide"}
-            className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+            className="h-full w-full object-cover transition-transform duration-500 hover:scale-110 transform-gpu will-change-transform"
+            onError={(e) => { e.target.onerror = null; e.target.src = defaultAvatar; }}
           />
 
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
@@ -443,8 +446,8 @@ export default function AgencyGuides() {
       <div className="flex h-full w-full bg-[#fcfbf8]" style={paperTextureStyle}>
         <AgencySidebar />
 
-        <main className="flex flex-1 flex-col overflow-y-auto">
-          <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-4 shadow-sm backdrop-blur-md lg:hidden">
+        <main className="flex flex-1 flex-col overflow-y-auto scroll-smooth">
+          <div className="sticky top-0 z-50 flex items-center justify-between bg-white p-4 shadow-sm lg:hidden">
             <div className="flex items-center gap-2">
               <span
                 className="material-symbols-outlined text-3xl"

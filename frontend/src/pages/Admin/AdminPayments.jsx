@@ -30,6 +30,20 @@ export default function AdminPayments() {
     }
   };
 
+  const handleProcessRefund = async (id) => {
+    if (!window.confirm("Are you sure you want to process this refund? This action cannot be undone.")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(`${apiBase}/api/admin/bookings/${id}/refund`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchBookings();
+    } catch (error) {
+      console.error("Process refund error:", error);
+      alert(error.response?.data?.message || "Failed to process refund");
+    }
+  };
+
   useEffect(() => {
     fetchBookings();
   }, [apiBase]);
@@ -42,6 +56,7 @@ export default function AdminPayments() {
                             pkg.toLowerCase().includes(search.toLowerCase());
       const matchesStatus = statusFilter === "All" || 
                             (statusFilter === "Paid" && booking.paymentStatus === "paid") || 
+                            (statusFilter === "Refunded" && booking.paymentStatus === "refunded") || 
                             (statusFilter === "Pending" && booking.paymentStatus === "pending");
       return matchesSearch && matchesStatus;
     });
@@ -50,6 +65,9 @@ export default function AdminPayments() {
   const getStatusBadge = (status) => {
     if (status === "paid") {
       return "bg-emerald-500/10 text-emerald-700 border-emerald-500/20";
+    }
+    if (status === "refunded") {
+      return "bg-gray-500/10 text-gray-700 border-gray-500/20";
     }
     if (status === "pending") {
       return "bg-yellow-500/10 text-yellow-700 border-yellow-500/20";
@@ -93,6 +111,7 @@ export default function AdminPayments() {
                 >
                   <option value="All">All Status</option>
                   <option value="Paid">Paid</option>
+                  <option value="Refunded">Refunded</option>
                   <option value="Pending">Pending</option>
                 </select>
 
@@ -167,10 +186,18 @@ export default function AdminPayments() {
                           {booking.paymentStatus}
                         </span>
                         {booking.status === "cancelled" && booking.refundAmount > 0 && (
-                          <div className="mt-2">
-                            <span className="rounded-full border px-2 py-0.5 text-[10px] font-bold bg-amber-500/10 text-amber-700 border-amber-500/20">
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${booking.refundStatus === "processed" ? "bg-gray-500/10 text-gray-700 border-gray-500/20" : "bg-amber-500/10 text-amber-700 border-amber-500/20"}`}>
                               {booking.refundStatus === "processed" ? "Refund Processed" : "Refund Pending"}
                             </span>
+                            {booking.refundStatus === "pending" && (
+                              <button 
+                                onClick={() => handleProcessRefund(booking._id)}
+                                className="rounded bg-blue-600 px-2 py-1 text-[10px] font-bold text-white transition-colors hover:bg-blue-700"
+                              >
+                                Process
+                              </button>
+                            )}
                           </div>
                         )}
                       </td>

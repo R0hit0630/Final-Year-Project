@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import travelinLogo from "../assets/travolin-logo.png";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -54,8 +55,13 @@ export default function AgencySidebar() {
   return (
     <aside className="hidden w-64 flex-col justify-between border-r border-[#e0e8dc] bg-[#fdfdfc]/80 backdrop-blur-sm lg:flex h-screen sticky top-0">
       <div className="flex h-full flex-col p-6">
-        <div className="mb-10 flex items-center gap-3">
-          <div className="relative h-12 w-12 overflow-hidden rounded-xl border border-[#e0e8dc] bg-white shadow-sm">
+        {/* Travolin Branding */}
+        <Link to="/" className="mb-6 block">
+          <img src={travelinLogo} alt="Travolin" className="h-8 w-auto" />
+        </Link>
+
+        <div className="mb-8 flex items-center gap-3 border-t border-[#e0e8dc] pt-6">
+          <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-[#e0e8dc] bg-white shadow-sm">
             <img
               alt="Agency Logo"
               className="h-full w-full object-cover"
@@ -64,7 +70,7 @@ export default function AgencySidebar() {
           </div>
 
           <div className="flex flex-col overflow-hidden">
-            <h1 className="text-base font-bold leading-tight text-[#2d3b2a] truncate">
+            <h1 className="text-sm font-bold leading-tight text-[#2d3b2a] truncate">
               {agency?.agencyName || "Loading..."}
             </h1>
             <p

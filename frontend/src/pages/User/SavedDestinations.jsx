@@ -293,11 +293,14 @@ export default function SavedDestinations() {
     setFavoriteIds(new Set());
   };
 
+  const validSavedPackages = useMemo(() => {
+    return allPackages.filter((pkg) => favoriteIds.has(pkg.id));
+  }, [allPackages, favoriteIds]);
+
   const savedPackages = useMemo(() => {
-    const list = allPackages.filter((pkg) => favoriteIds.has(pkg.id));
     const query = norm(search);
 
-    let filtered = list.filter((pkg) => {
+    let filtered = validSavedPackages.filter((pkg) => {
       if (!query) return true;
 
       return (
@@ -320,7 +323,7 @@ export default function SavedDestinations() {
     }
 
     return filtered;
-  }, [allPackages, favoriteIds, search, sortBy]);
+  }, [validSavedPackages, search, sortBy]);
 
   const navItems = [
     { label: "My Trips", icon: "map", to: "/trips" },
@@ -479,7 +482,7 @@ export default function SavedDestinations() {
                   <option>Duration</option>
                 </select>
 
-                {favoriteIds.size > 0 && (
+                {validSavedPackages.length > 0 && (
                   <button
                     type="button"
                     onClick={handleClearAll}
@@ -498,7 +501,7 @@ export default function SavedDestinations() {
                   Total Saved
                 </p>
                 <p className="mt-2 text-2xl font-bold text-[#2d3b2a]">
-                  {favoriteIds.size}
+                  {validSavedPackages.length}
                 </p>
               </div>
 
@@ -516,7 +519,7 @@ export default function SavedDestinations() {
                   Wishlist Status
                 </p>
                 <p className="mt-2 text-base font-bold text-blue-600">
-                  {favoriteIds.size > 0 ? "Active" : "Empty"}
+                  {validSavedPackages.length > 0 ? "Active" : "Empty"}
                 </p>
               </div>
             </div>
@@ -528,7 +531,7 @@ export default function SavedDestinations() {
               <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-600">
                 {error}
               </div>
-            ) : favoriteIds.size === 0 ? (
+            ) : validSavedPackages.length === 0 ? (
               <div className="rounded-2xl border border-[#e0e8dc] bg-white p-10 text-center shadow-sm">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500">
                   <span className="material-symbols-outlined text-3xl">favorite</span>

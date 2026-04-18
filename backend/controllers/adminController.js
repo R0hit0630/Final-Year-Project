@@ -2,6 +2,7 @@ import User from "../models/user.js";
 import Package from "../models/Package.js";
 import Booking from "../models/Booking.js";
 import Guide from "../models/Guide.js";
+import Review from "../models/Review.js";
 
 // @desc    Get dashboard stats for admin
 // @route   GET /api/admin/stats
@@ -180,3 +181,75 @@ export const deletePackage = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+// @desc    Get detailed stats and details for a specific user or agency
+// @route   GET /api/admin/users/:id/details
+// @access  Private/Admin
+export const getUserDetailsAdmin = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let details = {};
+
+    if (user.role === "user") {
+      const bookedPackagesCount = await Booking.countDocuments({ user: user._id });
+      details = { bookedPackagesCount };
+    } else if (user.role === "agency") {
+      const packagesCount = await Package.countDocuments({ agency: user._id });
+      const guidesCount = await Guide.countDocuments({ agency: user._id });
+      
+      const packages = await Package.find({ agency: user._id }).select("_id");
+      const packageIds = packages.map(p => p._id);
+
+      const agencyBookings = await Booking.find({ package: { $in: packageIds }, paymentStatus: { $in: ["paid", "refunded"] } });
+      const revenue = agencyBookings.reduce((acc, curr) => {
+        const earned = curr.status === "cancelled" ? (curr.totalPrice - (curr.refundAmount || 0)) : curr.totalPrice;
+        return acc + (earned || 0);
+      }, 0);
+
+      const reviews = await Review.find({ agency: user._id, type: "package" });
+      const totalRating = reviews.reduce((acc, curr) => acc + curr.rating, 0);
+      const averageRating = reviews.length > 0 ? (totalRating / reviews.length).toFixed(1) : 0;
+
+      details = { packagesCount, guidesCount, revenue, averageRating, reviewsCount: reviews.length };
+    }
+
+    res.json({ user, details });
+  } catch (error) {
+    console.error("getUserDetailsAdmin error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// @desc    Process refund for a cancelled booking
+// @route   PUT /api/admin/bookings/:id/refund
+// @access  Private/Admin
+export const processRefundAdmin = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    if (booking.status !== "cancelled") {
+      return res.status(400).json({ message: "Booking is not cancelled" });
+    }
+
+    if (booking.refundStatus !== "pending" || !booking.refundAmount) {
+      return res.status(400).json({ message: "No pending refund for this booking" });
+    }
+
+    booking.refundStatus = "processed";
+    booking.paymentStatus = "refunded";
+    await booking.save();
+
+    res.json({ message: "Refund processed successfully", booking });
+  } catch (error) {
+    console.error("processRefundAdmin error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+

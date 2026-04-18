@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import travelinLogo from "../assets/travolin-logo.png";
 
 export default function PublicFooter() {
   return (
@@ -12,12 +13,7 @@ export default function PublicFooter() {
           {/* Brand */}
           <div className="md:col-span-1">
             <Link to="/" className="flex items-center gap-3 mb-4 group">
-              <span className="material-symbols-outlined text-[#197fe6] text-[28px] transition-transform group-hover:scale-110">
-                landscape
-              </span>
-              <span className="text-lg font-bold tracking-wide uppercase">
-                Travolin
-              </span>
+              <img src={travelinLogo} alt="Travolin" className="h-9 w-auto transition-transform group-hover:scale-105" />
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed">
               Your gateway to the Himalayas. Curated trekking adventures and

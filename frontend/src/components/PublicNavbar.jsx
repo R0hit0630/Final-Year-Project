@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import travelinLogo from "../assets/travolin-logo.png";
 
 export default function PublicNavbar() {
   const navigate = useNavigate();
@@ -33,13 +34,10 @@ export default function PublicNavbar() {
       >
         <div className="max-w-7xl mx-auto px-6 sm:px-10 h-20 flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <span className="material-symbols-outlined text-[#197fe6] text-[32px] transition-transform group-hover:scale-110">
-              landscape
-            </span>
-            <span className="text-xl font-bold tracking-wide uppercase text-white">
-              Travolin
-            </span>
+          <Link to="/" className="flex items-center group">
+            <div className="bg-white rounded-xl px-2 py-1 shadow-sm transition-transform group-hover:scale-105">
+              <img src={travelinLogo} alt="Travolin" className="h-8 w-auto" />
+            </div>
           </Link>
 
           {/* Desktop Links */}
