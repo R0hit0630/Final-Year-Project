@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import PublicNavbar from "../components/PublicNavbar";
 
 import pokharaImg from "../assets/pokhara.jpg";
 import annapurnaImg from "../assets/annapurna.jpg";
@@ -106,41 +107,7 @@ export default function Destination() {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Navbar (same as Home) */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-md border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 sm:px-10 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[#197fe6] text-[32px]">
-              landscape
-            </span>
-            <span className="text-xl font-bold tracking-wide uppercase">
-              Travolin
-            </span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-10">
-            <Link to="/" className="text-gray-200 hover:text-white text-sm font-medium transition">
-              Home
-            </Link>
-            <Link to="/destinations" className="text-gray-200 hover:text-white text-sm font-medium transition">
-              Destinations
-            </Link>
-            <a href="#experiences" className="text-gray-200 hover:text-white text-sm font-medium transition">
-              Experiences
-            </a>
-            <a href="#journal" className="text-gray-200 hover:text-white text-sm font-medium transition">
-              Journal
-            </a>
-          </div>
-
-          <button
-            onClick={() => navigate("/login")}
-            className="hidden md:flex items-center justify-center h-9 px-5 rounded-lg bg-[#197fe6] hover:bg-[#197fe6]/90 text-white text-sm font-bold transition shadow-lg shadow-[#197fe6]/20"
-          >
-            Book Trip
-          </button>
-        </div>
-      </nav>
+      <PublicNavbar />
       {/* ===== BACKGROUND SLIDER WITH PARALLAX ===== */}
       <div
         className="absolute inset-0 flex transition-transform duration-[1000ms] ease-[cubic-bezier(0.22,1,0.36,1)]"

@@ -41,7 +41,7 @@ export default function AgencyPackages() {
           title: p.title || "Untitled Package",
           days: `${p.days || 0} Days`,
           location: p.region || "Unknown Region",
-          price: `$${Number(p.price || 0).toLocaleString()}`,
+          price: `रु ${Number(p.price || 0).toLocaleString()}`,
           img:
             p.images && p.images.length > 0
               ? p.images[0].startsWith("http")
@@ -111,7 +111,7 @@ export default function AgencyPackages() {
       },
       {
         label: "Revenue Potential",
-        value: `$${packages
+        value: `रु ${packages
           .reduce((sum, p) => {
             const amount = Number(String(p.price).replace(/[^0-9.]/g, "")) || 0;
             return sum + amount;

@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Destination from "./pages/Destination";
+import AboutUS from "./pages/AboutUS";
 import User from "./pages/User/User";
 import Profile from "./pages/User/profile";
 import ExploreNepal from "./pages/User/ExploreNepal";
@@ -29,6 +30,7 @@ import AddNewGuide from "./pages/Agency/AddNewGuide";
 import AgencyBookings from "./pages/Agency/AgencyBookings";
 import AgencyGuideProfile from "./pages/Agency/AgencyGuideProfile";
 import AgencyPackageDetails from "./pages/Agency/AgencyPackageDetails";
+import AgencyEarnings from "./pages/Agency/AgencyEarnings";
 
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import AdminUsers from "./pages/Admin/AdminUsers";
@@ -129,6 +131,7 @@ function App() {
         {/* PUBLIC ROUTES */}
         <Route path="/" element={<Home user={user} />} />
         <Route path="/destinations" element={<Destination />} />
+        <Route path="/about" element={<AboutUS />} />
         <Route path="/explore" element={<ExploreNepal />} />
         <Route path="/packages/:id" element={<PackageDetails />} />
 
@@ -247,6 +250,15 @@ function App() {
           element={
             <ProtectedRoute user={user} roles={["agency"]}>
               <AgencyBookings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/agency/earnings"
+          element={
+            <ProtectedRoute user={user} roles={["agency"]}>
+              <AgencyEarnings />
             </ProtectedRoute>
           }
         />

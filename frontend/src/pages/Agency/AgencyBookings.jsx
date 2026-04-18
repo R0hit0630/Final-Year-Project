@@ -245,7 +245,7 @@ export default function AgencyBookings() {
 
   const formatPrice = (amount) => {
     if (amount === undefined || amount === null) return "-";
-    return `$${Number(amount).toLocaleString()}`;
+    return `रु ${Number(amount).toLocaleString()}`;
   };
 
   const isCurrentlyOnLeave = (guide) => {
@@ -493,8 +493,15 @@ export default function AgencyBookings() {
 
                             <td className="py-4 text-[#4b5563]">{row.travelers}</td>
 
-                            <td className="py-4 font-semibold text-[#2d3b2a]">
-                              {formatPrice(row.totalPrice)}
+                            <td className="py-4">
+                              <p className={`font-semibold ${row.status === 'cancelled' ? 'text-amber-600' : 'text-[#2d3b2a]'}`}>
+                                {formatPrice(row.status === "cancelled" ? (row.totalPrice - (row.refundAmount || 0)) : row.totalPrice)}
+                              </p>
+                              {row.status === "cancelled" && (
+                                <p className="text-xs text-red-500 line-through">
+                                  {formatPrice(row.totalPrice)}
+                                </p>
+                              )}
                             </td>
 
                             <td className="py-4">

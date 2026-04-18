@@ -329,7 +329,7 @@ export default function AddPackage() {
                   </label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8] text-sm">
-                      Rs
+                      रु 
                     </span>
                     <input
                       value={price}

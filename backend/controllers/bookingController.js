@@ -8,9 +8,9 @@ export const getMyTrips = async (req, res) => {
     const userId = req.user._id;
 
     const bookings = await Booking.find({ user: userId })
-      .populate("package")
-      .populate("guide")
-      .sort({ createdAt: -1 });
+      .populate("package", "title region price days difficulty images itinerary")
+      .populate("guide", "name fullName email phone averageRating numReviews")
+      .sort({ startDate: 1 });
 
     let activeTrip = null;
     const pastTrips = [];
@@ -52,7 +52,7 @@ export const getMyTrips = async (req, res) => {
         }
       }
 
-      if (status === "completed") {
+      if (["completed", "cancelled"].includes(status)) {
         pastTrips.push(booking);
       }
     }
@@ -188,6 +188,47 @@ export const completeBooking = async (req, res) => {
   }
 };
 
+// PUT /api/bookings/:id/cancel
+export const cancelBookingByUser = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Ensure the user owns this booking
+    if (booking.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to cancel this booking" });
+    }
+
+    if (booking.status === "cancelled") {
+      return res.status(400).json({ message: "Booking is already cancelled" });
+    }
+
+    if (["ongoing", "completed"].includes(booking.status)) {
+      return res.status(400).json({ message: "Cannot cancel an ongoing or completed trip" });
+    }
+
+    // Handle Refund Logic
+    if (booking.paymentStatus === "paid") {
+      booking.refundAmount = booking.totalPrice * 0.7; // 70% refund
+      booking.refundStatus = "pending";
+    }
+
+    booking.status = "cancelled";
+    await booking.save();
+
+    return res.json({
+      message: "Booking cancelled successfully. A 70% refund is being processed if you had already paid.",
+      booking,
+    });
+  } catch (error) {
+    console.error("cancelBooking error:", error);
+    return res.status(500).json({ message: "Failed to cancel booking" });
+  }
+};
+
 // GET /api/bookings/agency/stats
 export const getAgencyStats = async (req, res) => {
   try {
@@ -273,7 +314,8 @@ export const getAgencyDashboardData = async (req, res) => {
         b.paymentStatus === "paid" &&
         new Date(b.createdAt) >= firstDayOfMonth
       ) {
-        monthlyRevenue += Number(b.totalPrice || 0);
+        const earned = b.status === "cancelled" ? (b.totalPrice - (b.refundAmount || 0)) : b.totalPrice;
+        monthlyRevenue += Number(earned || 0);
       }
     }
 

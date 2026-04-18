@@ -1,34 +1,53 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import AdminSidebar from "../../components/AdminSidebar";
 
 export default function AdminAgencies() {
+  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const [loading, setLoading] = useState(true);
+  const [agencies, setAgencies] = useState([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+
   const COLORS = {
     primary: "#1978e5",
     secondary: "#2d3b2a",
   };
 
-  const sidebar = useMemo(
-    () => [
-      { label: "Dashboard", icon: "dashboard", to: "/admin/dashboard", active: false },
-      { label: "Users", icon: "group", to: "/admin/users", active: false },
-      { label: "Agencies", icon: "business", to: "/admin/agencies", active: true },
-      { label: "Payments", icon: "payments", to: "/admin/payments", active: false },
-      { label: "Approvals", icon: "fact_check", to: "/admin/approvals", active: false },
-    ],
-    []
-  );
+  const fetchAgencies = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${apiBase}/api/admin/users?role=agency`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAgencies(res.data || []);
+    } catch (error) {
+      console.error("Fetch agencies error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const agencies = useMemo(
-    () => [
-      { name: "Summit Treks", email: "summit@gmail.com", joined: "Apr 09, 2026", status: "Approved" },
-      { name: "Himalayan Quest", email: "quest@gmail.com", joined: "Apr 11, 2026", status: "Pending" },
-      { name: "Nepal Trail Co.", email: "trail@gmail.com", joined: "Apr 12, 2026", status: "Approved" },
-    ],
-    []
-  );
+  useEffect(() => {
+    fetchAgencies();
+  }, [apiBase]);
 
-  const getStatusBadge = (status) => {
-    if (status === "Approved") {
+  const filteredAgencies = useMemo(() => {
+    return agencies.filter(agency => {
+      const name = agency.agencyName || agency.username || "";
+      const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) ||
+                            agency.email.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = statusFilter === "All" || 
+                            (statusFilter === "Approved" && agency.agencyVerified) || 
+                            (statusFilter === "Pending" && !agency.agencyVerified);
+      return matchesSearch && matchesStatus;
+    });
+  }, [agencies, search, statusFilter]);
+
+  const getStatusBadge = (verified) => {
+    if (verified) {
       return "bg-emerald-500/10 text-emerald-700 border-emerald-500/20";
     }
     return "bg-yellow-500/10 text-yellow-700 border-yellow-500/20";
@@ -37,75 +56,7 @@ export default function AdminAgencies() {
   return (
     <div className="min-h-screen bg-[#f6f7f8] text-[#2d3b2a]">
       <div className="flex min-h-screen">
-        <aside className="hidden w-64 border-r border-[#e0e8dc] bg-white lg:flex lg:flex-col lg:p-6">
-          <div className="mb-10 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#e0e8dc] bg-white shadow-sm">
-              <span
-                className="material-symbols-outlined text-3xl"
-                style={{ color: COLORS.primary }}
-              >
-                admin_panel_settings
-              </span>
-            </div>
-            <div>
-              <h1 className="text-base font-bold">Travolin Admin</h1>
-              <p
-                className="text-xs uppercase tracking-wider"
-                style={{ color: COLORS.primary }}
-              >
-                Control Panel
-              </p>
-            </div>
-          </div>
-
-          <nav className="flex flex-col gap-2">
-            {sidebar.map((item) => (
-              <Link
-                key={item.label}
-                to={item.to}
-                className={[
-                  "group flex items-center gap-3 rounded-xl px-4 py-3 transition-all",
-                  item.active
-                    ? "bg-[#1978e5]/10 hover:bg-[#1978e5]/20"
-                    : "hover:bg-[#f0f4ee]",
-                ].join(" ")}
-              >
-                <span
-                  className={
-                    item.active
-                      ? "material-symbols-outlined text-[#1978e5]"
-                      : "material-symbols-outlined text-[#6b7280]"
-                  }
-                >
-                  {item.icon}
-                </span>
-                <span
-                  className={
-                    item.active
-                      ? "font-semibold text-[#2d3b2a]"
-                      : "font-medium text-[#4b5563]"
-                  }
-                >
-                  {item.label}
-                </span>
-              </Link>
-            ))}
-          </nav>
-
-          <div className="mt-auto pt-6">
-            <Link
-              to="/logout"
-              className="group flex items-center gap-3 rounded-xl border border-transparent px-4 py-3 transition-all hover:border-[#e0e8dc] hover:bg-white hover:shadow-sm"
-            >
-              <span className="material-symbols-outlined text-[#6b7280] group-hover:text-red-500">
-                logout
-              </span>
-              <span className="text-sm font-medium text-[#4b5563] group-hover:text-red-500">
-                Log Out
-              </span>
-            </Link>
-          </div>
-        </aside>
+        <AdminSidebar />
 
         <main className="flex-1 p-6 md:p-8 lg:p-10">
           <div className="mb-8">
@@ -124,14 +75,20 @@ export default function AdminAgencies() {
                 <input
                   type="text"
                   placeholder="Search by agency or email"
-                  className="w-full rounded-xl border border-gray-200 bg-[#fcfbf8] py-3 pl-11 pr-4 text-sm outline-none"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-[#fcfbf8] py-3 pl-11 pr-4 text-sm outline-none focus:border-primary/50"
                 />
               </div>
 
-              <select className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-[#2d3b2a] outline-none">
-                <option>All Status</option>
-                <option>Approved</option>
-                <option>Pending</option>
+              <select 
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-[#2d3b2a] outline-none focus:border-primary/50"
+              >
+                <option value="All">All Status</option>
+                <option value="Approved">Approved</option>
+                <option value="Pending">Pending</option>
               </select>
             </div>
           </div>
@@ -161,21 +118,21 @@ export default function AdminAgencies() {
                 </thead>
 
                 <tbody>
-                  {agencies.map((agency) => (
-                    <tr key={agency.email} className="border-b border-gray-100 last:border-0">
+                  {filteredAgencies.map((agency) => (
+                    <tr key={agency._id} className="border-b border-gray-100 last:border-0">
                       <td className="py-4">
-                        <p className="font-semibold text-[#2d3b2a]">{agency.name}</p>
+                        <p className="font-semibold text-[#2d3b2a]">{agency.agencyName || agency.username}</p>
                         <p className="text-xs text-[#6b7280]">{agency.email}</p>
                       </td>
-                      <td className="py-4 text-[#4b5563]">{agency.joined}</td>
+                      <td className="py-4 text-[#4b5563]">{new Date(agency.createdAt).toLocaleDateString()}</td>
                       <td className="py-4">
                         <span
                           className={[
                             "rounded-full border px-3 py-1 text-xs font-bold",
-                            getStatusBadge(agency.status),
+                            getStatusBadge(agency.agencyVerified),
                           ].join(" ")}
                         >
-                          {agency.status}
+                          {agency.agencyVerified ? "Verified" : "Pending"}
                         </span>
                       </td>
                       <td className="py-4 text-right">

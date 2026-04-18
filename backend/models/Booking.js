@@ -59,6 +59,18 @@ const bookingSchema = new mongoose.Schema(
       default: "pending",
     },
 
+    refundAmount: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+
+    refundStatus: {
+      type: String,
+      enum: ["none", "pending", "processed"],
+      default: "none",
+    },
+
     transactionUuid: {
       type: String,
       unique: true,

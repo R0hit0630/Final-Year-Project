@@ -280,6 +280,35 @@ export default function MyTrips() {
     );
   };
 
+  const handleCancelTrip = async () => {
+    if (!activeTrip?._id) return;
+    
+    const confirmMsg = activeTrip.paymentStatus === "paid" 
+      ? "Are you sure you want to cancel this booking? Since you have already paid, you will receive a 70% refund."
+      : "Are you sure you want to cancel this booking?";
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setLoading(true);
+      await axios.put(
+        `${apiBase}/api/bookings/${activeTrip._id}/cancel`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      alert("Booking cancelled successfully.");
+      fetchData();
+    } catch (err) {
+      console.error("Cancel error:", err);
+      alert(err?.response?.data?.message || "Failed to cancel booking.");
+      setLoading(false);
+    }
+  };
+
   const handleSubmitReview = async () => {
     if (!reviewTrip?._id) return;
 
@@ -577,6 +606,16 @@ export default function MyTrips() {
                             </p>
                           </div>
 
+                          {["pending", "confirmed"].includes(String(activeTrip.status || "").toLowerCase()) && (
+                            <button
+                              type="button"
+                              onClick={handleCancelTrip}
+                              className="rounded-xl border border-red-400 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-100 shadow-sm transition hover:bg-red-500/20"
+                            >
+                              Cancel Trip
+                            </button>
+                          )}
+
                           {canReviewTrip(activeTrip) && (
                             <button
                               type="button"
@@ -739,6 +778,15 @@ export default function MyTrips() {
                                   </span>
                                   <span>{pkg?.days || 0} Days</span>
                                 </div>
+
+                                {trip.status === "cancelled" && trip.refundAmount > 0 && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-base text-red-500">
+                                      payments
+                                    </span>
+                                    <span className="text-red-500 font-medium">Refunded: रु {trip.refundAmount}</span>
+                                  </div>
+                                )}
                               </div>
 
                               {canReviewTrip(trip) ? (

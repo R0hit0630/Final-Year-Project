@@ -12,6 +12,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import guideRoutes from "./routes/guideRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/guides", guideRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/admin", adminRoutes);
 
 connectDB();
 

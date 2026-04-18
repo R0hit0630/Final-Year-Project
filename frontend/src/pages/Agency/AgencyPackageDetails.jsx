@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+import AgencySidebar from "../../components/AgencySidebar";
 
 export default function AgencyPackageDetails() {
   const { id } = useParams();
@@ -158,7 +159,11 @@ export default function AgencyPackageDetails() {
 
   return (
     <div className="min-h-screen bg-[#f6f7f8] text-[#2d3b2a]">
-      <div className="mx-auto max-w-5xl px-4 py-8 md:px-8">
+      <div className="flex min-h-screen">
+        <AgencySidebar />
+        
+        <main className="flex-1 p-6 md:p-8 lg:p-10 overflow-y-auto">
+          <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Agency Package Details</h1>
@@ -255,7 +260,7 @@ export default function AgencyPackageDetails() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-semibold">Price</label>
+              <label className="mb-2 block text-sm font-semibold">Price (रु)</label>
               <input
                 type="number"
                 name="price"
@@ -408,6 +413,8 @@ export default function AgencyPackageDetails() {
             </button>
           </div>
         </form>
+          </div>
+        </main>
       </div>
     </div>
   );

@@ -3,11 +3,13 @@ import Booking from "../models/Booking.js";
 import Package from "../models/Package.js";
 import { protect } from "../middleware/auth.js";
 import { requireRole } from "../middleware/role.js";
-import { 
-  assignGuide, 
+import {
+  assignGuide,
   completeBooking,
-  getAgencyStats, 
-  getAgencyDashboardData 
+  getAgencyStats,
+  getAgencyDashboardData,
+  cancelBookingByUser,
+  getMyTrips
 } from "../controllers/bookingController.js";
 
 const router = express.Router();
@@ -121,47 +123,15 @@ router.get("/my", protect, async (req, res) => {
 
 
 // ================= 🔥 FIXED MY TRIPS =================
-router.get("/my-trips", protect, async (req, res) => {
+router.get("/my-trips", protect, async (req, res, next) => {
+  // Sync before fetching
   try {
     await syncCompletedBookings();
-
-    const bookings = await Booking.find({
-      user: req.user._id,
-      status: { $ne: "cancelled" },
-    })
-      .populate("package", "title region price days difficulty images itinerary")
-      .populate("guide", "name fullName email phone averageRating numReviews")
-      .sort({ startDate: 1 });
-
-    let activeTrip = null;
-    const pastTrips = [];
-
-    for (const booking of bookings) {
-      const status = String(booking.status || "").toLowerCase();
-
-      // 🔥 ACTIVE TRIP LOGIC: Only pending, confirmed, or ongoing can be active
-      if (
-        ["pending", "confirmed", "ongoing"].includes(status) &&
-        !activeTrip
-      ) {
-        activeTrip = booking;
-      }
-
-      // 🔥 PAST TRIP LOGIC: Only completed trips go here
-      if (status === "completed") {
-        pastTrips.push(booking);
-      }
-    }
-
-    return res.json({
-      activeTrip,
-      pastTrips,
-    });
+    next();
   } catch (err) {
-    console.error("Fetch my trips error:", err);
-    return res.status(500).json({ message: "Failed to fetch my trips" });
+    next(err);
   }
-});
+}, getMyTrips);
 
 
 // ================= AGENCY BOOKINGS =================
@@ -225,5 +195,7 @@ router.get("/:id", protect, async (req, res) => {
 router.put("/:id/assign-guide", protect, requireRole("agency"), assignGuide);
 router.put("/:id/complete", protect, requireRole("agency"), completeBooking);
 
+// ================= CANCEL BOOKING =================
+router.put("/:id/cancel", protect, cancelBookingByUser);
 
 export default router;

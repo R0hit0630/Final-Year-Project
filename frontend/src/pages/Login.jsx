@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import bgImage from "../assets/bg.jpg";
 
@@ -51,34 +51,63 @@ const Login = ({ setUser }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#f6f8fb]">
+    <div className="min-h-screen w-full flex bg-[#0f1923]">
       {/* LEFT IMAGE */}
       <div
         className="hidden md:flex w-1/2 relative bg-cover bg-center"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0b2545]/80 via-[#274c77]/65 to-black/50" />
-        <div className="relative z-10 p-10 flex flex-col justify-end w-full">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0b2545]/85 via-[#0f1923]/70 to-black/60" />
+        <div className="relative z-10 p-10 flex flex-col justify-between w-full h-full">
+          {/* Top Logo */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <span className="material-symbols-outlined text-[#197fe6] text-[28px] transition-transform group-hover:scale-110">
+              landscape
+            </span>
+            <span className="text-lg font-bold tracking-wide uppercase text-white">
+              Travolin
+            </span>
+          </Link>
+
+          {/* Bottom Text */}
           <div className="max-w-md">
-            <p className="text-white/80 text-sm mb-2">Travolin</p>
+            <p className="text-[#197fe6] text-xs font-bold uppercase tracking-widest mb-3">
+              Welcome Back
+            </p>
             <h1 className="text-white text-3xl font-bold leading-tight">
-              Welcome back
+              Continue your
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+                Himalayan journey
+              </span>
             </h1>
-            <p className="text-white/80 mt-3 text-sm leading-relaxed">
-              Log in to manage your trips, bookings, and dashboard.
+            <p className="text-white/70 mt-4 text-sm leading-relaxed">
+              Log in to manage your trips, track bookings, and access your personalized dashboard.
             </p>
           </div>
         </div>
       </div>
 
       {/* RIGHT LOGIN */}
-      <div className="w-full md:w-1/2 flex items-center justify-center px-4 py-10">
+      <div className="w-full md:w-1/2 flex items-center justify-center px-4 py-10 bg-[#f6f7f8]">
         <div className="w-full max-w-md">
+          {/* Mobile Logo */}
+          <div className="md:hidden text-center mb-8">
+            <Link to="/" className="inline-flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#197fe6] text-[28px]">
+                landscape
+              </span>
+              <span className="text-lg font-bold tracking-wide uppercase text-[#2d3b2a]">
+                Travolin
+              </span>
+            </Link>
+          </div>
+
           {/* Card */}
-          <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
+          <div className="bg-white rounded-2xl shadow-xl border border-black/5 p-6 sm:p-8">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900">Login</h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <h2 className="text-2xl font-bold text-[#2d3b2a]">Log In</h2>
+              <p className="text-sm text-[#6b7280] mt-1">
                 Enter your credentials to continue
               </p>
             </div>
@@ -91,46 +120,46 @@ const Login = ({ setUser }) => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-semibold text-[#2d3b2a]">
                   Username or Email
                 </label>
                 <input
                   type="text"
-                  placeholder="Username or Email"
+                  placeholder="Enter username or email"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  className="w-full mt-1 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#274c77]/30 focus:border-[#274c77]"
+                  className="w-full mt-1.5 px-4 py-3 rounded-xl bg-[#fcfbf8] border border-gray-200 text-sm outline-none focus:border-[#197fe6]/50 focus:ring-2 focus:ring-[#197fe6]/10 transition"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-semibold text-[#2d3b2a]">
                   Password
                 </label>
                 <input
                   type="password"
-                  placeholder="Password"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full mt-1 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#274c77]/30 focus:border-[#274c77]"
+                  className="w-full mt-1.5 px-4 py-3 rounded-xl bg-[#fcfbf8] border border-gray-200 text-sm outline-none focus:border-[#197fe6]/50 focus:ring-2 focus:ring-[#197fe6]/10 transition"
                   required
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl bg-[#274c77] text-white font-semibold hover:opacity-95 transition shadow-md shadow-[#274c77]/20"
+                className="w-full py-3.5 rounded-xl bg-[#197fe6] hover:bg-[#1570d4] text-white font-bold transition shadow-lg shadow-[#197fe6]/20 text-sm"
               >
-                LOGIN
+                Log In
               </button>
 
               <div className="text-center pt-2">
-                <p className="text-xs text-gray-500">
-                  Don’t have an account?
+                <p className="text-xs text-[#6b7280]">
+                  Don't have an account?
                   <span
                     onClick={() => navigate("/register")}
-                    className="text-[#274c77] font-semibold cursor-pointer ml-1 hover:underline"
+                    className="text-[#197fe6] font-semibold cursor-pointer ml-1 hover:underline"
                   >
                     Sign up
                   </span>
@@ -140,7 +169,7 @@ const Login = ({ setUser }) => {
           </div>
 
           {/* small footer */}
-          <p className="text-center text-[11px] text-gray-400 mt-4">
+          <p className="text-center text-[11px] text-[#94a3b8] mt-4">
             Secure login • Your data stays protected
           </p>
         </div>

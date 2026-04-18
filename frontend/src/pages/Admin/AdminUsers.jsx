@@ -1,90 +1,84 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import AdminSidebar from "../../components/AdminSidebar";
 
 export default function AdminUsers() {
+  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+
   const COLORS = {
     primary: "#1978e5",
     secondary: "#2d3b2a",
   };
 
-  const sidebar = useMemo(
-    () => [
-      { label: "Dashboard", icon: "dashboard", to: "/admin/dashboard", active: false },
-      { label: "Users", icon: "group", to: "/admin/users", active: true },
-      { label: "Agencies", icon: "business", to: "/admin/agencies", active: false },
-      { label: "Payments", icon: "payments", to: "/admin/payments", active: false },
-      { label: "Approvals", icon: "fact_check", to: "/admin/approvals", active: false },
-    ],
-    []
-  );
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${apiBase}/api/admin/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(res.data || []);
+    } catch (error) {
+      console.error("Fetch users error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const users = useMemo(
-    () => [
-      { name: "John Smith", email: "john@gmail.com", role: "User", joined: "Apr 10, 2026", status: "Active" },
-      { name: "Emily Carter", email: "emily@gmail.com", role: "User", joined: "Apr 11, 2026", status: "Active" },
-      { name: "David Lee", email: "david@gmail.com", role: "User", joined: "Apr 12, 2026", status: "Blocked" },
-      { name: "Sophia Brown", email: "sophia@gmail.com", role: "User", joined: "Apr 13, 2026", status: "Active" },
-    ],
-    []
-  );
+  useEffect(() => {
+    fetchUsers();
+  }, [apiBase]);
 
-  const getStatusBadge = (status) => {
-    if (status === "Active") return "bg-emerald-500/10 text-emerald-700 border-emerald-500/20";
+  const handleToggleStatus = async (userId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(`${apiBase}/api/admin/users/${userId}/toggle-status`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchUsers();
+    } catch (error) {
+      alert("Failed to toggle user status");
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${apiBase}/api/admin/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchUsers();
+    } catch (error) {
+      alert("Failed to delete user");
+    }
+  };
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      const matchesSearch = (user.fullName || user.username || "").toLowerCase().includes(search.toLowerCase()) ||
+                            user.email.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = statusFilter === "All" || 
+                            (statusFilter === "Active" && user.isActive) || 
+                            (statusFilter === "Blocked" && !user.isActive);
+      return matchesSearch && matchesStatus;
+    });
+  }, [users, search, statusFilter]);
+
+  const getStatusBadge = (isActive) => {
+    if (isActive) return "bg-emerald-500/10 text-emerald-700 border-emerald-500/20";
     return "bg-red-500/10 text-red-700 border-red-500/20";
   };
 
   return (
     <div className="min-h-screen bg-[#f6f7f8] text-[#2d3b2a]">
       <div className="flex min-h-screen">
-        <aside className="hidden w-64 border-r border-[#e0e8dc] bg-white lg:flex lg:flex-col lg:p-6">
-          <div className="mb-10 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#e0e8dc] bg-white shadow-sm">
-              <span className="material-symbols-outlined text-3xl" style={{ color: COLORS.primary }}>
-                admin_panel_settings
-              </span>
-            </div>
-            <div>
-              <h1 className="text-base font-bold">Travolin Admin</h1>
-              <p className="text-xs uppercase tracking-wider" style={{ color: COLORS.primary }}>
-                Control Panel
-              </p>
-            </div>
-          </div>
-
-          <nav className="flex flex-col gap-2">
-            {sidebar.map((item) => (
-              <Link
-                key={item.label}
-                to={item.to}
-                className={[
-                  "group flex items-center gap-3 rounded-xl px-4 py-3 transition-all",
-                  item.active ? "bg-[#1978e5]/10 hover:bg-[#1978e5]/20" : "hover:bg-[#f0f4ee]",
-                ].join(" ")}
-              >
-                <span className={item.active ? "material-symbols-outlined text-[#1978e5]" : "material-symbols-outlined text-[#6b7280]"}>
-                  {item.icon}
-                </span>
-                <span className={item.active ? "font-semibold text-[#2d3b2a]" : "font-medium text-[#4b5563]"}>
-                  {item.label}
-                </span>
-              </Link>
-            ))}
-          </nav>
-
-          <div className="mt-auto pt-6">
-            <Link
-              to="/logout"
-              className="group flex items-center gap-3 rounded-xl border border-transparent px-4 py-3 transition-all hover:border-[#e0e8dc] hover:bg-white hover:shadow-sm"
-            >
-              <span className="material-symbols-outlined text-[#6b7280] group-hover:text-red-500">
-                logout
-              </span>
-              <span className="text-sm font-medium text-[#4b5563] group-hover:text-red-500">
-                Log Out
-              </span>
-            </Link>
-          </div>
-        </aside>
+        <AdminSidebar />
 
         <main className="flex-1 p-6 md:p-8 lg:p-10">
           <div className="mb-8">
@@ -101,14 +95,20 @@ export default function AdminUsers() {
                 <input
                   type="text"
                   placeholder="Search by name or email"
-                  className="w-full rounded-xl border border-gray-200 bg-[#fcfbf8] py-3 pl-11 pr-4 text-sm outline-none"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-[#fcfbf8] py-3 pl-11 pr-4 text-sm outline-none focus:border-primary/50"
                 />
               </div>
 
-              <select className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-[#2d3b2a] outline-none">
-                <option>All Status</option>
-                <option>Active</option>
-                <option>Blocked</option>
+              <select 
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-[#2d3b2a] outline-none focus:border-primary/50"
+              >
+                <option value="All">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Blocked">Blocked</option>
               </select>
             </div>
           </div>
@@ -131,23 +131,36 @@ export default function AdminUsers() {
                 </thead>
 
                 <tbody>
-                  {users.map((user) => (
-                    <tr key={user.email} className="border-b border-gray-100 last:border-0">
+                  {filteredUsers.map((user) => (
+                    <tr key={user._id} className="border-b border-gray-100 last:border-0">
                       <td className="py-4">
-                        <p className="font-semibold text-[#2d3b2a]">{user.name}</p>
+                        <p className="font-semibold text-[#2d3b2a]">{user.fullName || user.username}</p>
                         <p className="text-xs text-[#6b7280]">{user.email}</p>
                       </td>
-                      <td className="py-4 text-[#4b5563]">{user.role}</td>
-                      <td className="py-4 text-[#4b5563]">{user.joined}</td>
+                      <td className="py-4 text-[#4b5563] capitalize">{user.role}</td>
+                      <td className="py-4 text-[#4b5563]">{new Date(user.createdAt).toLocaleDateString()}</td>
                       <td className="py-4">
-                        <span className={["rounded-full border px-3 py-1 text-xs font-bold", getStatusBadge(user.status)].join(" ")}>
-                          {user.status}
+                        <span className={["rounded-full border px-3 py-1 text-xs font-bold", getStatusBadge(user.isActive)].join(" ")}>
+                          {user.isActive ? "Active" : "Blocked"}
                         </span>
                       </td>
                       <td className="py-4 text-right">
-                        <button className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold hover:bg-gray-50">
-                          View
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => handleToggleStatus(user._id)}
+                            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold hover:bg-gray-50"
+                            title={user.isActive ? "Block User" : "Unblock User"}
+                          >
+                            {user.isActive ? "Block" : "Unblock"}
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteUser(user._id)}
+                            className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100"
+                            title="Delete User"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
