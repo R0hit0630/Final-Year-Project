@@ -135,7 +135,7 @@ export default function MyTrips() {
     if (pastTrips.length > 0) {
       setShowPastBookings(true);
     }
-  }, [loading, pastTrips, reviewTrip]);
+  }, [loading, activeTrip, pastTrips, reviewTrip]);
 
   const fullName =
     userData?.fullName ||
@@ -502,7 +502,7 @@ export default function MyTrips() {
             </header>
 
             <div className="mx-auto w-full max-w-7xl px-8 py-8">
-              {!activeTrip ? (
+              {!activeTrip || activeTrip.status === "completed" ? (
                 <div className="rounded-3xl border border-black/5 bg-white p-10 text-center shadow-sm">
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
                     <span className="material-symbols-outlined text-3xl text-primary">

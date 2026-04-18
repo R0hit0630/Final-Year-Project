@@ -13,15 +13,6 @@ export default function EsewaSuccess() {
     const verifyPayment = async () => {
       try {
         const dataParam = params.get("data");
-        const packageId = params.get("packageId");
-        const selectedDate = params.get("selectedDate");
-        const groupSize = params.get("groupSize");
-        const subtotal = params.get("subtotal");
-        const serviceFee = params.get("serviceFee");
-        const total = params.get("total");
-        const tx = params.get("tx");
-        const userId = params.get("userId");
-
         if (!dataParam) {
           throw new Error("Missing eSewa response data");
         }
@@ -33,18 +24,11 @@ export default function EsewaSuccess() {
           },
           body: JSON.stringify({
             data: dataParam,
-            packageId,
-            selectedDate,
-            groupSize,
-            subtotal,
-            serviceFee,
-            total,
-            tx,
-            userId,
           }),
         });
 
         const data = await res.json();
+        console.error("eSewa verify response:", data);
 
         if (!res.ok) {
           throw new Error(data?.message || "Payment verification failed");
@@ -53,7 +37,7 @@ export default function EsewaSuccess() {
         setVerified(true);
         setMessage("Payment successful and package booked successfully.");
       } catch (err) {
-        console.error(err);
+        console.error("verifyPayment error:", err);
         setVerified(false);
         setMessage(err.message || "Verification failed");
       } finally {
@@ -66,16 +50,19 @@ export default function EsewaSuccess() {
 
   return (
     <div className="min-h-screen bg-[#f6f7f8] px-4 py-10">
-      <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5 text-center">
+      <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-black/5">
         <h1 className="text-2xl font-bold text-[#2d3b2a]">
           {loading
             ? "Please wait..."
             : verified
-            ? "Payment Successful"
-            : "Payment Verification Failed"}
+              ? "Payment Successful"
+              : "Payment Verification Failed"}
         </h1>
 
-        <p className={`mt-4 text-sm ${verified ? "text-green-600" : "text-red-500"}`}>
+        <p
+          className={`mt-4 text-sm ${verified ? "text-green-600" : "text-red-500"
+            }`}
+        >
           {message}
         </p>
 

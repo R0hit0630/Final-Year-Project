@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import AgencySidebar from "../../components/AgencySidebar";
 
 export default function AgencyProfile() {
   const navigate = useNavigate();
@@ -41,17 +42,7 @@ export default function AgencyProfile() {
       </svg>
     `);
 
-  const sidebar = useMemo(
-    () => [
-      { label: "Overview", icon: "dashboard", to: "/agency", active: false },
-      { label: "My Packages", icon: "hiking", to: "/agency/packages", active: false },
-      { label: "Bookings", icon: "book_online", to: "/agency/bookings", active: false },
-      { label: "Earnings", icon: "payments", to: "/agency/earnings", active: false },
-      { label: "Guides", icon: "person", to: "/agency/guides", active: false },
-      { label: "Profile", icon: "settings_account_box", to: "/agency/profile", active: true },
-    ],
-    []
-  );
+
 
   const paperTextureStyle = useMemo(
     () => ({
@@ -371,93 +362,7 @@ export default function AgencyProfile() {
         className="flex h-full w-full"
         style={{ background: COLORS.paper, ...paperTextureStyle }}
       >
-        <aside
-          className="hidden w-64 flex-col justify-between border-r lg:flex"
-          style={{
-            borderColor: COLORS.border,
-            background: "rgba(253,253,252,0.8)",
-          }}
-        >
-          <div className="flex h-full flex-col p-6">
-            <div className="mb-10 flex items-center gap-3">
-              <div
-                className="relative h-12 w-12 overflow-hidden rounded-xl border shadow-sm bg-white"
-                style={{ borderColor: COLORS.border }}
-              >
-                <img
-                  alt="Agency Logo"
-                  className="h-full w-full object-cover"
-                  src={logo || FALLBACK_LOGO}
-                  onError={(e) => {
-                    e.currentTarget.src = FALLBACK_LOGO;
-                  }}
-                />
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-base font-bold leading-tight">
-                  {form.agencyName || "Agency"}
-                </h1>
-                <p
-                  className="text-xs font-medium uppercase tracking-wider"
-                  style={{ color: COLORS.primary }}
-                >
-                  Partner Agency
-                </p>
-              </div>
-            </div>
-
-            <nav className="flex flex-col gap-2">
-              {sidebar.map((i) => (
-                <Link
-                  key={i.label}
-                  to={i.to}
-                  className={[
-                    "group flex items-center gap-3 rounded-xl px-4 py-3 transition-all",
-                    i.active
-                      ? "bg-[#1978e5]/10 hover:bg-[#1978e5]/20"
-                      : "hover:bg-[#f0f4ee]",
-                  ].join(" ")}
-                >
-                  <span
-                    className={[
-                      "material-symbols-outlined transition-colors",
-                      i.active
-                        ? "text-[#1978e5]"
-                        : "text-[#6b7280] group-hover:text-[#1978e5]",
-                    ].join(" ")}
-                  >
-                    {i.icon}
-                  </span>
-                  <span
-                    className={[
-                      "text-sm",
-                      i.active
-                        ? "font-semibold text-[#2d3b2a]"
-                        : "font-medium text-[#4b5563] group-hover:text-[#2d3b2a]",
-                    ].join(" ")}
-                  >
-                    {i.label}
-                  </span>
-                </Link>
-              ))}
-            </nav>
-
-            <div className="mt-auto pt-6">
-              <button
-                type="button"
-                onClick={onLogout}
-                className="group flex w-full items-center gap-3 rounded-xl border border-transparent px-4 py-3 hover:border-[#e0e8dc] hover:bg-white hover:shadow-sm transition-all"
-              >
-                <span className="material-symbols-outlined text-[#6b7280] group-hover:text-red-500 transition-colors">
-                  logout
-                </span>
-                <span className="text-sm font-medium text-[#4b5563] group-hover:text-red-500">
-                  Log Out
-                </span>
-              </button>
-            </div>
-          </div>
-        </aside>
+        <AgencySidebar />
 
         <main className="flex flex-1 flex-col overflow-y-auto">
           <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-4 backdrop-blur-md shadow-sm lg:hidden">

@@ -3,7 +3,12 @@ import Booking from "../models/Booking.js";
 import Package from "../models/Package.js";
 import { protect } from "../middleware/auth.js";
 import { requireRole } from "../middleware/role.js";
-import { assignGuide, getAgencyStats } from "../controllers/bookingController.js";
+import { 
+  assignGuide, 
+  completeBooking,
+  getAgencyStats, 
+  getAgencyDashboardData 
+} from "../controllers/bookingController.js";
 
 const router = express.Router();
 
@@ -134,7 +139,7 @@ router.get("/my-trips", protect, async (req, res) => {
     for (const booking of bookings) {
       const status = String(booking.status || "").toLowerCase();
 
-      // 🔥 ACTIVE TRIP LOGIC
+      // 🔥 ACTIVE TRIP LOGIC: Only pending, confirmed, or ongoing can be active
       if (
         ["pending", "confirmed", "ongoing"].includes(status) &&
         !activeTrip
@@ -142,7 +147,7 @@ router.get("/my-trips", protect, async (req, res) => {
         activeTrip = booking;
       }
 
-      // 🔥 PAST TRIP LOGIC
+      // 🔥 PAST TRIP LOGIC: Only completed trips go here
       if (status === "completed") {
         pastTrips.push(booking);
       }
@@ -187,7 +192,8 @@ router.get("/agency", protect, requireRole("agency"), async (req, res) => {
 });
 
 
-// ================= AGENCY STATS =================
+// ================= AGENCY STATS & DASHBOARD =================
+router.get("/agency/dashboard", protect, requireRole("agency"), getAgencyDashboardData);
 router.get("/agency/stats", protect, requireRole("agency"), getAgencyStats);
 
 
@@ -217,6 +223,7 @@ router.get("/:id", protect, async (req, res) => {
 
 // ================= ASSIGN GUIDE =================
 router.put("/:id/assign-guide", protect, requireRole("agency"), assignGuide);
+router.put("/:id/complete", protect, requireRole("agency"), completeBooking);
 
 
 export default router;

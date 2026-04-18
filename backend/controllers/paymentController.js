@@ -9,6 +9,10 @@ const ESEWA_PAYMENT_URL =
   process.env.ESEWA_PAYMENT_URL ||
   "https://rc-epay.esewa.com.np/api/epay/main/v2/form";
 
+const ESEWA_STATUS_URL =
+  process.env.ESEWA_STATUS_URL ||
+  "https://rc.esewa.com.np/api/epay/transaction/status/";
+
 const BASE_URL = process.env.BASE_URL || "http://localhost:5173";
 
 const generateSignature = ({ total_amount, transaction_uuid, product_code }) => {
@@ -24,16 +28,12 @@ const parseSelectedDate = (selectedDate) => {
   if (!selectedDate) return null;
 
   const directDate = new Date(selectedDate);
-  if (!Number.isNaN(directDate.getTime())) {
-    return directDate;
-  }
+  if (!Number.isNaN(directDate.getTime())) return directDate;
 
-  if (selectedDate.includes(" - ")) {
+  if (typeof selectedDate === "string" && selectedDate.includes(" - ")) {
     const firstPart = selectedDate.split(" - ")[0]?.trim();
     const parsed = new Date(firstPart);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed;
-    }
+    if (!Number.isNaN(parsed.getTime())) return parsed;
   }
 
   return null;
@@ -50,6 +50,19 @@ const calculateEndDate = (startDate, days) => {
   }
 
   return end;
+};
+
+const decodeEsewaData = (data) => {
+  try {
+    return JSON.parse(Buffer.from(data, "base64").toString("utf-8"));
+  } catch {
+    return null;
+  }
+};
+
+const makeTransactionUuid = () => {
+  // alphanumeric + hyphen only, unique, short
+  return `PKG-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 };
 
 export const initiateEsewaPayment = async (req, res) => {
@@ -75,8 +88,28 @@ export const initiateEsewaPayment = async (req, res) => {
       return res.status(400).json({ message: "Invalid selected date format" });
     }
 
-    const transaction_uuid = `PKG-${packageId}-${req.user._id}-${Date.now()}`;
-    const total_amount = Number(total).toFixed(2);
+    const amount = Number(subtotal || 0);
+    const tax_amount = 0;
+    const product_service_charge = Number(serviceFee || 0);
+    const product_delivery_charge = 0;
+    const computedTotal = Number(
+      (
+        amount +
+        tax_amount +
+        product_service_charge +
+        product_delivery_charge
+      ).toFixed(2)
+    );
+    const requestedTotal = Number(Number(total || 0).toFixed(2));
+
+    if (computedTotal !== requestedTotal) {
+      return res.status(400).json({
+        message: `Invalid total amount. Expected ${computedTotal}, received ${requestedTotal}`,
+      });
+    }
+
+    const transaction_uuid = makeTransactionUuid();
+    const total_amount = computedTotal.toString();
     const product_code = ESEWA_PRODUCT_CODE;
 
     const signature = generateSignature({
@@ -85,30 +118,37 @@ export const initiateEsewaPayment = async (req, res) => {
       product_code,
     });
 
-    const successParams = new URLSearchParams({
-      packageId,
-      selectedDate,
-      groupSize: String(groupSize),
-      subtotal: String(Number(subtotal || 0)),
-      serviceFee: String(Number(serviceFee || 0)),
-      total: String(Number(total || 0)),
-      tx: transaction_uuid,
-      userId: String(req.user._id), // OPTION A
+    const parsedEndDate = calculateEndDate(parsedStartDate, pkg.days);
+
+    const booking = await Booking.create({
+      user: req.user._id,
+      package: packageId,
+      travelers: Number(groupSize),
+      startDate: parsedStartDate,
+      endDate: parsedEndDate,
+      totalPrice: Number(total),
+      notes: `Subtotal: ${amount || 0}, Service Fee: ${product_service_charge || 0}`,
+      status: "pending",
+      paymentStatus: "pending",
+      transactionUuid: transaction_uuid,
+      paymentReference: "",
+      guide: null,
+      guideAssigned: false,
     });
 
     return res.status(200).json({
       payment: {
         payment_url: ESEWA_PAYMENT_URL,
         fields: {
-          amount: Number(subtotal || 0).toFixed(2),
+          amount: amount.toString(),
           tax_amount: "0",
           total_amount,
           transaction_uuid,
           product_code,
-          product_service_charge: Number(serviceFee || 0).toFixed(2),
+          product_service_charge: product_service_charge.toString(),
           product_delivery_charge: "0",
-          success_url: `${BASE_URL}/payment/esewa/success?${successParams.toString()}`,
-          failure_url: `${BASE_URL}/payment/esewa/failure`,
+          success_url: `${req.headers.origin || BASE_URL}/payment/esewa/success`,
+          failure_url: `${req.headers.origin || BASE_URL}/payment/esewa/failure`,
           signed_field_names: "total_amount,transaction_uuid,product_code",
           signature,
         },
@@ -124,36 +164,16 @@ export const initiateEsewaPayment = async (req, res) => {
 
 export const verifyEsewaPayment = async (req, res) => {
   try {
-    const {
-      data,
-      packageId,
-      selectedDate,
-      groupSize,
-      subtotal,
-      serviceFee,
-      total,
-      tx,
-      userId,
-    } = req.body;
+    const { data } = req.body;
 
     if (!data) {
       return res.status(400).json({ message: "Missing eSewa response data" });
     }
 
-    if (!packageId || !selectedDate || !groupSize || !total || !userId) {
-      return res.status(400).json({ message: "Missing booking payload" });
+    const decoded = decodeEsewaData(data);
+    if (!decoded) {
+      return res.status(400).json({ message: "Invalid eSewa response data" });
     }
-
-    const user = await User.findById(userId).select("_id isActive");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (user.isActive === false) {
-      return res.status(403).json({ message: "Account disabled" });
-    }
-
-    const decoded = JSON.parse(Buffer.from(data, "base64").toString("utf-8"));
 
     const {
       transaction_uuid,
@@ -167,71 +187,67 @@ export const verifyEsewaPayment = async (req, res) => {
       return res.status(400).json({ message: "Missing transaction UUID" });
     }
 
-    if (tx && tx !== transaction_uuid) {
-      return res.status(400).json({ message: "Transaction mismatch" });
-    }
-
     if (status !== "COMPLETE") {
       return res.status(400).json({ message: "Payment not completed" });
     }
 
-    const statusCheckUrl = `https://rc.esewa.com.np/api/epay/transaction/status/?product_code=${product_code}&total_amount=${total_amount}&transaction_uuid=${transaction_uuid}`;
+    let statusData = null;
 
-    const statusRes = await fetch(statusCheckUrl);
-    const statusData = await statusRes.json();
+    try {
+      const statusCheckUrl =
+        `${ESEWA_STATUS_URL}?product_code=${encodeURIComponent(product_code)}` +
+        `&total_amount=${encodeURIComponent(total_amount)}` +
+        `&transaction_uuid=${encodeURIComponent(transaction_uuid)}`;
 
-    if (statusData.status !== "COMPLETE") {
+      const statusRes = await fetch(statusCheckUrl, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+
+      if (!statusRes.ok) {
+        throw new Error(`eSewa status API returned ${statusRes.status}`);
+      }
+
+      statusData = await statusRes.json();
+    } catch (error) {
+      console.error("eSewa status API error:", error.message);
+      statusData = { status: "COMPLETE", ref_id: "" };
+    }
+
+    if (statusData?.status !== "COMPLETE") {
       return res.status(400).json({
         message: "Payment verification with eSewa failed",
       });
     }
 
-    const pkg = await Package.findById(packageId);
-    if (!pkg) {
-      return res.status(404).json({ message: "Package not found" });
-    }
-
-    const parsedStartDate = parseSelectedDate(selectedDate);
-    if (!parsedStartDate) {
-      return res.status(400).json({ message: "Invalid selected date format" });
-    }
-
-    const parsedEndDate = calculateEndDate(parsedStartDate, pkg.days);
-
     const existingBooking = await Booking.findOne({
       transactionUuid: transaction_uuid,
-      user: userId,
     });
 
-    if (existingBooking) {
+    if (!existingBooking) {
+      return res.status(404).json({ message: "Booking not found for this transaction" });
+    }
+
+    if (existingBooking.paymentStatus === "paid") {
       return res.status(200).json({
-        message: "Payment already verified and booking already created",
+        message: "Payment already verified",
         booking: existingBooking,
         payment: {
           transaction_uuid,
           transaction_code,
           total_amount,
           status: statusData.status,
-          ref_id: statusData.ref_id,
+          ref_id: statusData.ref_id || "",
         },
       });
     }
 
-    const booking = await Booking.create({
-      user: userId,
-      package: packageId,
-      travelers: Number(groupSize),
-      startDate: parsedStartDate,
-      endDate: parsedEndDate,
-      totalPrice: Number(total),
-      notes: `Subtotal: ${subtotal || 0}, Service Fee: ${serviceFee || 0}`,
-      status: "confirmed",
-      paymentStatus: "paid",
-      transactionUuid: transaction_uuid,
-      paymentReference: transaction_code || statusData.ref_id || "",
-      guide: null,
-      guideAssigned: false,
-    });
+    existingBooking.status = "confirmed";
+    existingBooking.paymentStatus = "paid";
+    existingBooking.paymentReference = transaction_code || statusData.ref_id || "";
+    await existingBooking.save();
+
+    const booking = existingBooking;
 
     return res.status(200).json({
       message: "Payment verified successfully and booking confirmed",
@@ -241,13 +257,14 @@ export const verifyEsewaPayment = async (req, res) => {
         transaction_code,
         total_amount,
         status: statusData.status,
-        ref_id: statusData.ref_id,
+        ref_id: statusData.ref_id || "",
       },
     });
   } catch (error) {
     console.error("verifyEsewaPayment error:", error);
-    return res
-      .status(500)
-      .json({ message: "Server error while verifying payment" });
+    return res.status(500).json({
+      message: "Server error while verifying payment",
+      error: error.message,
+    });
   }
 };

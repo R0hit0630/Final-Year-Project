@@ -153,6 +153,41 @@ export const assignGuide = async (req, res) => {
   }
 };
 
+// PUT /api/bookings/:id/complete
+export const completeBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id).populate("package");
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Only the agency that owns the package can complete it
+    if (booking.package.agency.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    if (booking.status === "completed") {
+      return res.status(400).json({ message: "Booking is already completed" });
+    }
+
+    if (booking.status === "cancelled") {
+      return res.status(400).json({ message: "Cannot complete a cancelled booking" });
+    }
+
+    booking.status = "completed";
+    await booking.save();
+
+    return res.json({
+      message: "Booking marked as completed",
+      booking,
+    });
+  } catch (error) {
+    console.error("completeBooking error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 // GET /api/bookings/agency/stats
 export const getAgencyStats = async (req, res) => {
   try {
@@ -198,5 +233,130 @@ export const getAgencyStats = async (req, res) => {
   } catch (error) {
     console.error("getAgencyStats error:", error);
     return res.status(500).json({ message: "Failed to fetch agency stats" });
+  }
+};
+
+// GET /api/bookings/agency/dashboard
+export const getAgencyDashboardData = async (req, res) => {
+  try {
+    const agencyId = req.user._id;
+
+    // 1. Fetch Packages
+    const packages = await Package.find({ agency: agencyId });
+    const packageIds = packages.map((pkg) => pkg._id);
+
+    // 2. Fetch Bookings for these packages
+    const bookings = await Booking.find({ package: { $in: packageIds } })
+      .populate("user", "username fullName email phone avatar profileImage")
+      .populate("package", "title days price maxGroupSize images")
+      .populate("guide", "name fullName avatar photo");
+
+    // 3. Fetch Active Guides count
+    const activeGuidesCount = await Guide.countDocuments({
+      agency: agencyId,
+      isActive: true,
+    });
+
+    // --- CALCULATE STATS ---
+    const totalBookings = bookings.length;
+
+    // Monthly Revenue (from paid bookings created this month)
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    let monthlyRevenue = 0;
+    let weightedRatingSum = 0;
+    let totalReviews = 0;
+
+    for (const b of bookings) {
+      if (
+        b.paymentStatus === "paid" &&
+        new Date(b.createdAt) >= firstDayOfMonth
+      ) {
+        monthlyRevenue += Number(b.totalPrice || 0);
+      }
+    }
+
+    for (const pkg of packages) {
+      const avg = Number(pkg.averageRating || 0);
+      const reviews = Number(pkg.numReviews || 0);
+      weightedRatingSum += avg * reviews;
+      totalReviews += reviews;
+    }
+
+    const avgRating = totalReviews > 0 ? Number((weightedRatingSum / totalReviews).toFixed(1)) : 0;
+
+    const stats = {
+      totalBookings,
+      monthlyRevenue,
+      avgRating,
+      activeGuides: activeGuidesCount,
+    };
+
+    // --- FORMAT PACKAGES ---
+    // We'll calculate percent full based on active bookings vs maxGroupSize
+    const packageStats = packages.map((pkg) => {
+      const pkgBookings = bookings.filter(
+        (b) =>
+          b.package?._id.toString() === pkg._id.toString() &&
+          ["pending", "confirmed", "ongoing"].includes(b.status)
+      );
+
+      // Find the next departure
+      const upcoming = pkgBookings
+        .filter((b) => new Date(b.startDate) >= new Date())
+        .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+      const nextDeparture = upcoming.length > 0 ? upcoming[0].startDate : null;
+      
+      const totalTravelers = pkgBookings.reduce((sum, b) => sum + (b.travelers || 1), 0);
+      const capacity = Math.max(Number(pkg.maxGroupSize || 10), 1);
+      // Rough percentage full (if multiple bookings exist, just show percentage of 1 group for UI, or cap at 100)
+      const pct = Math.min(Math.round((totalTravelers / capacity) * 100), 100);
+
+      return {
+        _id: pkg._id,
+        title: pkg.title,
+        days: `${pkg.days} Days`,
+        img: pkg.images?.[0] || "",
+        status: pct > 80 ? "High Demand" : pct > 40 ? "Steady" : "Available",
+        pct: pct,
+        next: nextDeparture ? new Date(nextDeparture).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "N/A",
+      };
+    });
+
+    // --- FORMAT DEPARTURES ---
+    // Get upcoming bookings
+    const upcomingBookings = bookings
+      .filter((b) => ["pending", "confirmed", "ongoing"].includes(b.status))
+      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+      .slice(0, 10); // Limit to top 10
+
+    const departures = upcomingBookings.map((b) => {
+      return {
+        _id: b._id,
+        pkg: b.package?.title || "Unknown Package",
+        group: `Grp-${b._id.toString().slice(-4).toUpperCase()}`,
+        date: b.startDate ? new Date(b.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "N/A",
+        guide: b.guide ? { 
+          name: b.guide.fullName || b.guide.name, 
+          avatar: b.guide.photo || b.guide.avatar || "" 
+        } : null,
+        clients: {
+          avatars: b.user ? [b.user.profileImage || b.user.avatar || ""] : [],
+          extra: b.travelers > 1 ? `+${b.travelers - 1}` : null
+        },
+        status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
+      };
+    });
+
+    return res.json({
+      stats,
+      packages: packageStats,
+      departures,
+    });
+  } catch (error) {
+    console.error("getAgencyDashboardData error:", error);
+    return res.status(500).json({ message: "Failed to fetch dashboard data" });
   }
 };

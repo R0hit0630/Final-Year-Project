@@ -180,38 +180,19 @@ export default function PackageDetails() {
       .map((img) => buildImageUrl(img));
   }, [pkg]);
 
-  const generatedDates = useMemo(() => {
-    if (!pkg) return [];
-
-    if (Array.isArray(pkg.availableDates) && pkg.availableDates.length > 0) {
-      return pkg.availableDates;
-    }
-
+  const todayStr = useMemo(() => {
     const today = new Date();
-    const options = { month: "short", day: "numeric", year: "numeric" };
-    const tripDays = Math.max(Number(pkg.days || 1), 1);
-
-    return [0, 1, 2].map((n) => {
-      const start = new Date(today);
-      start.setDate(today.getDate() + 10 + n * 14);
-
-      const end = new Date(start);
-      end.setDate(start.getDate() + tripDays - 1);
-
-      return `${start.toLocaleDateString("en-US", options)} - ${end.toLocaleDateString(
-        "en-US",
-        options
-      )}`;
-    });
-  }, [pkg]);
+    today.setDate(today.getDate() + 1); // Start from tomorrow
+    return today.toISOString().split("T")[0];
+  }, []);
 
   useEffect(() => {
-    if (generatedDates.length > 0) {
-      setSelectedDate((prev) =>
-        generatedDates.includes(prev) ? prev : generatedDates[0]
-      );
+    if (pkg && Array.isArray(pkg.availableDates) && pkg.availableDates.length > 0) {
+      setSelectedDate(pkg.availableDates[0]);
+    } else if (!selectedDate) {
+      setSelectedDate(todayStr);
     }
-  }, [generatedDates]);
+  }, [pkg, todayStr]);
 
   const minGroupSize = Math.max(Number(pkg?.minGroupSize || 1), 1);
   const maxGroupSize = Math.max(Number(pkg?.maxGroupSize || 10), minGroupSize);
@@ -819,18 +800,29 @@ export default function PackageDetails() {
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]">
                           calendar_month
                         </span>
-                        <select
-                          value={selectedDate}
-                          onChange={(e) => setSelectedDate(e.target.value)}
-                          className="w-full rounded-lg border border-[#e0e8dc] bg-[#f6f7f8] py-3 pl-10 pr-4 text-sm text-[#2d3b2a] outline-none transition-all focus:border-blue-500 focus:ring-1"
-                          aria-label="Select date"
-                        >
-                          {generatedDates.map((d) => (
-                            <option key={d} value={d}>
-                              {d}
-                            </option>
-                          ))}
-                        </select>
+                        {pkg && Array.isArray(pkg.availableDates) && pkg.availableDates.length > 0 ? (
+                          <select
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="w-full rounded-lg border border-[#e0e8dc] bg-[#f6f7f8] py-3 pl-10 pr-4 text-sm text-[#2d3b2a] outline-none transition-all focus:border-blue-500 focus:ring-1"
+                            aria-label="Select date"
+                          >
+                            {pkg.availableDates.map((d) => (
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="date"
+                            min={todayStr}
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="w-full rounded-lg border border-[#e0e8dc] bg-[#f6f7f8] py-3 pl-10 pr-4 text-sm text-[#2d3b2a] outline-none transition-all focus:border-blue-500 focus:ring-1"
+                            aria-label="Select trip date"
+                          />
+                        )}
                       </div>
                     </div>
 

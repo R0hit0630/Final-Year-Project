@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import AgencySidebar from "../../components/AgencySidebar";
 
 export default function AddPackage() {
   const navigate = useNavigate();
@@ -19,17 +20,7 @@ export default function AddPackage() {
 
   const API_BASE = import.meta?.env?.VITE_API_URL || "http://localhost:5000";
 
-  const sidebar = useMemo(
-    () => [
-      { label: "Overview", icon: "dashboard", to: "/agency" },
-      { label: "My Packages", icon: "hiking", to: "/agency/packages" },
-      { label: "Bookings", icon: "book_online", to: "/agency/bookings" },
-      { label: "Guides", icon: "groups", to: "/agency/guides" },
-      { label: "Earnings", icon: "payments", to: "/agency/earnings" },
-      { label: "Profile", icon: "settings_account_box", to: "/agency/profile" },
-    ],
-    []
-  );
+
 
   const regions = [
     "Koshi Province",
@@ -228,70 +219,7 @@ export default function AddPackage() {
   return (
     <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
       <div className="flex h-full w-full bg-[#fcfbf8]">
-        <aside className="hidden w-64 flex-col justify-between border-r border-[#e0e8dc] bg-white/80 backdrop-blur-sm lg:flex">
-          <div className="flex h-full flex-col p-6">
-            <div className="mb-10 flex items-center gap-3">
-              <div className="h-12 w-12 rounded-xl border border-[#e0e8dc] bg-white shadow-sm overflow-hidden">
-                <img
-                  alt="Agency"
-                  className="h-full w-full object-cover"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBv5cRvMY3Y1duu7_mqX4yGdtkq8hLjd7F2MWWbrxUiEYLR7ACb9_WpRAQDRA1i-nfBrrt7AWJrIKWgoFL6vXK9nmNa7Xx6U-ouFwn1JaB6JtbwbjAOvrB3UCMvcSodjNYzIRFzg40W6onxqocvKUA9Jjr7U8YMFcbQQhwtTQxZirmliaSD4lbz4FrGB6Fqi68Q9lmPo_OPnKLhoj9a3nOxtLm-k3whu_Eiasizlk-9SwO5NES13rYYXjbUqCMDDE6JCeme3iAMfowo"
-                />
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-base font-bold text-[#2d3b2a] leading-tight">
-                  Summit Treks
-                </h1>
-                <p
-                  className="text-xs font-medium uppercase tracking-wider"
-                  style={{ color: COLORS.primary }}
-                >
-                  Partner Agency
-                </p>
-              </div>
-            </div>
-
-            <nav className="flex flex-col gap-2">
-              {sidebar.map((i) => (
-                <Link
-                  key={i.label}
-                  to={i.to}
-                  className="group flex items-center gap-3 rounded-xl px-4 py-3 transition-all hover:bg-[#f0f4ee]"
-                >
-                  <span className="material-symbols-outlined text-[#6b7280] group-hover:text-[#1978e5] transition-colors">
-                    {i.icon}
-                  </span>
-                  <span className="text-sm font-medium text-[#4b5563] group-hover:text-[#2d3b2a]">
-                    {i.label}
-                  </span>
-                </Link>
-              ))}
-
-              <div className="group flex items-center gap-3 rounded-xl px-4 py-3 bg-[#1978e5]/10">
-                <span className="material-symbols-outlined text-[#1978e5]">
-                  add_circle
-                </span>
-                <span className="text-sm font-semibold text-[#1978e5]">
-                  Add Package
-                </span>
-              </div>
-            </nav>
-
-            <div className="mt-auto pt-6">
-              <Link
-                to="/logout"
-                className="group flex items-center gap-3 rounded-xl border border-transparent px-4 py-3 hover:border-[#e0e8dc] hover:bg-white hover:shadow-sm transition-all"
-              >
-                <span className="material-symbols-outlined text-[#6b7280] group-hover:text-red-500 transition-colors">
-                  logout
-                </span>
-                <span className="text-sm font-medium text-[#4b5563] group-hover:text-red-500">
-                  Log Out
-                </span>
-              </Link>
-            </div>
-          </div>
-        </aside>
+        <AgencySidebar />
 
         <main className="flex flex-1 flex-col overflow-y-auto">
           <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-[#e0e8dc] px-6 md:px-8 py-5">
