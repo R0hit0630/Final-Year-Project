@@ -16,7 +16,7 @@ export default function EsewaSuccess() {
         if (!dataParam) {
           throw new Error("Missing eSewa response data");
         }
-
+        console.log("Verifying payment with data:", dataParam);
         const res = await fetch(`${API}/api/payments/esewa/verify`, {
           method: "POST",
           headers: {
@@ -28,7 +28,7 @@ export default function EsewaSuccess() {
         });
 
         const data = await res.json();
-        console.error("eSewa verify response:", data);
+        console.log("eSewa verify response:", data);
 
         if (!res.ok) {
           throw new Error(data?.message || "Payment verification failed");

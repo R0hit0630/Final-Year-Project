@@ -68,6 +68,26 @@ export default function AgencyPackages() {
     fetchPackages();
   }, []);
 
+  const handleDeletePackage = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this package?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:5000/api/packages/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      alert("Package deleted successfully.");
+      setPackages((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error("Error deleting package:", err);
+      alert(err.response?.data?.message || "Failed to delete package.");
+    }
+  };
+
+
   const paperTextureStyle = useMemo(
     () => ({
       backgroundImage:
@@ -211,26 +231,36 @@ export default function AgencyPackages() {
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            className="flex-1 rounded-lg border border-gray-200 bg-white py-2 text-xs font-bold text-[#2d3b2a] transition-colors hover:bg-gray-50"
-            type="button"
-            onClick={() => navigate(`/agency/packages/${p.id}`)}
-          >
-            Edit Details
-          </button>
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <button
+              className="flex-1 rounded-lg border border-gray-200 bg-white py-2 text-xs font-bold text-[#2d3b2a] transition-colors hover:bg-gray-50"
+              type="button"
+              onClick={() => navigate(`/agency/packages/${p.id}`)}
+            >
+              Edit Details
+            </button>
+
+            <button
+              className="flex-1 rounded-lg border py-2 text-xs font-bold transition-colors"
+              style={{
+                color: COLORS.primary,
+                backgroundColor: "rgba(25,120,229,0.08)",
+                borderColor: "rgba(25,120,229,0.25)",
+              }}
+              type="button"
+              onClick={() => navigate(`/agency/packages/${p.id}`)}
+            >
+              View Package
+            </button>
+          </div>
 
           <button
-            className="flex-1 rounded-lg border py-2 text-xs font-bold transition-colors"
-            style={{
-              color: COLORS.primary,
-              backgroundColor: "rgba(25,120,229,0.08)",
-              borderColor: "rgba(25,120,229,0.25)",
-            }}
+            className="w-full rounded-lg border border-red-200 bg-red-50 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-100"
             type="button"
-            onClick={() => navigate(`/agency/packages/${p.id}`)}
+            onClick={() => handleDeletePackage(p.id)}
           >
-            View Package
+            Delete Package
           </button>
         </div>
       </div>

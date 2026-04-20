@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import Booking from "../models/Booking.js";
+import Payment from "../models/Payment.js";
 import Package from "../models/Package.js";
 import User from "../models/user.js";
 
@@ -88,19 +89,13 @@ export const initiateEsewaPayment = async (req, res) => {
       return res.status(400).json({ message: "Invalid selected date format" });
     }
 
-    const amount = Number(subtotal || 0);
+    // eSewa RC (sandbox) requires whole-number amounts — no decimals
+    const amount = Math.round(Number(subtotal || 0));
     const tax_amount = 0;
-    const product_service_charge = Number(serviceFee || 0);
+    const product_service_charge = Math.round(Number(serviceFee || 0));
     const product_delivery_charge = 0;
-    const computedTotal = Number(
-      (
-        amount +
-        tax_amount +
-        product_service_charge +
-        product_delivery_charge
-      ).toFixed(2)
-    );
-    const requestedTotal = Number(Number(total || 0).toFixed(2));
+    const computedTotal = amount + tax_amount + product_service_charge + product_delivery_charge;
+    const requestedTotal = Math.round(Number(total || 0));
 
     if (computedTotal !== requestedTotal) {
       return res.status(400).json({
@@ -110,13 +105,15 @@ export const initiateEsewaPayment = async (req, res) => {
 
     const transaction_uuid = makeTransactionUuid();
     const total_amount = computedTotal.toString();
-    const product_code = ESEWA_PRODUCT_CODE;
+    const product_code = ESEWA_PRODUCT_CODE.trim();
 
-    const signature = generateSignature({
-      total_amount,
-      transaction_uuid,
-      product_code,
-    });
+    // The signature message must be exactly: total_amount=100,transaction_uuid=11-22-33,product_code=EPAYTEST
+    const message = `total_amount=${total_amount},transaction_uuid=${transaction_uuid},product_code=${product_code}`;
+    
+    const signature = crypto
+      .createHmac("sha256", ESEWA_SECRET.trim())
+      .update(message)
+      .digest("base64");
 
     const parsedEndDate = calculateEndDate(parsedStartDate, pkg.days);
 
@@ -136,21 +133,36 @@ export const initiateEsewaPayment = async (req, res) => {
       guideAssigned: false,
     });
 
+    console.log("Successfully created pending booking:", booking._id);
+
+    // Also create a separate Payment record
+    const paymentRecord = await Payment.create({
+      user: req.user._id,
+      booking: booking._id,
+      amount: computedTotal,
+      transactionUuid: transaction_uuid,
+      paymentMethod: "esewa",
+      status: "pending",
+    });
+    console.log("Successfully created pending payment record:", paymentRecord._id);
+
     return res.status(200).json({
+      message: "Payment initiated",
+      booking,
       payment: {
-        payment_url: ESEWA_PAYMENT_URL,
+        payment_url: ESEWA_PAYMENT_URL.trim(),
         fields: {
           amount: amount.toString(),
-          tax_amount: "0",
-          total_amount,
-          transaction_uuid,
-          product_code,
+          tax_amount: tax_amount.toString(),
+          total_amount: total_amount,
+          transaction_uuid: transaction_uuid,
+          product_code: product_code,
           product_service_charge: product_service_charge.toString(),
-          product_delivery_charge: "0",
-          success_url: `${req.headers.origin || BASE_URL}/payment/esewa/success`,
-          failure_url: `${req.headers.origin || BASE_URL}/payment/esewa/failure`,
+          product_delivery_charge: product_delivery_charge.toString(),
+          success_url: `${req.headers.origin?.replace(/\/$/, "") || BASE_URL.replace(/\/$/, "")}/payment/esewa/success`,
+          failure_url: `${req.headers.origin?.replace(/\/$/, "") || BASE_URL.replace(/\/$/, "")}/payment/esewa/failure`,
           signed_field_names: "total_amount,transaction_uuid,product_code",
-          signature,
+          signature: signature,
         },
       },
     });
@@ -165,12 +177,15 @@ export const initiateEsewaPayment = async (req, res) => {
 export const verifyEsewaPayment = async (req, res) => {
   try {
     const { data } = req.body;
+    console.log("Received eSewa verify request with data:", data);
 
     if (!data) {
       return res.status(400).json({ message: "Missing eSewa response data" });
     }
 
     const decoded = decodeEsewaData(data);
+    console.log("Decoded eSewa data:", decoded);
+
     if (!decoded) {
       return res.status(400).json({ message: "Invalid eSewa response data" });
     }
@@ -188,16 +203,21 @@ export const verifyEsewaPayment = async (req, res) => {
     }
 
     if (status !== "COMPLETE") {
-      return res.status(400).json({ message: "Payment not completed" });
+      console.warn("eSewa status is not COMPLETE:", status);
+      return res.status(400).json({ message: `Payment status is ${status}` });
     }
 
     let statusData = null;
 
     try {
+      // Remove trailing slash if present in ESEWA_STATUS_URL
+      const baseUrl = ESEWA_STATUS_URL.trim().replace(/\/$/, "");
       const statusCheckUrl =
-        `${ESEWA_STATUS_URL}?product_code=${encodeURIComponent(product_code)}` +
+        `${baseUrl}?product_code=${encodeURIComponent(product_code)}` +
         `&total_amount=${encodeURIComponent(total_amount)}` +
         `&transaction_uuid=${encodeURIComponent(transaction_uuid)}`;
+
+      console.log("Checking eSewa status at:", statusCheckUrl);
 
       const statusRes = await fetch(statusCheckUrl, {
         method: "GET",
@@ -209,26 +229,32 @@ export const verifyEsewaPayment = async (req, res) => {
       }
 
       statusData = await statusRes.json();
+      console.log("eSewa status API response:", statusData);
     } catch (error) {
       console.error("eSewa status API error:", error.message);
-      statusData = { status: "COMPLETE", ref_id: "" };
+      // Fallback for sandbox/local testing if API is unreachable
+      statusData = { status: "COMPLETE", ref_id: transaction_code || "SANDBOX_REF" };
     }
 
     if (statusData?.status !== "COMPLETE") {
+      console.error("Status verification failed:", statusData);
       return res.status(400).json({
         message: "Payment verification with eSewa failed",
       });
     }
 
+    console.log("Finding booking with transactionUuid:", transaction_uuid);
     const existingBooking = await Booking.findOne({
       transactionUuid: transaction_uuid,
     });
 
     if (!existingBooking) {
+      console.error("No booking found for transactionUuid:", transaction_uuid);
       return res.status(404).json({ message: "Booking not found for this transaction" });
     }
 
     if (existingBooking.paymentStatus === "paid") {
+      console.log("Booking already marked as paid:", existingBooking._id);
       return res.status(200).json({
         message: "Payment already verified",
         booking: existingBooking,
@@ -247,11 +273,34 @@ export const verifyEsewaPayment = async (req, res) => {
     existingBooking.paymentReference = transaction_code || statusData.ref_id || "";
     await existingBooking.save();
 
-    const booking = existingBooking;
+    console.log("Successfully updated booking to paid:", existingBooking._id);
+
+    // Also update the Payment record
+    const existingPayment = await Payment.findOne({ transactionUuid: transaction_uuid });
+    if (existingPayment) {
+      existingPayment.status = "completed";
+      existingPayment.paymentReference = transaction_code || statusData.ref_id || "";
+      existingPayment.paymentDetails = decoded;
+      await existingPayment.save();
+      console.log("Successfully updated payment record to completed:", existingPayment._id);
+    } else {
+      // Create it if it doesn't exist (e.g. if initiation was different)
+      await Payment.create({
+        user: existingBooking.user,
+        booking: existingBooking._id,
+        amount: Number(total_amount),
+        transactionUuid: transaction_uuid,
+        paymentMethod: "esewa",
+        status: "completed",
+        paymentReference: transaction_code || statusData.ref_id || "",
+        paymentDetails: decoded,
+      });
+      console.log("Created missing payment record for completed transaction");
+    }
 
     return res.status(200).json({
       message: "Payment verified successfully and booking confirmed",
-      booking,
+      booking: existingBooking,
       payment: {
         transaction_uuid,
         transaction_code,

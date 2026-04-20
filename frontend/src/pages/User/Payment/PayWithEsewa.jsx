@@ -11,12 +11,20 @@ export default function PayWithEsewa() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [paymentData, setPaymentData] = useState(null);
 
   useEffect(() => {
     if (!state?.packageId || !state?.selectedDate || !state?.groupSize || !state?.total) {
       navigate(`/packages/${id}`);
     }
   }, [state, id, navigate]);
+
+  useEffect(() => {
+    if (paymentData) {
+      console.log("Payment data ready, submitting form...");
+      document.getElementById("esewa-form").submit();
+    }
+  }, [paymentData]);
 
   const handleEsewaPayment = async () => {
     try {
@@ -29,10 +37,10 @@ export default function PayWithEsewa() {
         return;
       }
 
-      const subtotalNum = Number(state?.subtotal || 0);
-      const serviceFeeNum = Number(state?.serviceFee || 0);
-      const totalNum = Number(state?.total || 0);
-      const expectedTotal = Number((subtotalNum + serviceFeeNum).toFixed(2));
+      const subtotalNum = Math.round(Number(state?.subtotal || 0));
+      const serviceFeeNum = Math.round(Number(state?.serviceFee || 0));
+      const totalNum = Math.round(Number(state?.total || 0));
+      const expectedTotal = subtotalNum + serviceFeeNum;
 
       if (
         Number.isNaN(subtotalNum) ||
@@ -43,7 +51,7 @@ export default function PayWithEsewa() {
         return;
       }
 
-      if (expectedTotal !== Number(totalNum.toFixed(2))) {
+      if (expectedTotal !== totalNum) {
         setError(
           `Invalid payment total. Expected रु ${expectedTotal.toLocaleString()}, but got रु ${totalNum.toLocaleString()}. Please refresh and try again.`
         );
@@ -82,44 +90,7 @@ export default function PayWithEsewa() {
         throw new Error("Invalid payment response from server");
       }
 
-      console.log("eSewa payment_url:", payment.payment_url);
-      console.log("eSewa fields:", payment.fields);
-
-      const requiredFields = [
-        "amount",
-        "tax_amount",
-        "total_amount",
-        "transaction_uuid",
-        "product_code",
-        "product_service_charge",
-        "product_delivery_charge",
-        "success_url",
-        "failure_url",
-        "signed_field_names",
-        "signature",
-      ];
-
-      for (const field of requiredFields) {
-        const value = payment.fields[field];
-        if (value === undefined || value === null || value === "") {
-          throw new Error(`Missing eSewa field: ${field}`);
-        }
-      }
-
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = payment.payment_url;
-
-      Object.entries(payment.fields).forEach(([key, value]) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = key;
-        input.value = String(value);
-        form.appendChild(input);
-      });
-
-      document.body.appendChild(form);
-      form.submit();
+      setPaymentData(payment);
     } catch (err) {
       console.error("handleEsewaPayment error:", err);
       setError(
@@ -258,6 +229,19 @@ export default function PayWithEsewa() {
         >
           {loading ? "Processing..." : "Book Now, Pay Later"}
         </button>
+
+        {paymentData && (
+          <form
+            id="esewa-form"
+            method="POST"
+            action={paymentData.payment_url}
+            className="hidden"
+          >
+            {Object.entries(paymentData.fields).map(([key, value]) => (
+              <input key={key} type="hidden" name={key} value={String(value)} />
+            ))}
+          </form>
+        )}
       </div>
     </div>
   );

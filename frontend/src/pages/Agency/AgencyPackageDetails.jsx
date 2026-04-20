@@ -177,6 +177,29 @@ export default function AgencyPackageDetails() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this package?")) return;
+    setSaving(true);
+    setMessage("");
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:5000/api/packages/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      alert("Package deleted successfully.");
+      navigate("/agency/packages");
+    } catch (err) {
+      console.error("Error deleting package:", err);
+      setMessage(err.response?.data?.message || "Failed to delete package.");
+      setSaving(false);
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f6f7f8] p-10 text-center">
@@ -458,21 +481,32 @@ export default function AgencyPackageDetails() {
             </div>
           </div>
 
-          <div className="mt-6 flex gap-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-lg bg-[#1978e5] px-5 py-3 text-sm font-bold text-white"
-            >
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-lg bg-[#1978e5] px-5 py-3 text-sm font-bold text-white shadow-md hover:opacity-90 disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate("/agency/packages")}
+                className="rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-bold hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
 
             <button
               type="button"
-              onClick={() => navigate("/agency/packages")}
-              className="rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-bold"
+              onClick={handleDelete}
+              disabled={saving}
+              className="rounded-lg border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
             >
-              Cancel
+              Delete Package
             </button>
           </div>
         </form>

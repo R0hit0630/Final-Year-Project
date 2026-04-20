@@ -10,9 +10,9 @@ export const getMyTrips = async (req, res) => {
     const bookings = await Booking.find({ user: userId })
       .populate("package", "title region price days difficulty images itinerary")
       .populate("guide", "name fullName email phone averageRating numReviews")
-      .sort({ startDate: 1 });
+      .sort({ createdAt: -1 });
 
-    let activeTrip = null;
+    const activeTrips = [];
     const pastTrips = [];
     const today = new Date();
 
@@ -47,9 +47,7 @@ export const getMyTrips = async (req, res) => {
       }
 
       if (["pending", "confirmed", "ongoing"].includes(status)) {
-        if (!activeTrip) {
-          activeTrip = booking;
-        }
+        activeTrips.push(booking);
       }
 
       if (["completed", "cancelled"].includes(status)) {
@@ -58,7 +56,8 @@ export const getMyTrips = async (req, res) => {
     }
 
     return res.json({
-      activeTrip,
+      activeTrip: activeTrips.length > 0 ? activeTrips[0] : null,
+      activeTrips, // All active trips
       pastTrips,
     });
   } catch (error) {
