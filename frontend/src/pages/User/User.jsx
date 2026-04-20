@@ -29,9 +29,7 @@ export default function Profile({ user, setUser }) {
   );
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
-    navigate("/login", { replace: true });
+    navigate("/logout", { replace: true });
   };
 
   const avatar =

@@ -24,8 +24,6 @@ export const getMyProfile = async (req, res) => {
       location: u.location || "",
       avatar: u.avatar || "",
 
-      level: `LEVEL ${u.level ?? 1}`,
-      tier: u.tier || "EXPLORER",
 
       difficulty: u.preferences?.difficulty || "Challenging",
       interests: u.preferences?.interests || [],
@@ -54,26 +52,25 @@ export const updateMyProfile = async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (typeof fullName === "string") user.fullName = fullName.trim();
-    if (typeof phone === "string") user.phone = phone.trim();
-    if (typeof location === "string") user.location = location.trim();
-    if (typeof avatar === "string") user.avatar = avatar.trim();
-
-    user.preferences = user.preferences || {};
+    const updateData = {};
+    if (typeof fullName === "string") updateData.fullName = fullName.trim();
+    if (typeof phone === "string") updateData.phone = phone.trim();
+    if (typeof location === "string") updateData.location = location.trim();
+    if (typeof avatar === "string") updateData.avatar = avatar.trim();
 
     if (typeof difficulty === "string") {
-      user.preferences.difficulty = difficulty;
+      updateData["preferences.difficulty"] = difficulty;
     }
 
     if (Array.isArray(interests)) {
-      user.preferences.interests = interests
+      updateData["preferences.interests"] = interests
         .map((t) => String(t).trim().replace(/^#/, ""))
         .filter(Boolean)
         .slice(0, 20);
     }
 
     if (Array.isArray(emergencyContacts)) {
-      user.emergencyContacts = emergencyContacts
+      updateData.emergencyContacts = emergencyContacts
         .map((c) => ({
           name: String(c?.name || "").trim(),
           phone: String(c?.phone || "").trim(),
@@ -82,7 +79,7 @@ export const updateMyProfile = async (req, res) => {
         .slice(0, 10);
     }
 
-    await user.save();
+    await User.findByIdAndUpdate(req.user._id, { $set: updateData }, { new: true });
 
     return res.json({ message: "Profile updated successfully" });
   } catch (err) {
@@ -90,6 +87,7 @@ export const updateMyProfile = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // ==============================
 // AGENCY PROFILE
@@ -122,6 +120,7 @@ export const getMyAgencyProfile = async (req, res) => {
       logo: user.agencyLogo || "",
       isVerified: user.agencyVerified || false,
       agencyVerifiedAt: user.agencyVerifiedAt || null,
+      agencyCredentials: user.agencyCredentials || { license: "", insurance: "", vat: "" },
     });
   } catch (err) {
     console.error("getMyAgencyProfile error:", err.message);
@@ -141,6 +140,7 @@ export const updateMyAgencyProfile = async (req, res) => {
       instagram,
       tripadvisor,
       logo,
+      agencyCredentials,
     } = req.body;
 
     const user = await User.findById(req.user._id);
@@ -153,32 +153,39 @@ export const updateMyAgencyProfile = async (req, res) => {
       return res.status(403).json({ message: "Only agency can update this profile" });
     }
 
-    if (typeof agencyName === "string") user.agencyName = agencyName.trim();
-    if (typeof tagline === "string") user.tagline = tagline.trim();
-    if (typeof about === "string") user.about = about.trim();
-    if (typeof phone === "string") user.agencyPhone = phone.trim();
-    if (typeof address === "string") user.agencyAddress = address.trim();
-    if (typeof instagram === "string") user.instagram = instagram.trim();
-    if (typeof tripadvisor === "string") user.tripadvisor = tripadvisor.trim();
-    if (typeof logo === "string") user.agencyLogo = logo.trim();
+    const updateData = {};
+    if (typeof agencyName === "string") updateData.agencyName = agencyName.trim();
+    if (typeof tagline === "string") updateData.tagline = tagline.trim();
+    if (typeof about === "string") updateData.about = about.trim();
+    if (typeof phone === "string") updateData.agencyPhone = phone.trim();
+    if (typeof address === "string") updateData.agencyAddress = address.trim();
+    if (typeof instagram === "string") updateData.instagram = instagram.trim();
+    if (typeof tripadvisor === "string") updateData.tripadvisor = tripadvisor.trim();
+    if (typeof logo === "string") updateData.agencyLogo = logo.trim();
 
-    await user.save();
+    if (agencyCredentials) {
+      if (typeof agencyCredentials.license === "string") updateData["agencyCredentials.license"] = agencyCredentials.license;
+      if (typeof agencyCredentials.insurance === "string") updateData["agencyCredentials.insurance"] = agencyCredentials.insurance;
+      if (typeof agencyCredentials.vat === "string") updateData["agencyCredentials.vat"] = agencyCredentials.vat;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, { $set: updateData }, { new: true });
 
     return res.json({
       message: "Agency profile updated successfully",
       agency: {
-        id: user._id,
-        agencyName: user.agencyName,
-        tagline: user.tagline,
-        about: user.about,
-        email: user.email,
-        phone: user.agencyPhone,
-        address: user.agencyAddress,
-        instagram: user.instagram,
-        tripadvisor: user.tripadvisor,
-        logo: user.agencyLogo,
-        isVerified: user.agencyVerified,
-        agencyVerifiedAt: user.agencyVerifiedAt,
+        id: updatedUser._id,
+        agencyName: updatedUser.agencyName,
+        tagline: updatedUser.tagline,
+        about: updatedUser.about,
+        email: updatedUser.email,
+        phone: updatedUser.agencyPhone,
+        address: updatedUser.agencyAddress,
+        instagram: updatedUser.instagram,
+        tripadvisor: updatedUser.tripadvisor,
+        logo: updatedUser.agencyLogo,
+        isVerified: updatedUser.agencyVerified,
+        agencyVerifiedAt: updatedUser.agencyVerifiedAt,
       },
     });
   } catch (err) {

@@ -4,6 +4,44 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import AgencySidebar from "../../components/AgencySidebar";
 
+const Input = ({
+  label,
+  icon,
+  type = "text",
+  value,
+  onChange,
+  accentTextClass = "",
+  disabled = false,
+  editMode = true,
+}) => (
+  <div>
+    <label className="mb-1 block text-xs font-bold uppercase text-[#6b7280]">
+      {label}
+    </label>
+    <div className="relative">
+      {icon && (
+        <span className="material-symbols-outlined absolute left-3 top-2.5 text-[#94a3b8] text-sm">
+          {icon}
+        </span>
+      )}
+      <input
+        type={type}
+        disabled={disabled || !editMode}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={[
+          "w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-[#2d3b2a] outline-none transition-all",
+          icon ? "pl-9" : "",
+          editMode && !disabled
+            ? "focus:border-[#1978e5] focus:ring-[#1978e5]"
+            : "opacity-80 cursor-not-allowed bg-gray-50",
+          accentTextClass,
+        ].join(" ")}
+      />
+    </div>
+  </div>
+);
+
 export default function AgencyProfile() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -80,11 +118,17 @@ export default function AgencyProfile() {
     totalBookings: 0,
   });
 
-  const [credentials] = useState([
-    { title: "Ministry of Tourism License", meta: "Uploaded via admin or later sync", icon: "description" },
-    { title: "Liability Insurance", meta: "Uploaded via admin or later sync", icon: "security" },
-    { title: "VAT Registration", meta: "Uploaded via admin or later sync", icon: "id_card" },
-  ]);
+  const [credentials, setCredentials] = useState({
+    license: "",
+    insurance: "",
+    vat: "",
+  });
+  const [initialCredentials, setInitialCredentials] = useState({
+    license: "",
+    insurance: "",
+    vat: "",
+  });
+  const [uploadingDoc, setUploadingDoc] = useState("");
 
   const [personnel, setPersonnel] = useState([]);
 
@@ -130,10 +174,18 @@ export default function AgencyProfile() {
       tripadvisor: data.tripadvisor || "",
     };
 
+    const mappedCredentials = {
+      license: data.agencyCredentials?.license || "",
+      insurance: data.agencyCredentials?.insurance || "",
+      vat: data.agencyCredentials?.vat || "",
+    };
+
     const mappedLogo = normalizeImageUrl(data.logo || "");
 
     setForm(mappedForm);
     setInitialSavedForm(mappedForm);
+    setCredentials(mappedCredentials);
+    setInitialCredentials(mappedCredentials);
     setLogo(mappedLogo || FALLBACK_LOGO);
     setInitialLogo(mappedLogo || FALLBACK_LOGO);
     setVerified(Boolean(data.isVerified));
@@ -249,6 +301,42 @@ export default function AgencyProfile() {
     }
   };
 
+  const onDocumentUpload = async (e, type) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingDoc(type);
+
+      const body = new FormData();
+      body.append("document", file);
+
+      const uploadRes = await axios.post(`${API_BASE}/api/upload/document`, body, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const uploadedPath =
+        uploadRes.data?.documentUrl ||
+        uploadRes.data?.url ||
+        uploadRes.data?.path ||
+        "";
+
+      if (!uploadedPath) {
+        throw new Error("Upload succeeded but no file path returned");
+      }
+
+      setCredentials(prev => ({ ...prev, [type]: uploadedPath }));
+    } catch (error) {
+      console.error(`${type} upload failed:`, error);
+      alert(error?.response?.data?.message || error.message || `Failed to upload ${type}`);
+    } finally {
+      setUploadingDoc("");
+    }
+  };
+
   const onSave = async () => {
     try {
       setSaving(true);
@@ -267,12 +355,14 @@ export default function AgencyProfile() {
         instagram: form.instagram,
         tripadvisor: form.tripadvisor,
         logo: cleanLogo,
+        agencyCredentials: credentials,
       };
 
       const res = await axios.put(`${API_BASE}/api/users/agency/me`, payload, authConfig);
 
       setInitialSavedForm({ ...form });
       setInitialLogo(logo || FALLBACK_LOGO);
+      setInitialCredentials({ ...credentials });
       setVerified(Boolean(res.data?.agency?.isVerified ?? verified));
 
       alert(res.data?.message || "Agency profile updated successfully");
@@ -287,12 +377,11 @@ export default function AgencyProfile() {
   const onDiscard = () => {
     setForm(initialSavedForm);
     setLogo(initialLogo || FALLBACK_LOGO);
+    setCredentials(initialCredentials);
   };
 
   const onLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
+    navigate("/logout");
   };
 
   const formatBookings = (count) => {
@@ -301,43 +390,6 @@ export default function AgencyProfile() {
     }
     return String(count);
   };
-
-  const Input = ({
-    label,
-    icon,
-    type = "text",
-    value,
-    onChange,
-    accentTextClass = "",
-    disabled = false,
-  }) => (
-    <div>
-      <label className="mb-1 block text-xs font-bold uppercase text-[#6b7280]">
-        {label}
-      </label>
-      <div className="relative">
-        {icon && (
-          <span className="material-symbols-outlined absolute left-3 top-2.5 text-[#94a3b8] text-sm">
-            {icon}
-          </span>
-        )}
-        <input
-          type={type}
-          disabled={disabled || !editMode}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={[
-            "w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-[#2d3b2a] outline-none transition-all",
-            icon ? "pl-9" : "",
-            editMode && !disabled
-              ? "focus:border-[#1978e5] focus:ring-[#1978e5]"
-              : "opacity-80 cursor-not-allowed bg-gray-50",
-            accentTextClass,
-          ].join(" ")}
-        />
-      </div>
-    </div>
-  );
 
   if (loading) {
     return (
@@ -544,6 +596,7 @@ export default function AgencyProfile() {
                         value={form.email}
                         onChange={(v) => setField("email", v)}
                         disabled
+                        editMode={editMode}
                       />
                       <Input
                         label="Phone Number"
@@ -551,12 +604,14 @@ export default function AgencyProfile() {
                         type="tel"
                         value={form.phone}
                         onChange={(v) => setField("phone", v)}
+                        editMode={editMode}
                       />
                       <Input
                         label="Head Office"
                         icon="location_on"
                         value={form.address}
                         onChange={(v) => setField("address", v)}
+                        editMode={editMode}
                       />
                     </div>
                   </div>
@@ -571,11 +626,12 @@ export default function AgencyProfile() {
 
                     <div className="space-y-4">
                       <Input
-                        label="Instagram Profile"
-                        icon="photo_camera"
+                        label="Instagram URL"
+                        icon="link"
                         value={form.instagram}
                         onChange={(v) => setField("instagram", v)}
                         accentTextClass="text-pink-600"
+                        editMode={editMode}
                       />
                       <Input
                         label="TripAdvisor URL"
@@ -583,21 +639,8 @@ export default function AgencyProfile() {
                         value={form.tripadvisor}
                         onChange={(v) => setField("tripadvisor", v)}
                         accentTextClass="text-emerald-700"
+                        editMode={editMode}
                       />
-                      <button
-                        type="button"
-                        className="w-full rounded-lg border border-dashed px-3 py-2 text-xs font-bold transition-colors"
-                        style={{
-                          borderColor: COLORS.primary,
-                          color: COLORS.primary,
-                          background: "rgba(25,120,229,0.04)",
-                        }}
-                      >
-                        <span className="material-symbols-outlined text-sm align-[-3px] mr-1">
-                          add
-                        </span>
-                        Add Another Platform
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -752,38 +795,63 @@ export default function AgencyProfile() {
                   </div>
 
                   <div className="space-y-4">
-                    {credentials.map((c) => (
+                    {[
+                      { key: "license", title: "Ministry of Tourism License", icon: "description" },
+                      { key: "insurance", title: "Liability Insurance", icon: "security" },
+                      { key: "vat", title: "VAT Registration", icon: "id_card" },
+                    ].map((c) => (
                       <div
-                        key={c.title}
-                        className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-3 transition-all hover:bg-gray-50"
+                        key={c.key}
+                        className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-3 transition-all hover:bg-gray-50 flex items-center justify-between gap-3"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div
-                            className="flex h-10 w-10 items-center justify-center rounded-lg"
-                            style={{
-                              background: "rgba(25,120,229,0.08)",
-                              color: COLORS.primary,
-                            }}
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                            style={{ background: "rgba(25,120,229,0.08)", color: COLORS.primary }}
                           >
-                            <span className="material-symbols-outlined text-xl">
-                              {c.icon}
-                            </span>
+                            <span className="material-symbols-outlined text-xl">{c.icon}</span>
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-bold">{c.title}</p>
-                            <p className="text-xs text-[#94a3b8]">{c.meta}</p>
+                            <p className="truncate text-xs text-[#94a3b8]">
+                              {credentials[c.key] ? "Document Uploaded" : "Not uploaded yet"}
+                            </p>
                           </div>
-                          <button
-                            type="button"
-                            className="text-[#94a3b8] hover:text-[#2d3b2a] transition-colors"
-                          >
-                            <span className="material-symbols-outlined">
-                              more_vert
-                            </span>
-                          </button>
                         </div>
 
-                        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-emerald-500" />
+                        <div className="flex items-center gap-3 shrink-0">
+                          {credentials[c.key] && (
+                            <a
+                              href={normalizeImageUrl(credentials[c.key])}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs font-bold text-[#1978e5] hover:underline flex items-center gap-1 bg-[#1978e5]/10 px-3 py-1.5 rounded-full border border-[#1978e5]/20 hover:bg-[#1978e5]/20 transition-colors whitespace-nowrap"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">visibility</span>
+                              View PDF
+                            </a>
+                          )}
+
+                          <label
+                            className={`relative cursor-pointer transition-all flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 border border-gray-200 ${
+                              editMode && uploadingDoc !== c.key ? "text-[#94a3b8] hover:text-[#1978e5] hover:bg-[#1978e5]/10 hover:border-[#1978e5]/30" : "opacity-50 pointer-events-none"
+                            }`}
+                            title={editMode ? "Upload Document" : "Enable Edit Mode to upload"}
+                          >
+                            <span className="material-symbols-outlined text-[18px]">
+                              {uploadingDoc === c.key ? "hourglass_top" : "upload_file"}
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              className="hidden"
+                              disabled={!editMode || uploadingDoc === c.key}
+                              onChange={(e) => onDocumentUpload(e, c.key)}
+                            />
+                          </label>
+                        </div>
+                        
+                        <div className={`absolute inset-x-0 bottom-0 h-0.5 ${credentials[c.key] ? 'bg-emerald-500' : 'bg-gray-200'}`} />
                       </div>
                     ))}
                   </div>

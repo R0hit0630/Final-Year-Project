@@ -57,8 +57,6 @@ const userSchema = new mongoose.Schema(
     location: { type: String, trim: true, default: "" },
     avatar: { type: String, trim: true, default: "" },
 
-    level: { type: Number, default: 1 },
-    tier: { type: String, default: "EXPLORER" },
 
     preferences: {
       difficulty: {
@@ -84,6 +82,12 @@ const userSchema = new mongoose.Schema(
 
     agencyVerified: { type: Boolean, default: false },
     agencyVerifiedAt: { type: Date, default: null },
+
+    agencyCredentials: {
+      license: { type: String, default: "" },
+      insurance: { type: String, default: "" },
+      vat: { type: String, default: "" },
+    },
   },
   { timestamps: true }
 );

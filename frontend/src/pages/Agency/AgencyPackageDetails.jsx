@@ -116,31 +116,59 @@ export default function AgencyPackageDetails() {
 
     try {
       const token = localStorage.getItem("token");
-      const formData = new FormData();
 
-      Object.keys(form).forEach((key) => {
-        if (key === "itinerary") {
-          formData.append("itinerary", JSON.stringify(form.itinerary));
-        } else {
-          formData.append(key, form[key]);
-        }
-      });
+      // Step 1: upload new images if any were selected
+      let uploadedImageUrls = [];
+      if (images.length > 0) {
+        const imageFormData = new FormData();
+        images.forEach((img) => imageFormData.append("images", img));
 
-      images.forEach((img) => {
-        formData.append("images", img);
-      });
+        const uploadRes = await axios.post(
+          "http://localhost:5000/api/upload/multiple",
+          imageFormData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        uploadedImageUrls = uploadRes.data?.imageUrls || [];
+      }
 
+      // Step 2: build JSON payload
+      const payload = {
+        title: form.title,
+        region: form.region,
+        type: form.type,
+        price: form.price,
+        days: form.days,
+        difficulty: form.difficulty,
+        description: form.description,
+        minGroupSize: form.minGroupSize,
+        maxGroupSize: form.maxGroupSize,
+        itinerary: form.itinerary,
+      };
+
+      // Only send images if new ones were uploaded
+      if (uploadedImageUrls.length > 0) {
+        payload.images = uploadedImageUrls;
+      }
+
+      // Step 3: PUT as JSON
       const res = await axios.put(
         `http://localhost:5000/api/packages/${id}`,
-        formData,
+        payload,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         }
       );
 
       setMessage(res.data?.message || "Package updated successfully.");
+
+      // Refresh preview if new images were uploaded
+      if (uploadedImageUrls.length > 0) {
+        setPreviewImages(uploadedImageUrls);
+        setImages([]);
+      }
     } catch (err) {
       console.error("Error updating package:", err);
       setMessage(err.response?.data?.message || "Failed to update package.");
@@ -225,24 +253,59 @@ export default function AgencyPackageDetails() {
 
             <div>
               <label className="mb-2 block text-sm font-semibold">Region</label>
-              <input
-                type="text"
+              <select
                 name="region"
                 value={form.region}
                 onChange={handleChange}
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none"
-              />
+              >
+                <option value="">Select region</option>
+                <optgroup label="Provinces">
+                  <option>Koshi Province</option>
+                  <option>Madhesh Province</option>
+                  <option>Bagmati Province</option>
+                  <option>Gandaki Province</option>
+                  <option>Lumbini Province</option>
+                  <option>Karnali Province</option>
+                  <option>Sudurpashchim Province</option>
+                </optgroup>
+                <optgroup label="Geographic Zones">
+                  <option>Himalayan Region (Himal)</option>
+                  <option>Hilly Region (Pahad)</option>
+                  <option>Terai Region</option>
+                </optgroup>
+                <optgroup label="Trekking Regions">
+                  <option>Everest Region (Khumbu)</option>
+                  <option>Annapurna Region</option>
+                  <option>Langtang Region</option>
+                  <option>Manaslu Region</option>
+                  <option>Mustang Region</option>
+                  <option>Dolpo Region</option>
+                </optgroup>
+              </select>
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-semibold">Type</label>
-              <input
-                type="text"
+              <select
                 name="type"
                 value={form.type}
                 onChange={handleChange}
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none"
-              />
+              >
+                <option value="">Select type</option>
+                <option>Adventure Experiences</option>
+                <option>Spiritual &amp; Wellness Experiences</option>
+                <option>Cultural &amp; Heritage Experiences</option>
+                <option>Nature &amp; Wildlife Experiences</option>
+                <option>Outdoor &amp; Recreational Experiences</option>
+                <option>Culinary Experiences</option>
+                <option>Luxury &amp; Leisure Experiences</option>
+                <option>Family &amp; Leisure Experiences</option>
+                <option>Photography &amp; Scenic Experiences</option>
+                <option>Volunteer &amp; Educational Experiences</option>
+                <option>Urban &amp; Lifestyle Experiences</option>
+              </select>
             </div>
 
             <div>

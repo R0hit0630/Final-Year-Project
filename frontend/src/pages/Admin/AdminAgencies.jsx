@@ -79,6 +79,12 @@ export default function AdminAgencies() {
     return "bg-yellow-500/10 text-yellow-700 border-yellow-500/20";
   };
 
+  const normalizeImageUrl = (value) => {
+    if (!value) return "";
+    if (value.startsWith("http")) return value;
+    return `${apiBase}${value.startsWith("/") ? "" : "/"}${value}`;
+  };
+
   const handleToggleStatus = async (id, currentStatus) => {
     try {
       const token = localStorage.getItem("token");
@@ -273,6 +279,37 @@ export default function AdminAgencies() {
                   <div className="flex justify-between"><span className="text-gray-600">Joined:</span> <span className="font-semibold text-[#2d3b2a]">{new Date(selectedAgency.createdAt).toLocaleDateString()}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600">Verification:</span> <span className={`font-semibold ${selectedAgency.agencyVerified ? "text-emerald-600" : "text-yellow-600"}`}>{selectedAgency.agencyVerified ? "Verified" : "Pending"}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600">Status:</span> <span className={`font-semibold ${selectedAgency.isActive !== false ? "text-emerald-600" : "text-red-600"}`}>{selectedAgency.isActive !== false ? "Active" : "Blocked"}</span></div>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Submitted Credentials</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    { key: 'license', label: 'Ministry of Tourism License', icon: 'description', colorClass: 'bg-blue-50 text-blue-600 border-blue-200' },
+                    { key: 'insurance', label: 'Liability Insurance', icon: 'security', colorClass: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+                    { key: 'vat', label: 'VAT Registration', icon: 'id_card', colorClass: 'bg-purple-50 text-purple-600 border-purple-200' },
+                  ].map((c) => {
+                    const hasDoc = selectedAgency.agencyCredentials?.[c.key];
+                    return (
+                      <div key={c.key} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50 hover:bg-white transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-8 w-8 items-center justify-center rounded border ${c.colorClass}`}>
+                            <span className="material-symbols-outlined text-[16px]">{c.icon}</span>
+                          </div>
+                          <span className="text-sm font-semibold text-[#2d3b2a]">{c.label}</span>
+                        </div>
+                        {hasDoc ? (
+                          <a href={normalizeImageUrl(hasDoc)} target="_blank" rel="noreferrer" className="text-xs font-bold text-[#1978e5] hover:underline flex items-center gap-1 bg-[#1978e5]/10 px-3 py-1.5 rounded-full border border-[#1978e5]/20 hover:bg-[#1978e5]/20 transition-colors">
+                            <span className="material-symbols-outlined text-[14px]">visibility</span>
+                            View PDF
+                          </a>
+                        ) : (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-100 px-2 py-1 rounded">Missing</span>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 

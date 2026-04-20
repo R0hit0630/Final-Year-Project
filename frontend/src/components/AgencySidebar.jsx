@@ -47,9 +47,7 @@ export default function AgencySidebar() {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
+    navigate("/logout");
   };
 
   return (

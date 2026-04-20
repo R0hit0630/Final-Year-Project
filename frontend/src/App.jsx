@@ -29,6 +29,7 @@ import AgencyPending from "./pages/Agency/AgencyPending";
 import AddNewGuide from "./pages/Agency/AddNewGuide";
 import AgencyBookings from "./pages/Agency/AgencyBookings";
 import AgencyGuideProfile from "./pages/Agency/AgencyGuideProfile";
+import EditGuide from "./pages/Agency/EditGuide";
 import AgencyPackageDetails from "./pages/Agency/AgencyPackageDetails";
 import AgencyEarnings from "./pages/Agency/AgencyEarnings";
 
@@ -273,6 +274,15 @@ function App() {
           element={
             <ProtectedRoute user={user} roles={["agency"]}>
               <AgencyEarnings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/agency/guides/:id/edit"
+          element={
+            <ProtectedRoute user={user} roles={["agency"]}>
+              <EditGuide />
             </ProtectedRoute>
           }
         />

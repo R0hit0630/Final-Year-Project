@@ -4,9 +4,7 @@ export default function AgencyPending() {
   const navigate = useNavigate();
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
+    navigate("/logout");
   };
 
   const user = JSON.parse(localStorage.getItem("user") || "null");

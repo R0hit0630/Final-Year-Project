@@ -61,6 +61,39 @@ export default function AdminApprovals() {
     return "bg-yellow-500/10 text-yellow-700 border-yellow-500/20";
   };
 
+  const normalizeImageUrl = (value) => {
+    if (!value) return "";
+    if (value.startsWith("http")) return value;
+    return `${apiBase}${value.startsWith("/") ? "" : "/"}${value}`;
+  };
+
+  const renderCredentials = (item) => {
+    const creds = item.agencyCredentials;
+    if (!creds || (!creds.license && !creds.insurance && !creds.vat)) {
+      return <span className="text-xs text-gray-400 italic">None uploaded</span>;
+    }
+
+    return (
+      <div className="flex gap-2">
+        {creds.license && (
+          <a href={normalizeImageUrl(creds.license)} target="_blank" rel="noreferrer" title="Ministry of Tourism License" className="flex items-center justify-center h-8 w-8 rounded border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:scale-105 transition-all">
+            <span className="material-symbols-outlined text-[16px]">description</span>
+          </a>
+        )}
+        {creds.insurance && (
+          <a href={normalizeImageUrl(creds.insurance)} target="_blank" rel="noreferrer" title="Liability Insurance" className="flex items-center justify-center h-8 w-8 rounded border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:scale-105 transition-all">
+            <span className="material-symbols-outlined text-[16px]">security</span>
+          </a>
+        )}
+        {creds.vat && (
+          <a href={normalizeImageUrl(creds.vat)} target="_blank" rel="noreferrer" title="VAT Registration" className="flex items-center justify-center h-8 w-8 rounded border border-purple-200 bg-purple-50 text-purple-600 hover:bg-purple-100 hover:scale-105 transition-all">
+            <span className="material-symbols-outlined text-[16px]">id_card</span>
+          </a>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#f6f7f8] text-[#2d3b2a]">
       <div className="flex min-h-screen">
@@ -135,7 +168,7 @@ export default function AdminApprovals() {
                       </td>
                       <td className="py-4 text-[#4b5563]">{item.fullName || "N/A"}</td>
                       <td className="py-4 text-[#4b5563]">{new Date(item.createdAt).toLocaleDateString()}</td>
-                      <td className="py-4 text-[#4b5563]">Business License</td>
+                      <td className="py-4 text-[#4b5563]">{renderCredentials(item)}</td>
                       <td className="py-4">
                         <span
                           className={[
