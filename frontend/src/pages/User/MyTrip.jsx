@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { API_BASE as apiBase } from "../../config/api.js";
 import defaultAvatar from "../../assets/default-avatar.jpg";
 
 export default function MyTrips() {
@@ -15,8 +16,6 @@ export default function MyTrips() {
     muted: "#6b7280",
     muted2: "#94a3b8",
   };
-
-  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const [showPastBookings, setShowPastBookings] = useState(false);
 
@@ -42,15 +41,7 @@ export default function MyTrips() {
   const token = localStorage.getItem("token");
   const autoOpenedReviewRef = useRef(false);
 
-  const navItems = useMemo(
-    () => [
-      { label: "My Trips", icon: "map", to: "/trips", active: true },
-      { label: "Explore Nepal", icon: "explore", to: "/Explore" },
-      { label: "Saved Destinations", icon: "favorite", to: "/saved" },
-      { label: "Profile", icon: "person", to: "/profile" },
-    ],
-    []
-  );
+
 
   const fetchData = async () => {
     if (!token) {
@@ -89,7 +80,7 @@ export default function MyTrips() {
 
   useEffect(() => {
     fetchData();
-  }, [apiBase, token]);
+  }, [token]);
 
   const canReviewTrip = (trip) =>
     String(trip?.status || "").toLowerCase() === "completed" && !trip?.isReviewed;
@@ -129,13 +120,8 @@ export default function MyTrips() {
       setShowPastBookings(true);
       openReviewModal(firstUnreviewedCompletedTrip);
       autoOpenedReviewRef.current = true;
-      return;
     }
-
-    if (pastTrips.length > 0) {
-      setShowPastBookings(true);
-    }
-  }, [loading, activeTrip, pastTrips, reviewTrip]);
+  }, [loading, pastTrips, reviewTrip]);
 
   const fullName =
     userData?.fullName ||
@@ -148,9 +134,15 @@ export default function MyTrips() {
 
   const activePackage = activeTrip?.package || null;
 
-  const heroImage = activePackage?.images?.[0]
-    ? `${apiBase}${activePackage.images[0]}`
-    : "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80";
+  // Safe helper: handles both legacy absolute URLs and relative paths
+  const buildImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith("http://") || path.startsWith("https://")) return path; // already absolute
+    return `${apiBase}${path.startsWith("/") ? "" : "/"}${path}`;
+  };
+
+  const heroImage = buildImageUrl(activePackage?.images?.[0])
+    ?? "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80";
 
   const itinerary = useMemo(() => {
     const items = activePackage?.itinerary || [];
@@ -262,10 +254,9 @@ export default function MyTrips() {
   const guidePhone = activeTrip?.guide?.phone || "Not available";
 
   const getGuideImage = () => {
-    if (activeTrip?.guide?.photo) return `${apiBase}${activeTrip.guide.photo}`;
-    if (activeTrip?.guide?.avatar) return `${apiBase}${activeTrip.guide.avatar}`;
-    if (activeTrip?.guide?.image) return `${apiBase}${activeTrip.guide.image}`;
-    return defaultAvatar;
+    const guide = activeTrip?.guide;
+    const src = guide?.photo || guide?.avatar || guide?.image;
+    return buildImageUrl(src) || defaultAvatar;
   };
 
   const markTripReviewedLocally = (tripId) => {
@@ -409,7 +400,7 @@ export default function MyTrips() {
           <h2 className="text-lg font-bold text-red-600">Unable to load trips</h2>
           <p className="mt-2 text-sm text-[#6b7280]">{error}</p>
           <Link
-            to="/Explore"
+            to="/explore"
             className="mt-5 inline-flex rounded-lg bg-[#1978e5] px-4 py-2 text-sm font-semibold text-white"
           >
             Explore Nepal
@@ -421,83 +412,6 @@ export default function MyTrips() {
 
   return (
     <>
-      <div className="h-screen w-full overflow-hidden font-['Inter'] text-[#2d3b2a]">
-        <div className="flex h-full w-full bg-[#fcfbf8]">
-          <aside className="hidden w-64 shrink-0 flex-col justify-between border-r border-[#e0e8dc] bg-[#fdfdfc]/80 backdrop-blur-sm lg:flex">
-            <div className="flex h-full flex-col p-6">
-              <div className="mb-10 flex items-center gap-3">
-                <div className="relative h-12 w-12 overflow-hidden rounded-full border-2 border-white shadow-sm ring-1 ring-primary/20">
-                  <img
-                    alt="User Profile"
-                    className="h-full w-full object-cover"
-                    src={avatar ? `${apiBase}${avatar}` : defaultAvatar}
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <h1 className="text-[#2d3b2a] text-base font-bold leading-tight">
-                    {(fullName || "User").split(" ").slice(0, 2).join(" ")}
-                  </h1>
-                  <p
-                    className="text-xs font-medium uppercase tracking-wider"
-                    style={{ color: COLORS.primary }}
-                  >
-                    {role ? role.charAt(0).toUpperCase() + role.slice(1) : "User"}
-                  </p>
-                </div>
-              </div>
-
-              <nav className="flex flex-col gap-2">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    to={item.to}
-                    className={[
-                      "group flex items-center gap-3 rounded-xl px-4 py-3 transition-all",
-                      item.active ? "bg-primary/10" : "hover:bg-[#f0f4ee]",
-                    ].join(" ")}
-                    style={{ textDecoration: "none" }}
-                  >
-                    <span
-                      className={[
-                        "material-symbols-outlined transition-colors",
-                        item.active
-                          ? "text-primary"
-                          : "text-[#6b7280] group-hover:text-primary",
-                      ].join(" ")}
-                    >
-                      {item.icon}
-                    </span>
-                    <span
-                      className={[
-                        "text-sm",
-                        item.active
-                          ? "font-semibold text-[#2d3b2a]"
-                          : "font-medium text-[#4b5563] group-hover:text-[#2d3b2a]",
-                      ].join(" ")}
-                    >
-                      {item.label}
-                    </span>
-                  </Link>
-                ))}
-              </nav>
-
-              <div className="mt-auto pt-6">
-                <Link
-                  to="/logout"
-                  className="group flex items-center gap-3 rounded-xl border border-transparent px-4 py-3 transition-all hover:border-[#e0e8dc] hover:bg-white hover:shadow-sm"
-                >
-                  <span className="material-symbols-outlined text-[#6b7280] transition-colors group-hover:text-red-500">
-                    logout
-                  </span>
-                  <span className="text-sm font-medium text-[#4b5563] group-hover:text-red-500">
-                    Log Out
-                  </span>
-                </Link>
-              </div>
-            </div>
-          </aside>
-
-          <main className="flex flex-1 flex-col overflow-y-auto bg-[#f6f7f8]">
             <header className="sticky top-0 z-40 border-b border-[#e0e8dc] bg-[#fdfdfc]/80 px-8 py-4 backdrop-blur-md">
               <div className="mx-auto flex max-w-7xl items-center justify-between gap-6">
                 <div className="flex items-center gap-3">
@@ -531,7 +445,7 @@ export default function MyTrips() {
             </header>
 
             <div className="mx-auto w-full max-w-7xl px-8 py-8">
-              {!activeTrip || activeTrip.status === "completed" ? (
+              {!activeTrip || ["completed", "cancelled"].includes(String(activeTrip.status || "").toLowerCase()) ? (
                 <div className="rounded-3xl border border-black/5 bg-white p-10 text-center shadow-sm">
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
                     <span className="material-symbols-outlined text-3xl text-primary">
@@ -546,7 +460,7 @@ export default function MyTrips() {
                     packages and book your next adventure in Nepal.
                   </p>
                   <Link
-                    to="/Explore"
+                    to="/explore"
                     className="mt-6 inline-flex rounded-xl bg-[#1978e5] px-5 py-3 text-sm font-semibold text-white shadow-sm"
                   >
                     Explore Nepal
@@ -719,7 +633,7 @@ export default function MyTrips() {
                       Past Bookings
                     </h3>
                     <span className="text-sm font-medium text-[#6b7280]">
-                      {pastTrips.length} completed trips
+                      {pastTrips.length} {pastTrips.length === 1 ? "trip" : "trips"}
                     </span>
                   </div>
 
@@ -733,9 +647,8 @@ export default function MyTrips() {
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
                       {pastTrips.map((trip) => {
                         const pkg = trip.package || {};
-                        const image = pkg?.images?.[0]
-                          ? `${apiBase}${pkg.images[0]}`
-                          : "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80";
+                        const image = buildImageUrl(pkg?.images?.[0])
+                          ?? "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80";
 
                         return (
                           <div
@@ -805,12 +718,12 @@ export default function MyTrips() {
                                   Reviewed
                                 </div>
                               ) : (
-                                <button
-                                  type="button"
-                                  className="mt-4 w-full rounded-xl border border-[#e0e8dc] bg-white px-4 py-2.5 text-sm font-semibold text-[#4b5563] transition hover:border-primary hover:bg-primary/5"
+                                <a
+                                  href={`/packages/${trip.package?._id}`}
+                                  className="mt-4 block w-full rounded-xl border border-[#e0e8dc] bg-white px-4 py-2.5 text-sm font-semibold text-center text-[#4b5563] transition hover:border-primary hover:bg-primary/5"
                                 >
-                                  View Details
-                                </button>
+                                  View Package
+                                </a>
                               )}
                             </div>
                           </div>
@@ -1069,10 +982,6 @@ export default function MyTrips() {
                 </div>
               </div>
             </footer>
-          </main>
-        </div>
-      </div>
-
       {reviewTrip && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">

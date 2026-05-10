@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
-import AgencySidebar from "../../components/AgencySidebar";
+import { API_BASE } from "../../config/api.js";
 
 export default function AgencyPackageDetails() {
   const { id } = useParams();
@@ -32,7 +32,7 @@ export default function AgencyPackageDetails() {
         const token = localStorage.getItem("token");
 
         const res = await axios.get(
-          `http://localhost:5000/api/packages/mine/${id}`,
+          `${API_BASE}/api/packages/mine/${id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -57,7 +57,7 @@ export default function AgencyPackageDetails() {
 
         setPreviewImages(
           (pkg.images || []).map((img) =>
-            img.startsWith("http") ? img : `http://localhost:5000${img}`
+            img.startsWith("http") ? img : `${API_BASE}${img}`
           )
         );
       } catch (err) {
@@ -124,7 +124,7 @@ export default function AgencyPackageDetails() {
         images.forEach((img) => imageFormData.append("images", img));
 
         const uploadRes = await axios.post(
-          "http://localhost:5000/api/upload/multiple",
+          `${API_BASE}/api/upload/multiple`,
           imageFormData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -152,7 +152,7 @@ export default function AgencyPackageDetails() {
 
       // Step 3: PUT as JSON
       const res = await axios.put(
-        `http://localhost:5000/api/packages/${id}`,
+        `${API_BASE}/api/packages/${id}`,
         payload,
         {
           headers: {
@@ -184,7 +184,7 @@ export default function AgencyPackageDetails() {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5000/api/packages/${id}`, {
+      await axios.delete(`${API_BASE}/api/packages/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -209,11 +209,7 @@ export default function AgencyPackageDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f7f8] text-[#2d3b2a]">
-      <div className="flex min-h-screen">
-        <AgencySidebar />
-        
-        <main className="flex-1 p-6 md:p-8 lg:p-10 overflow-y-auto">
+            <main className="flex-1 p-6 md:p-8 lg:p-10 overflow-y-auto">
           <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -512,7 +508,5 @@ export default function AgencyPackageDetails() {
         </form>
           </div>
         </main>
-      </div>
-    </div>
   );
 }

@@ -1,11 +1,10 @@
 import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import AdminSidebar from "../../components/AdminSidebar";
+import { API_BASE as apiBase } from "../../config/api.js";
 import defaultAvatar from "../../assets/default-avatar.jpg";
 
 export default function AdminAgencies() {
-  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const [loading, setLoading] = useState(true);
   const [agencies, setAgencies] = useState([]);
   const [search, setSearch] = useState("");
@@ -119,11 +118,8 @@ export default function AdminAgencies() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f6f7f8] text-[#2d3b2a]">
-      <div className="flex min-h-screen">
-        <AdminSidebar />
-
-        <main className="flex-1 p-6 md:p-8 lg:p-10">
+    <>
+      <main className="flex-1 p-6 md:p-8 lg:p-10">
           <div className="mb-8">
             <h1 className="text-3xl font-bold">Manage Agencies</h1>
             <p className="mt-1 text-[#6b7280]">
@@ -241,7 +237,6 @@ export default function AdminAgencies() {
             </div>
           </div>
         </main>
-      </div>
 
       {selectedAgency && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -355,6 +350,6 @@ export default function AdminAgencies() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

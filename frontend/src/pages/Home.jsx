@@ -1,7 +1,5 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import PublicNavbar from "../components/PublicNavbar";
-import PublicFooter from "../components/PublicFooter";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -47,8 +45,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#111921] text-white overflow-x-hidden">
-      <PublicNavbar />
+    <div className="text-white overflow-x-hidden">
 
       {/* Hero */}
       <header className="relative w-full min-h-screen flex items-center justify-center pt-20">
@@ -178,7 +175,7 @@ export default function Home() {
                 className={`group relative overflow-hidden rounded-2xl h-[420px] cursor-pointer ${
                   c.shift ? "md:translate-y-12" : ""
                 }`}
-                onClick={() => navigate("/register")}
+                onClick={() => navigate("/explore")}
               >
                 <div className="absolute inset-0 bg-gray-900 transition-transform duration-700 group-hover:scale-105">
                   <img
@@ -283,8 +280,6 @@ export default function Home() {
           </section>
         </div>
       </main>
-
-      <PublicFooter />
     </div>
   );
 }

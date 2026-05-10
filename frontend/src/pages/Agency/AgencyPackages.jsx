@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import AgencySidebar from "../../components/AgencySidebar";
+import { API_BASE } from "../../config/api.js";
 
 export default function AgencyPackages() {
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ export default function AgencyPackages() {
       try {
         const token = localStorage.getItem("token");
 
-        const res = await axios.get("http://localhost:5000/api/packages/mine", {
+        const res = await axios.get(`${API_BASE}/api/packages/mine`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -46,7 +46,7 @@ export default function AgencyPackages() {
             p.images && p.images.length > 0
               ? p.images[0].startsWith("http")
                 ? p.images[0]
-                : `http://localhost:5000${p.images[0]}`
+                : `${API_BASE}${p.images[0]}`
               : "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80",
           status: p.isActive ? "Active" : "Inactive",
           pct: 60,
@@ -73,7 +73,7 @@ export default function AgencyPackages() {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5000/api/packages/${id}`, {
+      await axios.delete(`${API_BASE}/api/packages/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -268,11 +268,7 @@ export default function AgencyPackages() {
   );
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
-      <div className="flex h-full w-full bg-[#fcfbf8]" style={paperTextureStyle}>
-        <AgencySidebar />
-
-        <main className="flex flex-1 flex-col overflow-y-auto">
+            <main className="flex flex-1 flex-col overflow-y-auto">
           <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-4 shadow-sm backdrop-blur-md lg:hidden">
             <div className="flex items-center gap-2">
               <span
@@ -386,7 +382,5 @@ export default function AgencyPackages() {
             </div>
           </div>
         </main>
-      </div>
-    </div>
   );
 }

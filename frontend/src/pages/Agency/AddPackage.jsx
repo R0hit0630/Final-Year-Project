@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import AgencySidebar from "../../components/AgencySidebar";
+import { API_BASE } from "../../config/api.js";
 
 export default function AddPackage() {
   const navigate = useNavigate();
@@ -17,9 +17,6 @@ export default function AddPackage() {
     muted: "#6b7280",
     muted2: "#94a3b8",
   };
-
-  const API_BASE = import.meta?.env?.VITE_API_URL || "http://localhost:5000";
-
 
 
   const regions = [
@@ -217,11 +214,7 @@ export default function AddPackage() {
   };
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
-      <div className="flex h-full w-full bg-[#fcfbf8]">
-        <AgencySidebar />
-
-        <main className="flex flex-1 flex-col overflow-y-auto">
+            <main className="flex flex-1 flex-col overflow-y-auto">
           <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-[#e0e8dc] px-6 md:px-8 py-5">
             <div className="mx-auto flex max-w-5xl items-center justify-between">
               <div>
@@ -607,7 +600,5 @@ export default function AddPackage() {
             </div>
           </div>
         </main>
-      </div>
-    </div>
   );
 }

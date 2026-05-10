@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
-import AgencySidebar from "../../components/AgencySidebar";
+import { API_BASE } from "../../config/api.js";
 import defaultAvatar from "../../assets/default-avatar.jpg";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const getToken = () => localStorage.getItem("token");
 
 export default function EditGuide() {
@@ -179,11 +178,7 @@ export default function EditGuide() {
   }
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
-      <div className="flex h-full w-full bg-[#fcfbf8]" style={paperTextureStyle}>
-        <AgencySidebar />
-
-        <main className="flex flex-1 flex-col overflow-y-auto">
+            <main className="flex flex-1 flex-col overflow-y-auto">
           {/* Mobile bar */}
           <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-4 shadow-sm backdrop-blur-md lg:hidden">
             <div className="flex items-center gap-2">
@@ -438,7 +433,5 @@ export default function EditGuide() {
             </form>
           </div>
         </main>
-      </div>
-    </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_BASE } from "../config/api.js";
 import bgImage from "../assets/bg.jpg";
 import travelinLogo from "../assets/travolin-logo.png";
 
@@ -30,7 +31,6 @@ const Register = ({ setUser }) => {
     agencyName: "",
     agencyAddress: "",
     agencyPhone: "",
-    agencyLogo: "",
   });
 
   const [error, setError] = useState("");
@@ -58,11 +58,10 @@ const Register = ({ setUser }) => {
         payload.agencyName = formData.agencyName;
         payload.agencyAddress = formData.agencyAddress;
         payload.agencyPhone = formData.agencyPhone;
-        payload.agencyLogo = formData.agencyLogo;
       }
 
       const res = await axios.post(
-        "http://localhost:5000/api/auth/register",
+        `${API_BASE}/api/auth/register`,
         payload
       );
 
@@ -91,7 +90,6 @@ const Register = ({ setUser }) => {
         navigate("/explore");
       }
     } catch (err) {
-      console.log("REGISTER ERROR RESPONSE:", err.response?.data);
       setError(err.response?.data?.message || "Registration failed");
     } finally {
       setLoading(false);
@@ -99,274 +97,218 @@ const Register = ({ setUser }) => {
   };
 
   const inputClass =
-    "w-full mt-1.5 px-4 py-3 rounded-xl bg-[#fcfbf8] border border-gray-200 text-sm outline-none focus:border-[#197fe6]/50 focus:ring-2 focus:ring-[#197fe6]/10 transition";
+    "w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-black focus:ring-1 focus:ring-black transition-shadow";
 
   return (
-    <div className="min-h-screen w-full flex bg-[#0f1923]">
-      {/* LEFT IMAGE */}
-      <div
-        className="hidden lg:flex w-[45%] relative bg-cover bg-center"
-        style={{ backgroundImage: `url(${bgImage})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0b2545]/85 via-[#0f1923]/70 to-black/60" />
-        <div className="relative z-10 p-10 flex flex-col justify-between w-full h-full">
-          {/* Top Logo */}
-          <Link to="/" className="flex items-center group">
-            <div className="bg-white rounded-xl px-2 py-1 shadow-md transition-transform group-hover:scale-105">
-              <img src={travelinLogo} alt="Travolin" className="h-8 w-auto" />
-            </div>
-          </Link>
-
-          {/* Bottom Text */}
-          <div className="max-w-md">
-            <p className="text-[#197fe6] text-xs font-bold uppercase tracking-widest mb-3">
-              Join Us
-            </p>
-            <h1 className="text-white text-3xl font-bold leading-tight">
-              Start your
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
-                adventure today
-              </span>
-            </h1>
-            <p className="text-white/70 mt-4 text-sm leading-relaxed">
-              Create your account to book trips, manage packages, and access your dashboard in one place.
-            </p>
-          </div>
+    <div className="min-h-screen w-full flex bg-white font-sans text-slate-800">
+      
+      {/* LEFT IMAGE PANEL */}
+      <div className="hidden lg:block lg:w-1/2 relative overflow-hidden sticky top-0 h-screen">
+        <div
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-105"
+          style={{ backgroundImage: `url(${bgImage})` }}
+        >
+          {/* Very light overlay to keep it bright and airy */}
+          <div className="absolute inset-0 bg-black/20" />
+        </div>
+        
+        {/* Subtle branding overlay */}
+        <div className="absolute bottom-12 left-12 text-white max-w-lg drop-shadow-md">
+          <p className="text-sm font-semibold tracking-[0.2em] uppercase mb-4 opacity-90">
+            Join Travolin
+          </p>
+          <h1 className="text-5xl font-light leading-tight">
+            Start your <br/>
+            <span className="font-semibold">adventure today.</span>
+          </h1>
         </div>
       </div>
 
-      {/* RIGHT REGISTER */}
-      <div className="w-full lg:w-[55%] flex items-center justify-center px-4 py-10 bg-[#f6f7f8] overflow-y-auto">
-        <div className="w-full max-w-lg">
-          {/* Mobile Logo */}
-          <div className="lg:hidden text-center mb-8">
-            <Link to="/" className="inline-flex items-center">
-              <img src={travelinLogo} alt="Travolin" className="h-8 w-auto" />
+      {/* RIGHT FORM PANEL (Scrollable) */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 lg:p-16 bg-white min-h-screen">
+        <div className="w-full max-w-[500px] my-auto">
+          
+          {/* Back to Home */}
+          <div className="mb-8">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors group"
+            >
+              <span className="material-symbols-outlined text-[18px] transition-transform group-hover:-translate-x-0.5">arrow_back</span>
+              Back to Home
             </Link>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl border border-black/5 p-6 sm:p-8">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-[#2d3b2a]">
-                Create Account
-              </h2>
-              <p className="text-sm text-[#6b7280] mt-1">
-                Choose your account type and fill in your details
-              </p>
+          {/* Logo */}
+          <div className="mb-10">
+            <Link to="/" className="inline-block transition-opacity hover:opacity-80">
+              <img src={travelinLogo} alt="Travolin" className="h-9 w-auto" />
+            </Link>
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-3xl font-semibold text-slate-900 tracking-tight mb-3">Create an account</h2>
+            <p className="text-slate-500 text-base">Enter your details to register as a Traveler or Agency.</p>
+          </div>
+
+          {error && (
+            <div className="mb-6 border-l-4 border-red-500 bg-red-50 p-4 rounded-r-md">
+              <p className="text-red-700 text-sm font-medium">{error}</p>
+            </div>
+          )}
+
+          {/* Clean Role Switcher */}
+          <div className="flex bg-slate-100 rounded-lg p-1 mb-8">
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, role: "user" })}
+              className={`flex-1 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                formData.role === "user"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Traveler
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, role: "agency" })}
+              className={`flex-1 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                formData.role === "agency"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Agency
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 block">Username</label>
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="john_doe"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className={inputClass}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 block">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="john@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={inputClass}
+                  required
+                />
+              </div>
             </div>
 
-            {error && (
-              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-                <p className="text-red-700 text-sm text-center">{error}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 block">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={inputClass}
+                  required
+                  minLength={6}
+                />
               </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Account Type */}
-              <div>
-                <label className="text-sm font-semibold text-[#2d3b2a]">
-                  Account Type
-                </label>
-                <div className="mt-2 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role: "user" })}
-                    className={`flex-1 py-3 rounded-xl border text-sm font-semibold transition ${
-                      formData.role === "user"
-                        ? "bg-[#197fe6]/10 border-[#197fe6]/30 text-[#197fe6]"
-                        : "bg-[#fcfbf8] border-gray-200 text-[#6b7280] hover:border-gray-300"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[18px] align-middle mr-1">
-                      person
-                    </span>
-                    Traveler
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role: "agency" })}
-                    className={`flex-1 py-3 rounded-xl border text-sm font-semibold transition ${
-                      formData.role === "agency"
-                        ? "bg-[#197fe6]/10 border-[#197fe6]/30 text-[#197fe6]"
-                        : "bg-[#fcfbf8] border-gray-200 text-[#6b7280] hover:border-gray-300"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[18px] align-middle mr-1">
-                      business
-                    </span>
-                    Agency
-                  </button>
-                </div>
-              </div>
-
-              {/* Username / Email / Nationality */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-semibold text-[#2d3b2a]">
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    name="username"
-                    placeholder="johnstark"
-                    value={formData.username}
-                    onChange={handleChange}
-                    className={inputClass}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-semibold text-[#2d3b2a]">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="john@example.com"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={inputClass}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold text-[#2d3b2a]">
-                  Nationality
-                </label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 block">Nationality</label>
                 <input
                   type="text"
                   name="nationality"
-                  placeholder="Nepal"
+                  placeholder="e.g. USA"
                   value={formData.nationality}
                   onChange={handleChange}
                   className={inputClass}
                   required
                 />
               </div>
+            </div>
 
-              {/* Agency Details */}
-              {formData.role === "agency" && (
-                <div className="rounded-2xl border border-[#197fe6]/15 bg-[#197fe6]/[0.03] p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-[#2d3b2a]">
-                      Agency Details
-                    </p>
-                    <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#197fe6]/10 text-[#197fe6] border border-[#197fe6]/20 font-bold">
-                      Required
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-semibold text-[#2d3b2a]">
-                      Agency Name
-                    </label>
-                    <input
-                      type="text"
-                      name="agencyName"
-                      placeholder="Mountain Tours Pvt Ltd"
-                      value={formData.agencyName}
-                      onChange={handleChange}
-                      className={inputClass}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-semibold text-[#2d3b2a]">
-                      Agency Address
-                    </label>
-                    <input
-                      type="text"
-                      name="agencyAddress"
-                      placeholder="Pokhara, Nepal"
-                      value={formData.agencyAddress}
-                      onChange={handleChange}
-                      className={inputClass}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-semibold text-[#2d3b2a]">
-                        Agency Phone
-                      </label>
-                      <input
-                        type="text"
-                        name="agencyPhone"
-                        placeholder="+977 98XXXXXXXX"
-                        value={formData.agencyPhone}
-                        onChange={handleChange}
-                        className={inputClass}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-[#2d3b2a]">
-                        Logo URL (optional)
-                      </label>
-                      <input
-                        type="text"
-                        name="agencyLogo"
-                        placeholder="https://..."
-                        value={formData.agencyLogo}
-                        onChange={handleChange}
-                        className={inputClass}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-                    <p className="text-xs text-amber-800 leading-relaxed flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[14px]">info</span>
-                      Agency accounts require admin approval before dashboard access.
-                    </p>
-                  </div>
+            {/* Agency Details */}
+            {formData.role === "agency" && (
+              <div className="mt-6 p-5 border border-slate-200 bg-slate-50 rounded-xl space-y-4">
+                <h3 className="text-sm font-semibold text-slate-900">Agency Information</h3>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-600 block">Agency Name</label>
+                  <input
+                    type="text"
+                    name="agencyName"
+                    placeholder="Acme Travel Co."
+                    value={formData.agencyName}
+                    onChange={handleChange}
+                    className={inputClass}
+                    required={formData.role === "agency"}
+                  />
                 </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-600 block">Phone Number</label>
+                  <input
+                    type="text"
+                    name="agencyPhone"
+                    placeholder="+977 9800000000"
+                    value={formData.agencyPhone}
+                    onChange={handleChange}
+                    className={inputClass}
+                    required={formData.role === "agency"}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-600 block">Business Address</label>
+                  <input
+                    type="text"
+                    name="agencyAddress"
+                    placeholder="123 Kathmandu, Nepal"
+                    value={formData.agencyAddress}
+                    onChange={handleChange}
+                    className={inputClass}
+                    required={formData.role === "agency"}
+                  />
+                </div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 bg-slate-900 hover:bg-black text-white font-medium rounded-lg transition-colors flex items-center justify-center disabled:opacity-70 mt-6"
+            >
+              {loading ? (
+                <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : formData.role === "agency" ? (
+                "Register Agency"
+              ) : (
+                "Create Account"
               )}
+            </button>
 
-              {/* Password */}
-              <div>
-                <label className="text-sm font-semibold text-[#2d3b2a]">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Minimum 6 characters"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={inputClass}
-                  required
-                />
-              </div>
+            <div className="text-center pt-4">
+              <p className="text-slate-500 text-sm">
+                Already have an account?{" "}
+                <Link to="/login" className="font-semibold text-slate-900 hover:underline">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </form>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 rounded-xl bg-[#197fe6] hover:bg-[#1570d4] text-white font-bold transition disabled:opacity-50 shadow-lg shadow-[#197fe6]/20 text-sm"
-              >
-                {loading ? "Creating Account..." : "Create Account"}
-              </button>
-
-              <div className="text-center pt-2">
-                <p className="text-xs text-[#6b7280]">
-                  Already have an account?
-                  <span
-                    onClick={() => navigate("/login")}
-                    className="text-[#197fe6] font-semibold cursor-pointer ml-1 hover:underline"
-                  >
-                    Log in
-                  </span>
-                </p>
-              </div>
-            </form>
-          </div>
-
-          <p className="text-center text-[11px] text-[#94a3b8] mt-4">
-            By registering, you agree to our terms & privacy policy.
-          </p>
         </div>
       </div>
     </div>

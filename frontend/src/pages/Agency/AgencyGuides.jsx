@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import AgencySidebar from "../../components/AgencySidebar";
+import { API_BASE as apiBase } from "../../config/api.js";
 import defaultAvatar from "../../assets/default-avatar.jpg";
-
 export default function AgencyGuides() {
-  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const navigate = useNavigate();
 
   const [guides, setGuides] = useState([]);
@@ -442,11 +440,7 @@ export default function AgencyGuides() {
   };
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
-      <div className="flex h-full w-full bg-[#fcfbf8]" style={paperTextureStyle}>
-        <AgencySidebar />
-
-        <main className="flex flex-1 flex-col overflow-y-auto scroll-smooth">
+            <main className="flex flex-1 flex-col overflow-y-auto scroll-smooth">
           <div className="sticky top-0 z-50 flex items-center justify-between bg-white p-4 shadow-sm lg:hidden">
             <div className="flex items-center gap-2">
               <span
@@ -653,7 +647,5 @@ export default function AgencyGuides() {
             </div>
           </div>
         </main>
-      </div>
-    </div>
   );
 }

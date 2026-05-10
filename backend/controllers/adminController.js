@@ -11,7 +11,7 @@ export const getAdminStats = async (req, res) => {
   try {
     const totalUsers = await User.countDocuments({ role: "user" });
     const totalAgencies = await User.countDocuments({ role: "agency" });
-    const totalPackages = await Package.countDocuments();
+    const totalPackages = await Package.countDocuments({ isActive: true });
     const totalBookings = await Booking.countDocuments();
     const totalGuides = await Guide.countDocuments();
 
@@ -156,7 +156,26 @@ export const deleteUser = async (req, res) => {
       return res.status(403).json({ message: "Cannot delete an admin" });
     }
 
-    await User.findByIdAndDelete(req.params.id);
+    const userId = user._id;
+
+    // Cascade cleanup to preserve data integrity
+    if (user.role === "user") {
+      // Nullify user reference in bookings (keep booking history intact)
+      await Booking.updateMany({ user: userId }, { $set: { user: null } });
+      // Remove this user's reviews
+      await Review.deleteMany({ user: userId });
+    }
+
+    if (user.role === "agency") {
+      // Soft-delete all packages owned by this agency
+      await Package.updateMany({ agency: userId }, { $set: { isActive: false } });
+      // Deactivate all guides belonging to this agency
+      await Guide.updateMany({ agency: userId }, { $set: { isActive: false } });
+      // Remove agency's reviews
+      await Review.deleteMany({ agency: userId });
+    }
+
+    await User.findByIdAndDelete(userId);
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     console.error("deleteUser error:", error);
@@ -164,7 +183,7 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// @desc    Delete package
+// @desc    Soft-delete package (set isActive = false)
 // @route   DELETE /api/admin/packages/:id
 // @access  Private/Admin
 export const deletePackage = async (req, res) => {
@@ -174,7 +193,9 @@ export const deletePackage = async (req, res) => {
       return res.status(404).json({ message: "Package not found" });
     }
 
-    await Package.findByIdAndDelete(req.params.id);
+    // Soft delete — keeps booking history intact
+    pkg.isActive = false;
+    await pkg.save();
     res.json({ message: "Package deleted successfully" });
   } catch (error) {
     console.error("deletePackage error:", error);
@@ -252,4 +273,3 @@ export const processRefundAdmin = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-

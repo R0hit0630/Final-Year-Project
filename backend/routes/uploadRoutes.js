@@ -44,7 +44,7 @@ router.post("/", upload.single("image"), (req, res) => {
     return res.status(400).json({ message: "No image uploaded" });
   }
 
-  const imageUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+  const imageUrl = `/uploads/${req.file.filename}`;
 
   return res.status(200).json({
     message: "Image uploaded successfully",
@@ -61,7 +61,7 @@ router.post("/multiple", upload.array("images", 6), (req, res) => {
   }
 
   const imageUrls = files.map(
-    (file) => `http://localhost:5000/uploads/${file.filename}`
+    (file) => `/uploads/${file.filename}`
   );
 
   return res.status(200).json({
@@ -102,7 +102,7 @@ router.post("/document", documentUpload.single("document"), (req, res) => {
     return res.status(400).json({ message: "No document uploaded" });
   }
 
-  const documentUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+  const documentUrl = `/uploads/${req.file.filename}`;
 
   return res.status(200).json({
     message: "Document uploaded successfully",

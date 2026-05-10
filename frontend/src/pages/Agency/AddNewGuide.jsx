@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import AgencySidebar from "../../components/AgencySidebar";
+import { API_BASE } from "../../config/api.js";
 
 export default function AddNewGuide() {
   const navigate = useNavigate();
@@ -88,7 +88,7 @@ export default function AddNewGuide() {
         imageData.append("image", selectedImage);
 
         const uploadRes = await axios.post(
-          "http://localhost:5000/api/upload",
+          `${API_BASE}/api/upload`,
           imageData
         );
 
@@ -102,7 +102,7 @@ export default function AddNewGuide() {
       };
 
       const res = await axios.post(
-        "http://localhost:5000/api/guides",
+        `${API_BASE}/api/guides`,
         payload,
         {
           headers: {
@@ -123,11 +123,7 @@ export default function AddNewGuide() {
   };
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
-      <div className="flex h-full w-full bg-[#fcfbf8]" style={paperTextureStyle}>
-        <AgencySidebar />
-
-        <main className="flex flex-1 flex-col overflow-y-auto">
+            <main className="flex flex-1 flex-col overflow-y-auto">
           <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-4 shadow-sm backdrop-blur-md lg:hidden">
             <div className="flex items-center gap-2">
               <span
@@ -492,7 +488,5 @@ export default function AddNewGuide() {
             </form>
           </div>
         </main>
-      </div>
-    </div>
   );
 }

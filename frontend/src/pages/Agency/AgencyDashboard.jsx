@@ -1,20 +1,16 @@
-// src/Pages/AgencyDashboard.jsx
 import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import AgencySidebar from "../../components/AgencySidebar";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_BASE } from "../../config/api.js";
 
 // Converts relative image paths to full URLs
 const buildImageUrl = (imgPath) => {
   if (!imgPath) return null;
   if (imgPath.startsWith("http")) return imgPath;
-  return `${API_BASE_URL}${imgPath}`;
+  return `${API_BASE}${imgPath}`;
 };
 
 export default function AgencyDashboard() {
-  const API_BASE = API_BASE_URL;
   const getToken = () => localStorage.getItem("token");
   const navigate = useNavigate();
 
@@ -239,13 +235,7 @@ export default function AgencyDashboard() {
   );
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
-      <div className="flex h-full w-full bg-[#fcfbf8]" style={paperTextureStyle}>
-        {/* Sidebar */}
-        <AgencySidebar />
-
-        {/* Main */}
-        <main className="flex flex-1 flex-col overflow-y-auto">
+    <main className="flex flex-1 flex-col overflow-y-auto">
           {/* Mobile top bar */}
           <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-4 backdrop-blur-md shadow-sm lg:hidden">
             <div className="flex items-center gap-2">
@@ -472,8 +462,6 @@ export default function AgencyDashboard() {
               <p className="mt-2 text-xs text-gray-300">© {new Date().getFullYear()} Travolin. Partner Agency Portal.</p>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+    </main>
   );
 }

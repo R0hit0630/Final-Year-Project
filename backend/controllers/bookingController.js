@@ -14,37 +14,10 @@ export const getMyTrips = async (req, res) => {
 
     const activeTrips = [];
     const pastTrips = [];
-    const today = new Date();
 
     for (const booking of bookings) {
-      const startDate = booking.startDate ? new Date(booking.startDate) : null;
-      const endDate = booking.endDate ? new Date(booking.endDate) : null;
-      let status = String(booking.status || "").toLowerCase();
-
-      // Auto update to ongoing
-      if (
-        startDate &&
-        endDate &&
-        startDate <= today &&
-        endDate >= today &&
-        status === "confirmed"
-      ) {
-        booking.status = "ongoing";
-        await booking.save();
-        status = "ongoing";
-      }
-
-      // Auto update to completed
-      if (
-        endDate &&
-        endDate < today &&
-        status !== "completed" &&
-        status !== "cancelled"
-      ) {
-        booking.status = "completed";
-        await booking.save();
-        status = "completed";
-      }
+      // Status is already synced by syncCompletedBookings middleware before this call
+      const status = String(booking.status || "").toLowerCase();
 
       if (["pending", "confirmed", "ongoing"].includes(status)) {
         activeTrips.push(booking);

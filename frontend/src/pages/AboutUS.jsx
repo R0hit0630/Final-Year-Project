@@ -1,5 +1,3 @@
-import PublicNavbar from "../components/PublicNavbar";
-import PublicFooter from "../components/PublicFooter";
 import { useNavigate } from "react-router-dom";
 
 export default function AboutUS() {
@@ -47,8 +45,7 @@ export default function AboutUS() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#111921] text-white overflow-x-hidden">
-      <PublicNavbar />
+    <div className="text-white overflow-x-hidden">
 
       {/* Hero */}
       <section className="relative pt-32 pb-24 overflow-hidden">
@@ -279,7 +276,6 @@ export default function AboutUS() {
         </div>
       </section>
 
-      <PublicFooter />
     </div>
   );
 }

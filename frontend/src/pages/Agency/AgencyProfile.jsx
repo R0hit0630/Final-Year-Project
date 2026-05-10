@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import AgencySidebar from "../../components/AgencySidebar";
+import travelinLogo from "../../assets/travolin-logo.png";
 
 const Input = ({
   label,
@@ -406,16 +406,6 @@ export default function AgencyProfile() {
   }
 
   return (
-    <div
-      className="h-screen w-full overflow-hidden"
-      style={{ background: COLORS.bgLight, color: COLORS.secondary }}
-    >
-      <div
-        className="flex h-full w-full"
-        style={{ background: COLORS.paper, ...paperTextureStyle }}
-      >
-        <AgencySidebar />
-
         <main className="flex flex-1 flex-col overflow-y-auto">
           <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-4 backdrop-blur-md shadow-sm lg:hidden">
             <div className="flex items-center gap-2">
@@ -900,7 +890,5 @@ export default function AgencyProfile() {
             </div>
           </div>
         </main>
-      </div>
-    </div>
   );
 }

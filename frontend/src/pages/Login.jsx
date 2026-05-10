@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_BASE } from "../config/api.js";
 import bgImage from "../assets/bg.jpg";
 import travelinLogo from "../assets/travolin-logo.png";
 
@@ -8,6 +9,7 @@ const Login = ({ setUser }) => {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -28,9 +30,10 @@ const Login = ({ setUser }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
+      const res = await axios.post(`${API_BASE}/api/auth/login`, {
         identifier,
         password,
       });
@@ -48,7 +51,7 @@ const Login = ({ setUser }) => {
       localStorage.setItem("user", JSON.stringify(userObj));
       setUser(userObj);
 
-      //  Redirect by role (MATCH YOUR APP ROUTES)
+      //  Redirect by role
       if (res.data.role === "agency") {
         if (res.data.agencyVerified) {
           navigate("/agency", { replace: true });
@@ -62,125 +65,123 @@ const Login = ({ setUser }) => {
       }
     } catch (err) {
       setError(err.response?.data?.message || "Invalid credentials");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#0f1923]">
-      {/* LEFT IMAGE */}
-      <div
-        className="hidden md:flex w-1/2 relative bg-cover bg-center"
-        style={{ backgroundImage: `url(${bgImage})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0b2545]/85 via-[#0f1923]/70 to-black/60" />
-        <div className="relative z-10 p-10 flex flex-col justify-between w-full h-full">
-          {/* Top Logo */}
-          <Link to="/" className="flex items-center group">
-            <div className="bg-white rounded-xl px-2 py-1 shadow-md transition-transform group-hover:scale-105">
-              <img src={travelinLogo} alt="Travolin" className="h-8 w-auto" />
-            </div>
-          </Link>
-
-          {/* Bottom Text */}
-          <div className="max-w-md">
-            <p className="text-[#197fe6] text-xs font-bold uppercase tracking-widest mb-3">
-              Welcome Back
-            </p>
-            <h1 className="text-white text-3xl font-bold leading-tight">
-              Continue your
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
-                Himalayan journey
-              </span>
-            </h1>
-            <p className="text-white/70 mt-4 text-sm leading-relaxed">
-              Log in to manage your trips, track bookings, and access your personalized dashboard.
-            </p>
-          </div>
+    <div className="min-h-screen w-full flex bg-white font-sans text-slate-800">
+      
+      {/* LEFT IMAGE PANEL */}
+      <div className="hidden lg:block lg:w-1/2 relative overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-105"
+          style={{ backgroundImage: `url(${bgImage})` }}
+        >
+          {/* Very light overlay to keep it bright and airy */}
+          <div className="absolute inset-0 bg-black/20" />
+        </div>
+        
+        {/* Subtle branding overlay */}
+        <div className="absolute bottom-12 left-12 text-white max-w-lg drop-shadow-md">
+          <p className="text-sm font-semibold tracking-[0.2em] uppercase mb-4 opacity-90">
+            Journey to the Himalayas
+          </p>
+          <h1 className="text-5xl font-light leading-tight">
+            Discover a world of <br/>
+            <span className="font-semibold">extraordinary beauty.</span>
+          </h1>
         </div>
       </div>
 
-      {/* RIGHT LOGIN */}
-      <div className="w-full md:w-1/2 flex items-center justify-center px-4 py-10 bg-[#f6f7f8]">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="md:hidden text-center mb-8">
-            <Link to="/" className="inline-flex items-center gap-3">
-              <img src={travelinLogo} alt="Travolin" className="h-8 w-auto" />
+      {/* RIGHT FORM PANEL */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-16 lg:p-24 bg-white">
+        <div className="w-full max-w-[420px]">
+          
+          {/* Back to Home */}
+          <div className="mb-8">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors group"
+            >
+              <span className="material-symbols-outlined text-[18px] transition-transform group-hover:-translate-x-0.5">arrow_back</span>
+              Back to Home
             </Link>
           </div>
 
-          {/* Card */}
-          <div className="bg-white rounded-2xl shadow-xl border border-black/5 p-6 sm:p-8">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-[#2d3b2a]">Log In</h2>
-              <p className="text-sm text-[#6b7280] mt-1">
-                Enter your credentials to continue
-              </p>
-            </div>
-
-            {error && (
-              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-                <p className="text-red-700 text-sm text-center">{error}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="text-sm font-semibold text-[#2d3b2a]">
-                  Username or Email
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter username or email"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  className="w-full mt-1.5 px-4 py-3 rounded-xl bg-[#fcfbf8] border border-gray-200 text-sm outline-none focus:border-[#197fe6]/50 focus:ring-2 focus:ring-[#197fe6]/10 transition"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold text-[#2d3b2a]">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full mt-1.5 px-4 py-3 rounded-xl bg-[#fcfbf8] border border-gray-200 text-sm outline-none focus:border-[#197fe6]/50 focus:ring-2 focus:ring-[#197fe6]/10 transition"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3.5 rounded-xl bg-[#197fe6] hover:bg-[#1570d4] text-white font-bold transition shadow-lg shadow-[#197fe6]/20 text-sm"
-              >
-                Log In
-              </button>
-
-              <div className="text-center pt-2">
-                <p className="text-xs text-[#6b7280]">
-                  Don't have an account?
-                  <span
-                    onClick={() => navigate("/register")}
-                    className="text-[#197fe6] font-semibold cursor-pointer ml-1 hover:underline"
-                  >
-                    Sign up
-                  </span>
-                </p>
-              </div>
-            </form>
+          {/* Logo */}
+          <div className="mb-12">
+            <Link to="/" className="inline-block transition-opacity hover:opacity-80">
+              <img src={travelinLogo} alt="Travolin" className="h-9 w-auto" />
+            </Link>
           </div>
 
-          {/* small footer */}
-          <p className="text-center text-[11px] text-[#94a3b8] mt-4">
-            Secure login • Your data stays protected
-          </p>
+          <div className="mb-10">
+            <h2 className="text-3xl font-semibold text-slate-900 tracking-tight mb-3">Welcome back</h2>
+            <p className="text-slate-500 text-base">Please enter your details to sign in.</p>
+          </div>
+
+          {error && (
+            <div className="mb-6 border-l-4 border-red-500 bg-red-50 p-4 rounded-r-md">
+              <p className="text-red-700 text-sm font-medium">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 block">
+                Username or Email
+              </label>
+              <input
+                type="text"
+                placeholder="Enter your email"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-black focus:ring-1 focus:ring-black transition-shadow"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 block">
+                Password
+              </label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-black focus:ring-1 focus:ring-black transition-shadow"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 bg-slate-900 hover:bg-black text-white font-medium rounded-lg transition-colors flex items-center justify-center disabled:opacity-70 mt-4"
+            >
+              {loading ? (
+                <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : (
+                "Sign In"
+              )}
+            </button>
+
+            <div className="text-center pt-4">
+              <p className="text-slate-500 text-sm">
+                Don't have an account?{" "}
+                <Link to="/register" className="font-semibold text-slate-900 hover:underline">
+                  Sign up for free
+                </Link>
+              </p>
+            </div>
+          </form>
+
         </div>
       </div>
+
     </div>
   );
 };

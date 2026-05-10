@@ -15,22 +15,11 @@ import {
 const router = express.Router();
 
 
-// 🔥 AUTO SYNC STATUS (FIXED)
+// AUTO SYNC STATUS — order matters: ongoing first, then completed
 const syncCompletedBookings = async () => {
   const now = new Date();
 
-  // Completed
-  await Booking.updateMany(
-    {
-      status: { $in: ["confirmed", "ongoing"] },
-      endDate: { $lt: now },
-    },
-    {
-      $set: { status: "completed" },
-    }
-  );
-
-  // Ongoing
+  // Step 1: confirmed → ongoing (trip has started but not yet ended)
   await Booking.updateMany(
     {
       status: "confirmed",
@@ -39,6 +28,17 @@ const syncCompletedBookings = async () => {
     },
     {
       $set: { status: "ongoing" },
+    }
+  );
+
+  // Step 2: confirmed or ongoing → completed (trip has ended)
+  await Booking.updateMany(
+    {
+      status: { $in: ["confirmed", "ongoing"] },
+      endDate: { $lt: now },
+    },
+    {
+      $set: { status: "completed" },
     }
   );
 };
@@ -195,7 +195,7 @@ router.get("/:id", protect, async (req, res) => {
 router.put("/:id/assign-guide", protect, requireRole("agency"), assignGuide);
 router.put("/:id/complete", protect, requireRole("agency"), completeBooking);
 
-// ================= CANCEL BOOKING =================
-router.put("/:id/cancel", protect, cancelBookingByUser);
+// ================= CANCEL BOOKING (user only) =================
+router.put("/:id/cancel", protect, requireRole("user"), cancelBookingByUser);
 
 export default router;

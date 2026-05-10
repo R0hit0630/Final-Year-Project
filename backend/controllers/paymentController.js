@@ -232,7 +232,13 @@ export const verifyEsewaPayment = async (req, res) => {
       console.log("eSewa status API response:", statusData);
     } catch (error) {
       console.error("eSewa status API error:", error.message);
-      // Fallback for sandbox/local testing if API is unreachable
+      // In production, never silently accept a payment if the status API is down
+      if (process.env.NODE_ENV === "production") {
+        return res.status(503).json({
+          message: "Could not verify payment with eSewa. Please contact support.",
+        });
+      }
+      // Fallback only in development/sandbox — trust the decoded data
       statusData = { status: "COMPLETE", ref_id: transaction_code || "SANDBOX_REF" };
     }
 
@@ -315,5 +321,45 @@ export const verifyEsewaPayment = async (req, res) => {
       message: "Server error while verifying payment",
       error: error.message,
     });
+  }
+};
+
+// @desc  Cancel a pending booking when eSewa payment fails/is cancelled
+// @route DELETE /api/payments/esewa/cancel-pending/:transactionUuid
+// @access Public (called from EsewaFailure page)
+export const cancelPendingPayment = async (req, res) => {
+  try {
+    const { transactionUuid } = req.params;
+
+    if (!transactionUuid) {
+      return res.status(400).json({ message: "Missing transaction UUID" });
+    }
+
+    const booking = await Booking.findOne({
+      transactionUuid,
+      status: "pending",
+      paymentStatus: "pending",
+    });
+
+    if (!booking) {
+      // Already cancelled or doesn't exist — that's fine
+      return res.status(200).json({ message: "No pending booking found" });
+    }
+
+    booking.status = "cancelled";
+    booking.refundAmount = 0;
+    booking.refundStatus = "none"; // "not_applicable" is not a valid enum value — use "none"
+    await booking.save();
+
+    // Mark the linked payment record as failed (never delete — preserves audit trail)
+    await Payment.updateOne(
+      { transactionUuid, status: { $ne: "completed" } },
+      { $set: { status: "failed" } }
+    );
+
+    return res.status(200).json({ message: "Pending booking cancelled successfully" });
+  } catch (error) {
+    console.error("cancelPendingPayment error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };

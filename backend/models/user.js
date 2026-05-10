@@ -88,6 +88,10 @@ const userSchema = new mongoose.Schema(
       insurance: { type: String, default: "" },
       vat: { type: String, default: "" },
     },
+
+    // Aggregate rating fields (updated by reviewController on each review)
+    averageRating: { type: Number, default: 0, min: 0, max: 5 },
+    numReviews: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true }
 );

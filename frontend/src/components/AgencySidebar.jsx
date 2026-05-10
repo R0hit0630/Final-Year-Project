@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { API_BASE } from "../config/api.js";
 import travelinLogo from "../assets/travolin-logo.png";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const buildImageUrl = (imgPath) => {
   if (!imgPath) return "https://lh3.googleusercontent.com/aida-public/AB6AXuBv5cRvMY3Y1duu7_mqX4yGdtkq8hLjd7F2MWWbrxUiEYLR7ACb9_WpRAQDRA1i-nfBrrt7AWJrIKWgoFL6vXK9nmNa7Xx6U-ouFwn1JaB6JtbwbjAOvrB3UCMvcSodjNYzIRFzg40W6onxqocvKUA9Jjr7U8YMFcbQQhwtTQxZirmliaSD4lbz4FrGB6Fqi68Q9lmPo_OPnKLhoj9a3nOxtLm-k3whu_Eiasizlk-9SwO5NES13rYYXjbUqCMDDE6JCeme3iAMfowo";
   if (imgPath.startsWith("http")) return imgPath;
-  return `${API_BASE_URL}${imgPath}`;
+  return `${API_BASE}${imgPath}`;
 };
 
 export default function AgencySidebar() {
@@ -26,7 +25,7 @@ export default function AgencySidebar() {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await axios.get(`${API_BASE_URL}/api/users/agency/me`, {
+        const res = await axios.get(`${API_BASE}/api/users/agency/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setAgency(res.data);
@@ -53,10 +52,22 @@ export default function AgencySidebar() {
   return (
     <aside className="hidden w-64 flex-col justify-between border-r border-[#e0e8dc] bg-[#fdfdfc]/80 backdrop-blur-sm lg:flex h-screen sticky top-0">
       <div className="flex h-full flex-col p-6">
-        {/* Travolin Branding */}
-        <Link to="/" className="mb-6 block">
-          <img src={travelinLogo} alt="Travolin" className="h-8 w-auto" />
-        </Link>
+        {/* Branded Header */}
+        <div className="mb-6">
+          <Link to="/" className="block group">
+            <div className="flex items-center gap-3 rounded-2xl bg-slate-50 border border-slate-100 px-4 py-3 transition-all group-hover:bg-slate-100">
+              <img
+                src={travelinLogo}
+                alt="Travolin"
+                className="h-7 w-auto object-contain mix-blend-multiply"
+              />
+              <div className="h-5 w-px bg-slate-200" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 whitespace-nowrap">
+                Agency Portal
+              </span>
+            </div>
+          </Link>
+        </div>
 
         <div className="mb-8 flex items-center gap-3 border-t border-[#e0e8dc] pt-6">
           <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-[#e0e8dc] bg-white shadow-sm">

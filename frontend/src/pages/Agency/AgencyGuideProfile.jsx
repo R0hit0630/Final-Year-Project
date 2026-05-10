@@ -1,11 +1,9 @@
-// src/Pages/AgencyGuideProfile.jsx
 import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
-import AgencySidebar from "../../components/AgencySidebar";
+import { API_BASE } from "../../config/api.js";
 import defaultAvatar from "../../assets/default-avatar.jpg";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const getToken = () => localStorage.getItem("token");
 
 export default function AgencyGuideProfile() {
@@ -63,13 +61,8 @@ export default function AgencyGuideProfile() {
   };
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
-      <div className="flex h-full w-full bg-[#fcfbf8]">
-        <AgencySidebar />
-
-        {/* Main */}
-        <main className="flex flex-1 flex-col overflow-y-auto">
-          {/* Mobile bar */}
+    <main className="flex flex-1 flex-col overflow-y-auto">
+      {/* Mobile bar */}
           <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-4 shadow-sm backdrop-blur-md lg:hidden">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-3xl" style={{ color: COLORS.primary }}>terrain</span>
@@ -341,7 +334,5 @@ export default function AgencyGuideProfile() {
             )}
           </div>
         </main>
-      </div>
-    </div>
   );
 }

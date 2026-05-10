@@ -224,7 +224,7 @@ export const getPackageReviews = async (req, res) => {
       package: req.params.packageId,
       type: "package",
     })
-      .populate("user", "name username email")
+      .populate("user", "fullName username email avatar")
       .sort({ createdAt: -1 });
 
     res.status(200).json(reviews);
@@ -243,7 +243,7 @@ export const getGuideReviews = async (req, res) => {
       guide: req.params.guideId,
       type: "guide",
     })
-      .populate("user", "name username email")
+      .populate("user", "fullName username email avatar")
       .sort({ createdAt: -1 });
 
     res.status(200).json(reviews);
@@ -259,7 +259,7 @@ export const getGuideReviews = async (req, res) => {
 export const getAgencyReviews = async (req, res) => {
   try {
     const reviews = await Review.find({ agency: req.params.agencyId })
-      .populate("user", "name username email")
+      .populate("user", "fullName username email avatar")
       .sort({ createdAt: -1 });
 
     res.status(200).json(reviews);

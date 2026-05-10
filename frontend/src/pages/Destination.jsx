@@ -195,8 +195,10 @@ export default function Destination() {
           {current.description}
         </p>
 
-        <button className="mt-12 px-12 py-4 border border-white/30 bg-white/5 backdrop-blur-md hover:bg-white/10 transition-all duration-300 uppercase tracking-widest text-sm">
-          Enter Region
+        <button
+          onClick={() => navigate("/explore")}
+          className="mt-12 px-12 py-4 border border-white/30 bg-white/5 backdrop-blur-md hover:bg-white/10 transition-all duration-300 uppercase tracking-widest text-sm">
+          Explore Packages
         </button>
       </div>
 

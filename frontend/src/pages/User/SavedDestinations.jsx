@@ -1,9 +1,7 @@
-// src/pages/User/SavedDestinations.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { API_BASE as API } from "../../config/api.js";
 import defaultAvatar from "../../assets/default-avatar.jpg";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const getStoredUser = () => {
   try {
@@ -325,106 +323,10 @@ export default function SavedDestinations() {
     return filtered;
   }, [validSavedPackages, search, sortBy]);
 
-  const navItems = [
-    { label: "My Trips", icon: "map", to: "/trips" },
-    { label: "Explore Nepal", icon: "explore", to: "/explore" },
-    { label: "Saved Destinations", icon: "favorite", to: "/saved", active: true },
-    { label: "Profile", icon: "person", to: "/profile" },
-  ];
-
-  const displayName =
-    currentUser?.fullName ||
-    currentUser?.name ||
-    currentUser?.username ||
-    "Traveler";
-
-  const displayRole = currentUser?.role || "User";
-
-  const displayAvatar = buildImageUrl(
-    currentUser?.avatar ||
-      currentUser?.profileImage ||
-      currentUser?.image ||
-      currentUser?.photo
-  );
 
   return (
-    <div className="h-screen w-full overflow-hidden font-['Inter'] text-[#2d3b2a]">
-      <div className="flex h-full w-full bg-[#fcfbf8]">
-        {/* Sidebar */}
-        <aside className="hidden w-64 shrink-0 flex-col justify-between border-r border-[#e0e8dc] bg-[#fdfdfc]/80 backdrop-blur-sm lg:flex">
-          <div className="flex h-full flex-col p-6">
-            <div className="mb-10 flex items-center gap-3">
-              <div className="relative h-12 w-12 overflow-hidden rounded-full border-2 border-white shadow-sm ring-1 ring-blue-100">
-                <img
-                  alt="User Profile"
-                  className="h-full w-full object-cover"
-                  src={displayAvatar}
-                  onError={(e) => {
-                    e.currentTarget.src = defaultAvatar;
-                  }}
-                />
-              </div>
-
-              <div className="flex flex-col">
-                <h1 className="text-base font-bold leading-tight text-[#2d3b2a]">
-                  {profileLoading ? "Loading..." : displayName}
-                </h1>
-                <p className="text-xs font-medium uppercase tracking-wider text-blue-600">
-                  {displayRole}
-                </p>
-              </div>
-            </div>
-
-            <nav className="flex flex-col gap-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.label}
-                  to={item.to}
-                  className={`group flex items-center gap-3 rounded-xl px-4 py-3 transition-all ${
-                    item.active ? "bg-blue-50" : "hover:bg-[#f0f4ee]"
-                  }`}
-                >
-                  <span
-                    className={`material-symbols-outlined transition-colors ${
-                      item.active
-                        ? "text-blue-600"
-                        : "text-[#6b7280] group-hover:text-blue-600"
-                    }`}
-                  >
-                    {item.icon}
-                  </span>
-                  <span
-                    className={`text-sm ${
-                      item.active
-                        ? "font-semibold text-[#2d3b2a]"
-                        : "font-medium text-[#4b5563] group-hover:text-[#2d3b2a]"
-                    }`}
-                  >
-                    {item.label}
-                  </span>
-                </Link>
-              ))}
-            </nav>
-
-            <div className="mt-auto pt-6">
-              <Link
-                to="/logout"
-                className="group flex items-center gap-3 rounded-xl border border-transparent px-4 py-3 transition-all hover:border-[#e0e8dc] hover:bg-white hover:shadow-sm"
-              >
-                <span className="material-symbols-outlined text-[#6b7280] transition-colors group-hover:text-red-500">
-                  logout
-                </span>
-                <span className="text-sm font-medium text-[#4b5563] group-hover:text-red-500">
-                  Log Out
-                </span>
-              </Link>
-            </div>
-          </div>
-        </aside>
-
-        {/* Main */}
-        <main className="flex flex-1 flex-col overflow-y-auto bg-[#f6f7f8]">
-          <header className="sticky top-0 z-40 border-b border-[#e0e8dc] bg-[#fdfdfc]/80 px-4 py-4 backdrop-blur-md md:px-8">
+    <div className="flex flex-1 flex-col overflow-y-auto bg-[#f6f7f8]">
+      <header className="sticky top-0 z-40 border-b border-[#e0e8dc] bg-[#fdfdfc]/80 px-4 py-4 backdrop-blur-md md:px-8">
             <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-[#2d3b2a]">
@@ -598,8 +500,6 @@ export default function SavedDestinations() {
               </div>
             </div>
           </footer>
-        </main>
-      </div>
-    </div>
+        </div>
   );
 }

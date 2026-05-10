@@ -22,15 +22,22 @@ export default function AdminSidebar() {
   );
 
   return (
-    <aside className="hidden w-64 border-r border-[#e0e8dc] bg-white lg:flex lg:flex-col lg:p-6">
-      <div className="mb-10 flex flex-col gap-3">
-        <img src={travelinLogo} alt="Travolin" className="h-10 w-auto" />
-        <p
-          className="text-xs uppercase tracking-wider font-semibold"
-          style={{ color: COLORS.primary }}
-        >
-          Admin Control Panel
-        </p>
+    <aside className="hidden w-64 border-r border-[#e0e8dc] bg-white lg:flex lg:flex-col lg:p-6 h-screen sticky top-0 overflow-y-auto">
+      {/* Branded Header */}
+      <div className="mb-8">
+        <Link to="/" className="block group">
+          <div className="flex items-center gap-3 rounded-2xl bg-slate-50 border border-slate-100 px-4 py-3 transition-all group-hover:bg-slate-100">
+            <img
+              src={travelinLogo}
+              alt="Travolin"
+              className="h-7 w-auto object-contain mix-blend-multiply"
+            />
+            <div className="h-5 w-px bg-slate-200" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 whitespace-nowrap">
+              Admin Panel
+            </span>
+          </div>
+        </Link>
       </div>
 
       <nav className="flex flex-col gap-2">

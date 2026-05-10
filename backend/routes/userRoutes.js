@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 
 import { protect } from "../middleware/auth.js";
+import { requireRole } from "../middleware/role.js";
 import User from "../models/user.js";
 import {
   getMyProfile,
@@ -72,8 +73,8 @@ router.put("/me/avatar", protect, avatarUpload.single("avatar"), async (req, res
 router.get("/me", protect, getMyProfile);
 router.put("/me", protect, updateMyProfile);
 
-// AGENCY PROFILE
-router.get("/agency/me", protect, getMyAgencyProfile);
-router.put("/agency/me", protect, updateMyAgencyProfile);
+// AGENCY PROFILE (only agencies can access)
+router.get("/agency/me", protect, requireRole("agency"), getMyAgencyProfile);
+router.put("/agency/me", protect, requireRole("agency"), updateMyAgencyProfile);
 
 export default router;

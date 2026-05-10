@@ -218,6 +218,18 @@ export const deleteGuide = async (req, res) => {
       return res.status(404).json({ message: "Guide not found" });
     }
 
+    // Prevent deletion if guide has active or upcoming bookings
+    const activeBookings = await Booking.countDocuments({
+      guide: guide._id,
+      status: { $in: ["pending", "confirmed", "ongoing"] },
+    });
+
+    if (activeBookings > 0) {
+      return res.status(400).json({
+        message: `Cannot delete guide: ${activeBookings} active booking(s) assigned. Reassign or complete them first.`,
+      });
+    }
+
     await guide.deleteOne();
 
     res.status(200).json({

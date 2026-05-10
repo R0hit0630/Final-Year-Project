@@ -154,36 +154,4 @@ router.get("/agencies", protect, authorize("admin"), async (req, res) => {
 });
 
 
-// ADMIN: VERIFY AGENCY
-// PATCH /api/auth/verify-agency/:id
-
-router.patch("/verify-agency/:id", protect, authorize("admin"), async (req, res) => {
-  try {
-    const agency = await User.findById(req.params.id);
-
-    if (!agency) return res.status(404).json({ message: "Agency not found" });
-    if (agency.role !== "agency") {
-      return res.status(400).json({ message: "This user is not an agency" });
-    }
-
-    agency.agencyVerified = true;
-    agency.agencyVerifiedAt = new Date();
-    await agency.save();
-
-    return res.json({
-      message: "Agency verified successfully",
-      agency: {
-        id: agency._id,
-        username: agency.username,
-        email: agency.email,
-        agencyVerified: agency.agencyVerified,
-        agencyVerifiedAt: agency.agencyVerifiedAt,
-      },
-    });
-  } catch (err) {
-    console.error("VERIFY AGENCY ERROR:", err);
-    return res.status(500).json({ message: "Server error" });
-  }
-});
-
 export default router;

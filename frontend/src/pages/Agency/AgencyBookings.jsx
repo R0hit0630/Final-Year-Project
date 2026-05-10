@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import AgencySidebar from "../../components/AgencySidebar";
+import { API_BASE as apiBase } from "../../config/api.js";
 
 export default function AgencyBookings() {
   const COLORS = {
@@ -12,8 +12,6 @@ export default function AgencyBookings() {
     paper: "#fcfbf8",
     bgLight: "#f6f7f8",
   };
-
-  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const [bookings, setBookings] = useState([]);
   const [guides, setGuides] = useState([]);
@@ -311,11 +309,7 @@ export default function AgencyBookings() {
   };
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-[#f6f7f8] text-[#2d3b2a] antialiased">
-      <div className="flex h-full w-full bg-[#fcfbf8]" style={paperTextureStyle}>
-        <AgencySidebar />
-
-        <main className="flex flex-1 flex-col overflow-y-auto">
+            <main className="flex flex-1 flex-col overflow-y-auto">
           <div className="sticky top-0 z-50 flex items-center justify-between bg-white/80 p-4 shadow-sm backdrop-blur-md lg:hidden">
             <div className="flex items-center gap-2">
               <span
@@ -684,7 +678,5 @@ export default function AgencyBookings() {
             </div>
           </div>
         </main>
-      </div>
-    </div>
   );
 }
