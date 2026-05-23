@@ -57,6 +57,7 @@ export default function Destination() {
   const current = destinations[currentIndex];
 
   /* ---------- Smooth Slide Logic ---------- */
+  // Move to the next or previous destination index in the array
   const nextSlide = () =>
     setCurrentIndex((prev) => (prev + 1) % total);
 
@@ -64,6 +65,8 @@ export default function Destination() {
     setCurrentIndex((prev) => (prev - 1 + total) % total);
 
   /* ---------- Premium Smooth Scroll ---------- */
+  // [FLOW FEATURE: DESTINATION SLIDER - WHEEL SCROLL]
+  // Listens to wheel scroll events and transitions the slider index smoothly with a lock timer to prevent spamming
   const scrollLock = useRef(false);
 
   useEffect(() => {
@@ -74,9 +77,11 @@ export default function Destination() {
 
       scrollLock.current = true;
 
+      // Transition slides based on mouse wheel direction
       if (e.deltaY > 0) nextSlide();
       else prevSlide();
 
+      // Debounce window to let the slide animation finish
       setTimeout(() => {
         scrollLock.current = false;
       }, 900);

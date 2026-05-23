@@ -13,6 +13,8 @@ export default function AdminUsers() {
   const [userDetails, setUserDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
+  // [FLOW FEATURE: ADMIN USERS - FETCH DETAILS]
+  // Fetches booking activity summary details when a user row is clicked/selected
   useEffect(() => {
     if (selectedUser) {
       const fetchDetails = async () => {
@@ -40,6 +42,8 @@ export default function AdminUsers() {
     secondary: "#2d3b2a",
   };
 
+  // [FLOW FEATURE: ADMIN USERS - GET LIST]
+  // Fetches all users (travelers and agencies) from the backend database records
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -59,18 +63,22 @@ export default function AdminUsers() {
     fetchUsers();
   }, [apiBase]);
 
+  // [FLOW FEATURE: ADMIN USERS - TOGGLE STATUS]
+  // Toggles the isActive boolean field for the user (active/blocked) on backend
   const handleToggleStatus = async (userId) => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(`${apiBase}/api/admin/users/${userId}/toggle-status`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      fetchUsers();
+      fetchUsers(); // Refresh users list
     } catch (error) {
       alert("Failed to toggle user status");
     }
   };
 
+  // [FLOW FEATURE: ADMIN USERS - DELETE ACCOUNT]
+  // Permanently deletes the user record from the database
   const handleDeleteUser = async (userId) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
@@ -78,7 +86,7 @@ export default function AdminUsers() {
       await axios.delete(`${apiBase}/api/admin/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      fetchUsers();
+      fetchUsers(); // Refresh users list
     } catch (error) {
       alert("Failed to delete user");
     }

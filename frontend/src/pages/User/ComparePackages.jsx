@@ -131,6 +131,9 @@ export default function ComparePackages() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // [FLOW FEATURE: COMPARE PACKAGES]
+  // Step 1: Read the package IDs to compare from the URL parameters (?ids=id1,id2)
+  // or fall back to the IDs stored in the browser's localStorage
   const queryIds = useMemo(() => {
     const params = new URLSearchParams(location.search);
     const idsFromQuery = (params.get("ids") || "")
@@ -175,6 +178,9 @@ export default function ComparePackages() {
     fetchCurrentUser();
   }, []);
 
+  // [FLOW FEATURE: COMPARE PACKAGES]
+  // Step 2: Fetch package details from the backend compare API endpoint
+  // using the selected IDs. The backend validates and returns raw package schemas.
   useEffect(() => {
     const fetchPackages = async () => {
       try {
@@ -190,6 +196,7 @@ export default function ComparePackages() {
           return;
         }
 
+        // Call the GET /api/packages/compare?ids=... endpoint
         const res = await fetch(
           `${API}/api/packages/compare?ids=${queryIds.join(",")}`
         );
@@ -200,6 +207,7 @@ export default function ComparePackages() {
 
         const data = await res.json();
 
+        // Step 3: Map backend fields to the format required by the comparison view
         const mapped = (data.packages || []).map((p) => ({
           id: p._id || p.id,
           title: p.title ?? "",
@@ -223,13 +231,13 @@ export default function ComparePackages() {
           activities: Array.isArray(p.activities)
             ? p.activities
             : p.type
-            ? [p.type]
-            : [],
+              ? [p.type]
+              : [],
           img: p.images?.[0]
-            ? buildImageUrl(p.images[0])
-            : p.image
-            ? buildImageUrl(p.image)
-            : "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80",
+             ? buildImageUrl(p.images[0])
+             : p.image
+               ? buildImageUrl(p.image)
+               : "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80",
         }));
 
         setPackages(mapped);
@@ -244,18 +252,24 @@ export default function ComparePackages() {
     fetchPackages();
   }, [queryIds]);
 
+  // [FLOW FEATURE: COMPARE PACKAGES]
+  // Step 4: Remove a single package from comparison. Updates URL and localStorage.
   const handleRemove = (id) => {
     const current = getStoredCompareIds().filter((pkgId) => pkgId !== id);
     localStorage.setItem("comparePackages", JSON.stringify(current));
 
+    // If less than 2 packages are left, redirect back to explore page
     if (current.length < 2) {
       navigate("/explore");
       return;
     }
 
+    // Refresh route search parameters with the remaining IDs
     navigate(`/compare-packages?ids=${current.join(",")}`);
   };
 
+  // [FLOW FEATURE: COMPARE PACKAGES]
+  // Step 5: Clear all comparison items and navigate back to the explore section
   const handleClearAll = () => {
     localStorage.removeItem("comparePackages");
     navigate("/explore");
@@ -328,169 +342,168 @@ export default function ComparePackages() {
   ];
 
   return (
-        <div className="flex flex-1 flex-col overflow-y-auto bg-[#f6f7f8]">
-          <header className="sticky top-0 z-40 border-b border-[#e0e8dc] bg-[#fdfdfc]/80 px-4 py-4 backdrop-blur-md md:px-8">
-            <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 md:gap-6">
-              <div className="flex items-center gap-4">
-                <Link
-                  to="/explore"
-                  className="inline-flex items-center gap-2 rounded-lg border border-[#e0e8dc] bg-white px-4 py-2 text-sm font-semibold text-[#2d3b2a] transition-all hover:border-blue-500 hover:text-blue-600"
-                >
-                  <span className="material-symbols-outlined text-[18px]">
-                    arrow_back
-                  </span>
-                  Back
-                </Link>
+    <div className="flex flex-1 flex-col overflow-y-auto bg-[#f6f7f8]">
+      <header className="sticky top-0 z-40 border-b border-[#e0e8dc] bg-[#fdfdfc]/80 px-4 py-4 backdrop-blur-md md:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 md:gap-6">
+          <div className="flex items-center gap-4">
+            <Link
+              to="/explore"
+              className="inline-flex items-center gap-2 rounded-lg border border-[#e0e8dc] bg-white px-4 py-2 text-sm font-semibold text-[#2d3b2a] transition-all hover:border-blue-500 hover:text-blue-600"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                arrow_back
+              </span>
+              Back
+            </Link>
 
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#94a3b8]">
-                    Package Comparison
-                  </p>
-                  <h1 className="text-lg font-bold text-[#2d3b2a]">
-                    Compare Travel Packages
-                  </h1>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {packages.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleClearAll}
-                    className="rounded-lg border border-[#e0e8dc] bg-white px-4 py-2 text-sm font-semibold text-[#2d3b2a] transition-all hover:border-blue-500 hover:text-blue-600"
-                  >
-                    Clear All
-                  </button>
-                )}
-
-                <Link
-                  to="/bookings"
-                  className="rounded-lg bg-[#2d3b2a] px-4 py-2 text-sm font-semibold text-white transition-all hover:opacity-90"
-                >
-                  My Bookings
-                </Link>
-              </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#94a3b8]">
+                Package Comparison
+              </p>
+              <h1 className="text-lg font-bold text-[#2d3b2a]">
+                Compare Travel Packages
+              </h1>
             </div>
-          </header>
-
-          <div className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
-            {loading ? (
-              <LoadingSkeleton />
-            ) : packages.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <div className="space-y-8">
-                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                  {packages.map((pkg) => (
-                    <CompareCard key={pkg.id} pkg={pkg} onRemove={handleRemove} />
-                  ))}
-                </div>
-
-                <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
-                  <div className="border-b border-[#eef2f0] px-6 py-5">
-                    <h2 className="text-lg font-bold text-[#2d3b2a]">
-                      Side-by-Side Comparison
-                    </h2>
-                    <p className="mt-1 text-sm text-[#6b7280]">
-                      Compare the most important details before booking.
-                    </p>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border-collapse">
-                      <thead>
-                        <tr className="bg-[#fcfbf8]">
-                          <th className="min-w-[190px] border-b border-[#eef2f0] px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-[#94a3b8]">
-                            Feature
-                          </th>
-                          {packages.map((pkg) => (
-                            <th
-                              key={pkg.id}
-                              className="min-w-[260px] border-b border-[#eef2f0] px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-[#94a3b8]"
-                            >
-                              {pkg.title}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {comparisonRows.map((row) => (
-                          <tr key={row.label} className="align-top">
-                            <td className="border-b border-[#eef2f0] bg-[#fcfbf8] px-6 py-4 text-sm font-bold text-[#2d3b2a]">
-                              {row.label}
-                            </td>
-
-                            {packages.map((pkg) => (
-                              <td
-                                key={`${row.label}-${pkg.id}`}
-                                className={`border-b border-[#eef2f0] px-6 py-4 text-sm text-[#4b5563] ${
-                                  row.longText ? "leading-relaxed" : ""
-                                }`}
-                              >
-                                {row.render(pkg)}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-                  <h3 className="text-base font-bold text-[#2d3b2a]">
-                    Ready to book?
-                  </h3>
-                  <p className="mt-1 text-sm text-[#6b7280]">
-                    After comparing the packages, open the details page of your
-                    preferred option and continue with booking.
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    {packages.map((pkg) => (
-                      <Link
-                        key={pkg.id}
-                        to={`/packages/${pkg.id}`}
-                        className="rounded-lg bg-[#2d3b2a] px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-90"
-                      >
-                        View {pkg.title}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
-          <footer className="mt-auto border-t border-[#e0e8dc] bg-white/50 px-8 py-8">
-            <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row">
-              <p className="text-xs text-[#94a3b8]">
-                © {new Date().getFullYear()} Travolin. All adventures curated
-                with ❤️ in Nepal.
-              </p>
-              <div className="flex items-center gap-6">
-                <a
-                  className="text-xs font-semibold text-[#6b7280] transition-colors hover:text-blue-600"
-                  href="#"
-                >
-                  Terms of Service
-                </a>
-                <a
-                  className="text-xs font-semibold text-[#6b7280] transition-colors hover:text-blue-600"
-                  href="#"
-                >
-                  Privacy Policy
-                </a>
-                <a
-                  className="text-xs font-semibold text-[#6b7280] transition-colors hover:text-blue-600"
-                  href="#"
-                >
-                  Help Center
-                </a>
+          <div className="flex items-center gap-3">
+            {packages.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="rounded-lg border border-[#e0e8dc] bg-white px-4 py-2 text-sm font-semibold text-[#2d3b2a] transition-all hover:border-blue-500 hover:text-blue-600"
+              >
+                Clear All
+              </button>
+            )}
+
+            <Link
+              to="/bookings"
+              className="rounded-lg bg-[#2d3b2a] px-4 py-2 text-sm font-semibold text-white transition-all hover:opacity-90"
+            >
+              My Bookings
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
+        {loading ? (
+          <LoadingSkeleton />
+        ) : packages.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="space-y-8">
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {packages.map((pkg) => (
+                <CompareCard key={pkg.id} pkg={pkg} onRemove={handleRemove} />
+              ))}
+            </div>
+
+            <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+              <div className="border-b border-[#eef2f0] px-6 py-5">
+                <h2 className="text-lg font-bold text-[#2d3b2a]">
+                  Side-by-Side Comparison
+                </h2>
+                <p className="mt-1 text-sm text-[#6b7280]">
+                  Compare the most important details before booking.
+                </p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full border-collapse">
+                  <thead>
+                    <tr className="bg-[#fcfbf8]">
+                      <th className="min-w-[190px] border-b border-[#eef2f0] px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-[#94a3b8]">
+                        Feature
+                      </th>
+                      {packages.map((pkg) => (
+                        <th
+                          key={pkg.id}
+                          className="min-w-[260px] border-b border-[#eef2f0] px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-[#94a3b8]"
+                        >
+                          {pkg.title}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {comparisonRows.map((row) => (
+                      <tr key={row.label} className="align-top">
+                        <td className="border-b border-[#eef2f0] bg-[#fcfbf8] px-6 py-4 text-sm font-bold text-[#2d3b2a]">
+                          {row.label}
+                        </td>
+
+                        {packages.map((pkg) => (
+                          <td
+                            key={`${row.label}-${pkg.id}`}
+                            className={`border-b border-[#eef2f0] px-6 py-4 text-sm text-[#4b5563] ${row.longText ? "leading-relaxed" : ""
+                              }`}
+                          >
+                            {row.render(pkg)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-          </footer>
+
+            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+              <h3 className="text-base font-bold text-[#2d3b2a]">
+                Ready to book?
+              </h3>
+              <p className="mt-1 text-sm text-[#6b7280]">
+                After comparing the packages, open the details page of your
+                preferred option and continue with booking.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                {packages.map((pkg) => (
+                  <Link
+                    key={pkg.id}
+                    to={`/packages/${pkg.id}`}
+                    className="rounded-lg bg-[#2d3b2a] px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-90"
+                  >
+                    View {pkg.title}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <footer className="mt-auto border-t border-[#e0e8dc] bg-white/50 px-8 py-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row">
+          <p className="text-xs text-[#94a3b8]">
+            © {new Date().getFullYear()} Travolin. All adventures curated
+            with ❤️ in Nepal.
+          </p>
+          <div className="flex items-center gap-6">
+            <a
+              className="text-xs font-semibold text-[#6b7280] transition-colors hover:text-blue-600"
+              href="#"
+            >
+              Terms of Service
+            </a>
+            <a
+              className="text-xs font-semibold text-[#6b7280] transition-colors hover:text-blue-600"
+              href="#"
+            >
+              Privacy Policy
+            </a>
+            <a
+              className="text-xs font-semibold text-[#6b7280] transition-colors hover:text-blue-600"
+              href="#"
+            >
+              Help Center
+            </a>
+          </div>
         </div>
+      </footer>
+    </div>
   );
 }

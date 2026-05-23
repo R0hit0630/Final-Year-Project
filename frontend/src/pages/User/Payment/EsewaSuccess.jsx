@@ -10,12 +10,16 @@ export default function EsewaSuccess() {
   const [verified, setVerified] = useState(false);
   const [bookingDetails, setBookingDetails] = useState(null);
 
+  // [FLOW FEATURE: ESEWA PAYMENT VERIFICATION]
+  // Runs automatically on mount to extract and verify the base64 payload from eSewa redirect
   useEffect(() => {
     const verifyPayment = async () => {
       try {
+        // Step 1: Retrieve the "data" query parameter sent by eSewa's success callback
         const dataParam = params.get("data");
         if (!dataParam) throw new Error("Missing eSewa response data");
 
+        // Step 2: Post the base64-encoded response payload to our backend verify API
         const res = await fetch(`${API}/api/payments/esewa/verify`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -25,6 +29,7 @@ export default function EsewaSuccess() {
         const data = await res.json();
         if (!res.ok) throw new Error(data?.message || "Payment verification failed");
 
+        // Step 3: Set verified status and store the confirmed booking info returned by the server
         setVerified(true);
         setMessage("Your booking has been confirmed!");
         setBookingDetails(data?.booking || null);
@@ -65,7 +70,7 @@ export default function EsewaSuccess() {
             ) : verified ? (
               <>
                 <div className="w-20 h-20 rounded-full bg-emerald-50 border-4 border-emerald-100 flex items-center justify-center mb-4">
-                  <span className="material-symbols-outlined text-4xl text-emerald-500" style={{fontVariationSettings:"'FILL' 1"}}>check_circle</span>
+                  <span className="material-symbols-outlined text-4xl text-emerald-500" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                 </div>
                 <h1 className="text-2xl font-bold text-[#2d3b2a]">Booking Confirmed!</h1>
                 <p className="text-sm text-emerald-600 font-medium mt-1">{message}</p>
@@ -73,7 +78,7 @@ export default function EsewaSuccess() {
             ) : (
               <>
                 <div className="w-20 h-20 rounded-full bg-red-50 border-4 border-red-100 flex items-center justify-center mb-4">
-                  <span className="material-symbols-outlined text-4xl text-red-500" style={{fontVariationSettings:"'FILL' 1"}}>cancel</span>
+                  <span className="material-symbols-outlined text-4xl text-red-500" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
                 </div>
                 <h1 className="text-2xl font-bold text-[#2d3b2a]">Verification Failed</h1>
                 <p className="text-sm text-red-500 font-medium mt-1">{message}</p>

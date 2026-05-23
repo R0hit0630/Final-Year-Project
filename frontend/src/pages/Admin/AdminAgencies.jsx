@@ -13,6 +13,8 @@ export default function AdminAgencies() {
   const [agencyDetails, setAgencyDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
+  // [FLOW FEATURE: ADMIN AGENCIES - DETAILS]
+  // Fetches agency-specific details (packages count, guides count, rating, revenue) when selected
   useEffect(() => {
     if (selectedAgency) {
       const fetchDetails = async () => {
@@ -40,6 +42,8 @@ export default function AdminAgencies() {
     secondary: "#2d3b2a",
   };
 
+  // [FLOW FEATURE: ADMIN AGENCIES - FETCH LIST]
+  // Fetches list of all travel agencies from backend
   const fetchAgencies = async () => {
     try {
       setLoading(true);
@@ -59,6 +63,8 @@ export default function AdminAgencies() {
     fetchAgencies();
   }, [apiBase]);
 
+  // [FLOW FEATURE: ADMIN AGENCIES - LOCAL SEARCH & FILTER]
+  // Filters list of agencies by name, email, or verification status (Approved vs Pending)
   const filteredAgencies = useMemo(() => {
     return agencies.filter(agency => {
       const name = agency.agencyName || agency.username || "";
@@ -84,6 +90,8 @@ export default function AdminAgencies() {
     return `${apiBase}${value.startsWith("/") ? "" : "/"}${value}`;
   };
 
+  // [FLOW FEATURE: ADMIN AGENCIES - TOGGLE ACTIVE STATUS]
+  // Blocks or unblocks the agency's account state in database
   const handleToggleStatus = async (id, currentStatus) => {
     try {
       const token = localStorage.getItem("token");
@@ -103,6 +111,8 @@ export default function AdminAgencies() {
     }
   };
 
+  // [FLOW FEATURE: ADMIN AGENCIES - DELETE]
+  // Permanently deletes an agency from the system
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this agency? This action cannot be undone.")) return;
     try {

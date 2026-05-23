@@ -46,13 +46,17 @@ export default function AgencyGuides() {
     return new Date(date).toISOString().slice(0, 10);
   };
 
+  // [FLOW FEATURE: AGENCY GUIDES - FETCH]
+  // Fetches guides associated with the logged-in agency and initializes date inputs
   const fetchGuides = async () => {
     try {
       setLoading(true);
+      // GET /api/guides/mine fetches guides filtered by agency ID from JWT
       const res = await axios.get(`${apiBase}/api/guides/mine`, getAuthConfig());
 
       if (Array.isArray(res.data)) {
         setGuides(res.data);
+        // Pre-populate date drafts for inline leave editors
         const initialDrafts = {};
         res.data.forEach((guide) => {
           initialDrafts[guide._id] = {
@@ -86,6 +90,8 @@ export default function AgencyGuides() {
     }));
   };
 
+  // [FLOW FEATURE: AGENCY GUIDES - SAVE LEAVE]
+  // Sends a PUT request to update the guide's leave schedule in the DB
   const handleSaveLeave = async (guide) => {
     try {
       const token = localStorage.getItem("token");
@@ -99,6 +105,7 @@ export default function AgencyGuides() {
         return;
       }
 
+      // Step 1: Call update endpoint with leave dates
       await axios.put(
         `${apiBase}/api/guides/${guide._id}`,
         {
@@ -113,13 +120,15 @@ export default function AgencyGuides() {
       );
 
       alert("Leave dates saved successfully");
-      await fetchGuides();
+      await fetchGuides(); // Refresh local list to show the new leave status
     } catch (error) {
       console.error("Save leave error:", error);
       alert(error?.response?.data?.message || "Failed to save leave dates");
     }
   };
 
+  // [FLOW FEATURE: AGENCY GUIDES - CLEAR LEAVE]
+  // Sends a PUT request setting leave start and end dates to null, clearing their leave status
   const handleClearLeave = async (guide) => {
     try {
       const token = localStorage.getItem("token");
@@ -145,6 +154,8 @@ export default function AgencyGuides() {
     }
   };
 
+  // [FLOW FEATURE: AGENCY GUIDES - LEAVE STATUS CALCULATOR]
+  // Compares system time against guide's leave window to determine if they are currently unavailable
   const isCurrentlyOnLeave = (guide) => {
     if (!guide.leaveStartDate || !guide.leaveEndDate) return false;
     const now = new Date();

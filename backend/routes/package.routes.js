@@ -15,19 +15,19 @@ import { requireRole } from "../middleware/role.js";
 
 const router = express.Router();
 
-// PUBLIC
-router.get("/public", getPublicPackages);
-router.get("/compare", comparePackages);
+// Public routes — anyone can access without login
+router.get("/public", getPublicPackages);   // Search and filter packages (used on Explore page)
+router.get("/compare", comparePackages);    // Compare 2–4 packages side by side
 
-// AGENCY
-router.get("/mine", protect, requireRole("agency"), getMyPackages);
-router.get("/mine/:id", protect, requireRole("agency"), getMySinglePackage);
-router.post("/", protect, requireRole("agency"), createPackage);
-router.put("/:id", protect, requireRole("agency"), updatePackage);
-router.delete("/:id", protect, requireRole("agency"), deletePackage);
+// Agency-only routes — only logged-in agencies can manage packages
+router.get("/mine", protect, requireRole("agency"), getMyPackages);         // Get all packages owned by this agency
+router.get("/mine/:id", protect, requireRole("agency"), getMySinglePackage); // Get one specific package owned by this agency
+router.post("/", protect, requireRole("agency"), createPackage);             // Create a new package
+router.put("/:id", protect, requireRole("agency"), updatePackage);           // Edit an existing package
+router.delete("/:id", protect, requireRole("agency"), deletePackage);        // Soft-delete a package
 
-// GENERAL
-router.get("/", getAllPackages);
-router.get("/:id", getSinglePackage);
+// General public routes
+router.get("/", getAllPackages);       // Get all active packages (no filters)
+router.get("/:id", getSinglePackage); // Get a single package by its ID
 
 export default router;

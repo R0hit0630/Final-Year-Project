@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 export default function AboutUS() {
   const navigate = useNavigate();
 
+  // [FLOW FEATURE: ABOUT US - TEAM DATA]
+  // Static list of team members shown in the "Built by Travelers" section
   const team = [
     {
       name: "Rohit Shrestha",
@@ -21,6 +23,8 @@ export default function AboutUS() {
     },
   ];
 
+  // [FLOW FEATURE: ABOUT US - CORE VALUES]
+  // Static company values data rendered as feature cards in the "What We Stand For" section
   const values = [
     {
       icon: "public",

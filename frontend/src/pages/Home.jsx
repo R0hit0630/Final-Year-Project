@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 export default function Home() {
   const navigate = useNavigate();
 
+  // [FLOW FEATURE: HOME - FEATURED CARDS]
+  // Static showcase cards for hero-level destinations, each links to /explore on click
   const cards = [
     {
       tag: "Adventure",
@@ -37,6 +39,8 @@ export default function Home() {
     },
   ];
 
+  // [FLOW FEATURE: HOME - STATS BAR]
+  // Hardcoded platform statistics displayed below the hero to build social proof
   const stats = [
     { value: "500+", label: "Trips Completed" },
     { value: "12K+", label: "Happy Travelers" },

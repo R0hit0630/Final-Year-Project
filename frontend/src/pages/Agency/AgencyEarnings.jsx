@@ -28,6 +28,8 @@ export default function AgencyEarnings() {
     fetchData();
   }, []);
 
+  // [FLOW FEATURE: AGENCY EARNINGS - FETCH]
+  // Loads all bookings for the agency, then filters to only paid/refunded transactions for display
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -38,11 +40,14 @@ export default function AgencyEarnings() {
         headers: { Authorization: `Bearer ${token}` },
       };
 
+      // Step 1: Fetch all bookings belonging to this agency
       const res = await axios.get(`${apiBase}/api/bookings/agency`, config);
       const bookingsData = res.data?.bookings || res.data || [];
       
-      // Filter only paid or refunded bookings for earnings
+      // Step 2: Only show paid or refunded bookings in the earnings view
       const validBookings = bookingsData.filter(b => ["paid", "refunded"].includes(b.paymentStatus));
+
+      // Step 3: For cancelled bookings, the agency only earns 30% (totalPrice - refundAmount)
       const enrichedBookings = validBookings.map(b => {
         const isCancelled = b.status === "cancelled";
         const earnedAmount = isCancelled ? (b.totalPrice - (b.refundAmount || 0)) : b.totalPrice;
@@ -58,11 +63,13 @@ export default function AgencyEarnings() {
     }
   };
 
+  // [FLOW FEATURE: AGENCY EARNINGS - STATS MEMO]
+  // Derives summary statistics from the bookings array: total earnings, this month's earnings, and transaction count
   const stats = useMemo(() => {
     const totalEarnings = bookings.reduce((sum, b) => sum + (b.earnedAmount || 0), 0);
     const totalTransactions = bookings.length;
     
-    // Calculate this month's earnings
+    // Step: Filter to current calendar month using the booking's createdAt timestamp
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     

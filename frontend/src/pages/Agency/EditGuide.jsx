@@ -113,6 +113,8 @@ export default function EditGuide() {
     setPreviewImage(URL.createObjectURL(file));
   };
 
+  // [FLOW FEATURE: AGENCY GUIDES - UPDATE]
+  // Submits updated guide details, optionally uploading a new profile picture if chosen
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -120,6 +122,7 @@ export default function EditGuide() {
       const token = getToken();
       let photoUrl = existingPhoto;
 
+      // Step 1: If a new photo is selected, upload it first to get the URL
       if (selectedImage) {
         const imageData = new FormData();
         imageData.append("image", selectedImage);
@@ -133,6 +136,7 @@ export default function EditGuide() {
           existingPhoto;
       }
 
+      // Step 2: PUT the payload to /api/guides/:id to update details and credentials in DB
       await axios.put(
         `${API_BASE}/api/guides/${id}`,
         { ...form, skills, photo: photoUrl },
@@ -140,7 +144,7 @@ export default function EditGuide() {
       );
 
       alert("Guide updated successfully");
-      navigate(`/agency/guides/${id}`);
+      navigate(`/agency/guides/${id}`); // Return to guide profile details page
     } catch (err) {
       console.error("Update guide error:", err);
       alert(err?.response?.data?.message || "Failed to update guide");

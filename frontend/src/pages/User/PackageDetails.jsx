@@ -89,6 +89,8 @@ export default function PackageDetails() {
     fetchCurrentUser();
   }, []);
 
+  // [FLOW FEATURE: BOOKING - STEP 1]
+  // Fetch package details from the database package API endpoint using the ID from the URL
   useEffect(() => {
     const fetchOne = async () => {
       try {
@@ -118,6 +120,8 @@ export default function PackageDetails() {
     if (id) fetchOne();
   }, [id]);
 
+  // [FLOW FEATURE: REVIEWS DISPLAY]
+  // Fetch existing reviews for this package from the database reviews API endpoint
   useEffect(() => {
     const fetchReviews = async () => {
       try {
@@ -241,6 +245,8 @@ export default function PackageDetails() {
     ];
   }, [pkg]);
 
+  // [FLOW FEATURE: BOOKING - STEP 2]
+  // Calculate pricing values: (Base package price * number of selected travelers) + Service fee
   const subtotal = Number(pkg?.price || 0) * Number(groupSize || 1);
   const serviceFee = 50;
   const total = subtotal + serviceFee;
@@ -276,728 +282,728 @@ export default function PackageDetails() {
 
   return (
     <div className="font-['Inter'] text-[#2d3b2a] bg-[#f6f7f8] min-h-screen">
-        <main className="flex flex-1 flex-col overflow-y-auto bg-[#f6f7f8]">
-          <header className="sticky top-0 z-40 border-b border-[#e0e8dc] bg-[#fdfdfc]/80 px-4 py-4 backdrop-blur-md md:px-8">
-            <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 md:gap-6">
-              <div className="flex items-center gap-4">
-                <Link
-                  to="/explore"
-                  className="inline-flex items-center gap-2 rounded-lg border border-[#e0e8dc] bg-white px-4 py-2 text-sm font-semibold text-[#2d3b2a] transition-all hover:border-blue-500 hover:text-blue-600"
-                >
-                  <span className="material-symbols-outlined text-[18px]">
-                    arrow_back
-                  </span>
-                  Back
-                </Link>
+      <main className="flex flex-1 flex-col overflow-y-auto bg-[#f6f7f8]">
+        <header className="sticky top-0 z-40 border-b border-[#e0e8dc] bg-[#fdfdfc]/80 px-4 py-4 backdrop-blur-md md:px-8">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 md:gap-6">
+            <div className="flex items-center gap-4">
+              <Link
+                to="/explore"
+                className="inline-flex items-center gap-2 rounded-lg border border-[#e0e8dc] bg-white px-4 py-2 text-sm font-semibold text-[#2d3b2a] transition-all hover:border-blue-500 hover:text-blue-600"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  arrow_back
+                </span>
+                Back
+              </Link>
 
-                <div className="hidden md:block">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#94a3b8]">
-                    Package Details
-                  </p>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h2 className="text-lg font-bold text-[#2d3b2a]">{pkg.title}</h2>
-
-                    {numReviews > 0 ? (
-                      <div className="flex items-center gap-1 rounded-full bg-white px-3 py-1 shadow-sm ring-1 ring-black/5">
-                        <span
-                          className="material-symbols-outlined text-[16px] text-yellow-400"
-                          style={{ fontVariationSettings: "'FILL' 1" }}
-                        >
-                          star
-                        </span>
-                        <span className="text-xs font-bold text-[#2d3b2a]">
-                          {averageRating.toFixed(1)}
-                        </span>
-                        <span className="text-[10px] text-[#6b7280]">
-                          ({numReviews})
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#6b7280] shadow-sm ring-1 ring-black/5">
-                        No ratings yet
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 md:gap-4">
-                <div className="hidden h-8 w-px bg-[#e0e8dc] md:block" />
-                <Link
-                  to="/trips"
-                  className="rounded-lg bg-[#2d3b2a] px-4 py-2 text-sm font-semibold text-white transition-all hover:opacity-90"
-                >
-                  My Bookings
-                </Link>
-              </div>
-            </div>
-          </header>
-
-          <div className="mx-auto flex w-full max-w-7xl gap-8 px-4 py-8 md:px-8">
-            <div className="flex-1">
-              <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
-                <img
-                  src={cover}
-                  alt={pkg.title}
-                  className="h-[260px] w-full object-cover sm:h-[340px] lg:h-[420px]"
-                  onError={(e) => {
-                    e.currentTarget.src = fallbackCover;
-                  }}
-                />
-
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-5">
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    <span className="rounded-md bg-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur-md">
-                      {pkg.type || "Adventure"}
-                    </span>
-                    <span className="rounded-md bg-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur-md">
-                      {pkg.difficulty || "Moderate"}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
-                      {pkg.title}
-                    </h1>
-
-                    {numReviews > 0 ? (
-                      <div className="flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 backdrop-blur-md">
-                        <span
-                          className="material-symbols-outlined text-[18px] text-yellow-400"
-                          style={{ fontVariationSettings: "'FILL' 1" }}
-                        >
-                          star
-                        </span>
-                        <span className="text-xs font-bold text-[#2d3b2a]">
-                          {averageRating.toFixed(1)}
-                        </span>
-                        <span className="text-[10px] text-[#6b7280]">
-                          ({numReviews})
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#6b7280] backdrop-blur-md">
-                        No ratings yet
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-white/90">
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[18px]">
-                        location_on
-                      </span>
-                      {pkg.region || "Nepal"}
-                    </span>
-
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[18px]">
-                        schedule
-                      </span>
-                      {pkg.days || 0} Days
-                    </span>
-
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[18px]">
-                        groups
-                      </span>
-                      {minGroupSize}-{maxGroupSize} Travelers
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                    <span className="material-symbols-outlined">schedule</span>
-                  </div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
-                    Duration
-                  </p>
-                  <p className="mt-1 text-base font-bold text-[#2d3b2a]">
-                    {pkg.days || 0} Days
-                  </p>
-                </div>
-
-                <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                    <span className="material-symbols-outlined">trending_up</span>
-                  </div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
-                    Difficulty
-                  </p>
-                  <p className="mt-1 text-base font-bold text-[#2d3b2a]">
-                    {pkg.difficulty || "Moderate"}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                    <span className="material-symbols-outlined">category</span>
-                  </div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
-                    Type
-                  </p>
-                  <p className="mt-1 text-base font-bold text-[#2d3b2a]">
-                    {pkg.type || "Adventure"}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                    <span className="material-symbols-outlined">wb_sunny</span>
-                  </div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
-                    Best Season
-                  </p>
-                  <p className="mt-1 text-base font-bold text-[#2d3b2a]">
-                    {bestSeason}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-                <h3 className="mb-3 text-lg font-bold text-[#2d3b2a]">Overview</h3>
-                <p className="text-sm leading-relaxed text-[#6b7280]">
-                  {pkg.description || "No description provided."}
+              <div className="hidden md:block">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#94a3b8]">
+                  Package Details
                 </p>
-              </div>
-
-              <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-                <h3 className="mb-4 text-lg font-bold text-[#2d3b2a]">Highlights</h3>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {highlights.map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3">
-                      <span className="material-symbols-outlined mt-0.5 text-[20px] text-blue-600">
-                        check_circle
-                      </span>
-                      <p className="text-sm text-[#4b5563]">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {Array.isArray(pkg.itinerary) && pkg.itinerary.length > 0 && (
-                <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-                  <div className="mb-5 flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-[#2d3b2a]">Itinerary</h3>
-                    <button
-                      type="button"
-                      title="PDF download not yet available"
-                      className="text-sm font-semibold text-[#94a3b8] cursor-not-allowed"
-                      disabled
-                    >
-                      Download PDF
-                    </button>
-                  </div>
-
-                  <div className="relative space-y-6 border-l-2 border-[#e0e8dc] pl-6">
-                    {pkg.itinerary.map((day, i) => (
-                      <div key={i} className="relative">
-                        <div className="absolute -left-[33px] top-1 h-4 w-4 rounded-full border-4 border-white bg-blue-600 shadow-sm" />
-                        <p className="mb-1 text-xs font-bold uppercase tracking-widest text-blue-600">
-                          Day {i + 1}
-                        </p>
-                        <p className="text-base font-semibold text-[#2d3b2a]">
-                          {day.title || `Itinerary Day ${i + 1}`}
-                        </p>
-                        <p className="mt-1 text-sm leading-relaxed text-[#6b7280]">
-                          {day.details ||
-                            day.description ||
-                            "No details available for this day."}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-6 grid gap-6 md:grid-cols-2">
-                <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-                  <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-[#2d3b2a]">
-                    <span className="material-symbols-outlined text-green-500">
-                      check_circle
-                    </span>
-                    What's Included
-                  </h3>
-
-                  <div className="space-y-3">
-                    {includedItems.map((item, i) => (
-                      <div key={i} className="flex items-start gap-3">
-                        <span className="mt-1 h-2 w-2 rounded-full bg-green-500" />
-                        <p className="text-sm text-[#6b7280]">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-                  <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-[#2d3b2a]">
-                    <span className="material-symbols-outlined text-red-400">
-                      cancel
-                    </span>
-                    What's Not Included
-                  </h3>
-
-                  <div className="space-y-3">
-                    {excludedItems.map((item, i) => (
-                      <div key={i} className="flex items-start gap-3">
-                        <span className="mt-1 h-2 w-2 rounded-full bg-red-400" />
-                        <p className="text-sm text-[#6b7280]">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-                <div className="mb-5 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
-                      Traveler Reviews
-                    </p>
-                    <h3 className="mt-1 text-lg font-bold text-[#2d3b2a]">
-                      Customer Reviews
-                    </h3>
-                  </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h2 className="text-lg font-bold text-[#2d3b2a]">{pkg.title}</h2>
 
                   {numReviews > 0 ? (
-                    <div className="flex items-center gap-2 rounded-full bg-[#f8fafc] px-4 py-2">
+                    <div className="flex items-center gap-1 rounded-full bg-white px-3 py-1 shadow-sm ring-1 ring-black/5">
+                      <span
+                        className="material-symbols-outlined text-[16px] text-yellow-400"
+                        style={{ fontVariationSettings: "'FILL' 1" }}
+                      >
+                        star
+                      </span>
+                      <span className="text-xs font-bold text-[#2d3b2a]">
+                        {averageRating.toFixed(1)}
+                      </span>
+                      <span className="text-[10px] text-[#6b7280]">
+                        ({numReviews})
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#6b7280] shadow-sm ring-1 ring-black/5">
+                      No ratings yet
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 md:gap-4">
+              <div className="hidden h-8 w-px bg-[#e0e8dc] md:block" />
+              <Link
+                to="/trips"
+                className="rounded-lg bg-[#2d3b2a] px-4 py-2 text-sm font-semibold text-white transition-all hover:opacity-90"
+              >
+                My Bookings
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <div className="mx-auto flex w-full max-w-7xl gap-8 px-4 py-8 md:px-8">
+          <div className="flex-1">
+            <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+              <img
+                src={cover}
+                alt={pkg.title}
+                className="h-[260px] w-full object-cover sm:h-[340px] lg:h-[420px]"
+                onError={(e) => {
+                  e.currentTarget.src = fallbackCover;
+                }}
+              />
+
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-5">
+                <div className="mb-3 flex flex-wrap gap-2">
+                  <span className="rounded-md bg-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur-md">
+                    {pkg.type || "Adventure"}
+                  </span>
+                  <span className="rounded-md bg-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur-md">
+                    {pkg.difficulty || "Moderate"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
+                    {pkg.title}
+                  </h1>
+
+                  {numReviews > 0 ? (
+                    <div className="flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 backdrop-blur-md">
                       <span
                         className="material-symbols-outlined text-[18px] text-yellow-400"
                         style={{ fontVariationSettings: "'FILL' 1" }}
                       >
                         star
                       </span>
-                      <span className="text-sm font-bold text-[#2d3b2a]">
+                      <span className="text-xs font-bold text-[#2d3b2a]">
                         {averageRating.toFixed(1)}
                       </span>
-                      <span className="text-xs text-[#6b7280]">
-                        ({numReviews} reviews)
+                      <span className="text-[10px] text-[#6b7280]">
+                        ({numReviews})
                       </span>
                     </div>
                   ) : (
-                    <div className="rounded-full bg-[#f8fafc] px-4 py-2 text-xs font-semibold text-[#6b7280]">
+                    <div className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#6b7280] backdrop-blur-md">
                       No ratings yet
                     </div>
                   )}
                 </div>
 
-                {reviewsLoading ? (
-                  <div className="space-y-4">
-                    {Array.from({ length: 2 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="rounded-xl border border-[#eef2f0] p-4"
-                      >
-                        <div className="mb-3 h-4 w-24 animate-pulse rounded bg-[#e5e7eb]" />
-                        <div className="mb-2 h-3 w-full animate-pulse rounded bg-[#e5e7eb]" />
-                        <div className="h-3 w-2/3 animate-pulse rounded bg-[#e5e7eb]" />
-                      </div>
-                    ))}
+                <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-white/90">
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[18px]">
+                      location_on
+                    </span>
+                    {pkg.region || "Nepal"}
+                  </span>
+
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[18px]">
+                      schedule
+                    </span>
+                    {pkg.days || 0} Days
+                  </span>
+
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[18px]">
+                      groups
+                    </span>
+                    {minGroupSize}-{maxGroupSize} Travelers
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <span className="material-symbols-outlined">schedule</span>
+                </div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
+                  Duration
+                </p>
+                <p className="mt-1 text-base font-bold text-[#2d3b2a]">
+                  {pkg.days || 0} Days
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <span className="material-symbols-outlined">trending_up</span>
+                </div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
+                  Difficulty
+                </p>
+                <p className="mt-1 text-base font-bold text-[#2d3b2a]">
+                  {pkg.difficulty || "Moderate"}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <span className="material-symbols-outlined">category</span>
+                </div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
+                  Type
+                </p>
+                <p className="mt-1 text-base font-bold text-[#2d3b2a]">
+                  {pkg.type || "Adventure"}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <span className="material-symbols-outlined">wb_sunny</span>
+                </div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
+                  Best Season
+                </p>
+                <p className="mt-1 text-base font-bold text-[#2d3b2a]">
+                  {bestSeason}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+              <h3 className="mb-3 text-lg font-bold text-[#2d3b2a]">Overview</h3>
+              <p className="text-sm leading-relaxed text-[#6b7280]">
+                {pkg.description || "No description provided."}
+              </p>
+            </div>
+
+            <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+              <h3 className="mb-4 text-lg font-bold text-[#2d3b2a]">Highlights</h3>
+              <div className="grid gap-3 md:grid-cols-2">
+                {highlights.map((item, idx) => (
+                  <div key={idx} className="flex items-start gap-3">
+                    <span className="material-symbols-outlined mt-0.5 text-[20px] text-blue-600">
+                      check_circle
+                    </span>
+                    <p className="text-sm text-[#4b5563]">{item}</p>
                   </div>
-                ) : reviews.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-[#d9e2ec] bg-[#fcfbf8] p-8 text-center">
-                    <p className="text-sm font-semibold text-[#2d3b2a]">
-                      No reviews yet
-                    </p>
-                    <p className="mt-1 text-sm text-[#6b7280]">
-                      Be the first traveler to rate this package.
-                    </p>
+                ))}
+              </div>
+            </div>
+
+            {Array.isArray(pkg.itinerary) && pkg.itinerary.length > 0 && (
+              <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+                <div className="mb-5 flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-[#2d3b2a]">Itinerary</h3>
+                  <button
+                    type="button"
+                    title="PDF download not yet available"
+                    className="text-sm font-semibold text-[#94a3b8] cursor-not-allowed"
+                    disabled
+                  >
+                    Download PDF
+                  </button>
+                </div>
+
+                <div className="relative space-y-6 border-l-2 border-[#e0e8dc] pl-6">
+                  {pkg.itinerary.map((day, i) => (
+                    <div key={i} className="relative">
+                      <div className="absolute -left-[33px] top-1 h-4 w-4 rounded-full border-4 border-white bg-blue-600 shadow-sm" />
+                      <p className="mb-1 text-xs font-bold uppercase tracking-widest text-blue-600">
+                        Day {i + 1}
+                      </p>
+                      <p className="text-base font-semibold text-[#2d3b2a]">
+                        {day.title || `Itinerary Day ${i + 1}`}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-[#6b7280]">
+                        {day.details ||
+                          day.description ||
+                          "No details available for this day."}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-[#2d3b2a]">
+                  <span className="material-symbols-outlined text-green-500">
+                    check_circle
+                  </span>
+                  What's Included
+                </h3>
+
+                <div className="space-y-3">
+                  {includedItems.map((item, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <span className="mt-1 h-2 w-2 rounded-full bg-green-500" />
+                      <p className="text-sm text-[#6b7280]">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-[#2d3b2a]">
+                  <span className="material-symbols-outlined text-red-400">
+                    cancel
+                  </span>
+                  What's Not Included
+                </h3>
+
+                <div className="space-y-3">
+                  {excludedItems.map((item, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <span className="mt-1 h-2 w-2 rounded-full bg-red-400" />
+                      <p className="text-sm text-[#6b7280]">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
+                    Traveler Reviews
+                  </p>
+                  <h3 className="mt-1 text-lg font-bold text-[#2d3b2a]">
+                    Customer Reviews
+                  </h3>
+                </div>
+
+                {numReviews > 0 ? (
+                  <div className="flex items-center gap-2 rounded-full bg-[#f8fafc] px-4 py-2">
+                    <span
+                      className="material-symbols-outlined text-[18px] text-yellow-400"
+                      style={{ fontVariationSettings: "'FILL' 1" }}
+                    >
+                      star
+                    </span>
+                    <span className="text-sm font-bold text-[#2d3b2a]">
+                      {averageRating.toFixed(1)}
+                    </span>
+                    <span className="text-xs text-[#6b7280]">
+                      ({numReviews} reviews)
+                    </span>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {reviews.map((review) => {
-                      const reviewerName =
-                        review?.user?.fullName ||
-                        review?.user?.name ||
-                        review?.user?.username ||
-                        "Traveler";
-
-                      const reviewerInitial = reviewerName.charAt(0).toUpperCase();
-
-                      return (
-                        <div
-                          key={review._id}
-                          className="rounded-xl border border-[#eef2f0] bg-[#fcfbf8] p-4"
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#2d3b2a] text-sm font-bold text-white">
-                              {reviewerInitial}
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center justify-between gap-3">
-                                <div>
-                                  <h4 className="text-sm font-bold text-[#2d3b2a]">
-                                    {reviewerName}
-                                  </h4>
-                                  <p className="text-xs text-[#94a3b8]">
-                                    {review?.createdAt
-                                      ? new Date(review.createdAt).toLocaleDateString(
-                                          "en-GB",
-                                          {
-                                            day: "2-digit",
-                                            month: "short",
-                                            year: "numeric",
-                                          }
-                                        )
-                                      : "Recent review"}
-                                  </p>
-                                </div>
-
-                                <div className="flex items-center gap-1 rounded-full bg-white px-3 py-1 shadow-sm ring-1 ring-black/5">
-                                  <span
-                                    className="material-symbols-outlined text-[16px] text-yellow-400"
-                                    style={{ fontVariationSettings: "'FILL' 1" }}
-                                  >
-                                    star
-                                  </span>
-                                  <span className="text-xs font-bold text-[#2d3b2a]">
-                                    {Number(review?.packageRating || review?.rating || 0).toFixed(1)}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <p className="mt-3 text-sm leading-relaxed text-[#6b7280]">
-                                {review?.comment?.trim()
-                                  ? review.comment
-                                  : "The traveler left a rating without a written review."}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="rounded-full bg-[#f8fafc] px-4 py-2 text-xs font-semibold text-[#6b7280]">
+                    No ratings yet
                   </div>
                 )}
               </div>
 
-              {galleryImages.length > 0 && (
-                <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-                  <h3 className="mb-4 text-lg font-bold text-[#2d3b2a]">Gallery</h3>
+              {reviewsLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-[#eef2f0] p-4"
+                    >
+                      <div className="mb-3 h-4 w-24 animate-pulse rounded bg-[#e5e7eb]" />
+                      <div className="mb-2 h-3 w-full animate-pulse rounded bg-[#e5e7eb]" />
+                      <div className="h-3 w-2/3 animate-pulse rounded bg-[#e5e7eb]" />
+                    </div>
+                  ))}
+                </div>
+              ) : reviews.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[#d9e2ec] bg-[#fcfbf8] p-8 text-center">
+                  <p className="text-sm font-semibold text-[#2d3b2a]">
+                    No reviews yet
+                  </p>
+                  <p className="mt-1 text-sm text-[#6b7280]">
+                    Be the first traveler to rate this package.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {reviews.map((review) => {
+                    const reviewerName =
+                      review?.user?.fullName ||
+                      review?.user?.name ||
+                      review?.user?.username ||
+                      "Traveler";
 
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {galleryImages.map((img, i) => (
-                      <div key={i} className="overflow-hidden rounded-xl bg-[#f6f7f8]">
-                        <img
-                          src={img}
-                          alt={`Gallery image ${i + 1}`}
-                          className="h-52 w-full object-cover transition-transform duration-700 hover:scale-105"
-                          onError={(e) => {
-                            e.currentTarget.src = fallbackCover;
-                          }}
-                        />
+                    const reviewerInitial = reviewerName.charAt(0).toUpperCase();
+
+                    return (
+                      <div
+                        key={review._id}
+                        className="rounded-xl border border-[#eef2f0] bg-[#fcfbf8] p-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#2d3b2a] text-sm font-bold text-white">
+                            {reviewerInitial}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <h4 className="text-sm font-bold text-[#2d3b2a]">
+                                  {reviewerName}
+                                </h4>
+                                <p className="text-xs text-[#94a3b8]">
+                                  {review?.createdAt
+                                    ? new Date(review.createdAt).toLocaleDateString(
+                                      "en-GB",
+                                      {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                      }
+                                    )
+                                    : "Recent review"}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-1 rounded-full bg-white px-3 py-1 shadow-sm ring-1 ring-black/5">
+                                <span
+                                  className="material-symbols-outlined text-[16px] text-yellow-400"
+                                  style={{ fontVariationSettings: "'FILL' 1" }}
+                                >
+                                  star
+                                </span>
+                                <span className="text-xs font-bold text-[#2d3b2a]">
+                                  {Number(review?.packageRating || review?.rating || 0).toFixed(1)}
+                                </span>
+                              </div>
+                            </div>
+
+                            <p className="mt-3 text-sm leading-relaxed text-[#6b7280]">
+                              {review?.comment?.trim()
+                                ? review.comment
+                                : "The traveler left a rating without a written review."}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
 
-            <div className="hidden w-[340px] shrink-0 lg:block">
-              <div className="sticky top-24 space-y-6">
-                <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-                  <div className="mb-6">
-                    <p className="text-[10px] font-medium uppercase tracking-widest text-[#6b7280]">
-                      Starting From
-                    </p>
-                    <h2 className="mt-1 text-3xl font-bold text-[#2d3b2a]">
-                      रु {Number(pkg.price || 0).toLocaleString()}
-                    </h2>
-                    <p className="text-xs text-[#6b7280]">per person</p>
-                  </div>
+            {galleryImages.length > 0 && (
+              <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+                <h3 className="mb-4 text-lg font-bold text-[#2d3b2a]">Gallery</h3>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-[#6b7280]">
-                        Select Date
-                      </label>
-                      <div className="relative">
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]">
-                          calendar_month
-                        </span>
-                        {pkg && Array.isArray(pkg.availableDates) && pkg.availableDates.length > 0 ? (
-                          <select
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            className="w-full rounded-lg border border-[#e0e8dc] bg-[#f6f7f8] py-3 pl-10 pr-4 text-sm text-[#2d3b2a] outline-none transition-all focus:border-blue-500 focus:ring-1"
-                            aria-label="Select date"
-                          >
-                            {pkg.availableDates.map((d) => (
-                              <option key={d} value={d}>
-                                {d}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type="date"
-                            min={todayStr}
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            className="w-full rounded-lg border border-[#e0e8dc] bg-[#f6f7f8] py-3 pl-10 pr-4 text-sm text-[#2d3b2a] outline-none transition-all focus:border-blue-500 focus:ring-1"
-                            aria-label="Select trip date"
-                          />
-                        )}
-                      </div>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {galleryImages.map((img, i) => (
+                    <div key={i} className="overflow-hidden rounded-xl bg-[#f6f7f8]">
+                      <img
+                        src={img}
+                        alt={`Gallery image ${i + 1}`}
+                        className="h-52 w-full object-cover transition-transform duration-700 hover:scale-105"
+                        onError={(e) => {
+                          e.currentTarget.src = fallbackCover;
+                        }}
+                      />
                     </div>
-
-                    <div>
-                      <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-[#6b7280]">
-                        Guests
-                      </label>
-
-                      <div className="flex items-center justify-between rounded-lg border border-[#e0e8dc] bg-[#f6f7f8] px-3 py-2.5">
-                        <span className="flex items-center gap-2 text-sm font-medium text-[#2d3b2a]">
-                          <span className="material-symbols-outlined text-[18px] text-[#6b7280]">
-                            person
-                          </span>
-                          {groupSize} {groupSize === 1 ? "Traveler" : "Travelers"}
-                        </span>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setGroupSize((prev) => Math.max(minGroupSize, prev - 1))
-                            }
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#2d3b2a] shadow-sm transition-all hover:bg-[#eef4fb]"
-                            aria-label="Decrease guests"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">
-                              remove
-                            </span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setGroupSize((prev) => Math.min(maxGroupSize, prev + 1))
-                            }
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#2d3b2a] shadow-sm transition-all hover:bg-[#eef4fb]"
-                            aria-label="Increase guests"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">
-                              add
-                            </span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl bg-[#f6f7f8] p-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-[#6b7280]">
-                          रु {Number(pkg.price || 0).toLocaleString()} × {groupSize}
-                        </span>
-                        <span className="font-semibold text-[#2d3b2a]">
-                          रु {subtotal.toLocaleString()}
-                        </span>
-                      </div>
-
-                      <div className="mt-2 flex items-center justify-between text-sm">
-                        <span className="text-[#6b7280]">Service Fee</span>
-                        <span className="font-semibold text-[#2d3b2a]">
-                          रु {serviceFee}
-                        </span>
-                      </div>
-
-                      <div className="mt-3 border-t border-[#e0e8dc] pt-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-[#2d3b2a]">Total</span>
-                          <span className="text-lg font-bold text-blue-600">
-                            रु {total.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Link
-                      to={getToken() ? `/pay/${packageId}` : "/login"}
-                      state={{
-                        packageId,
-                        selectedDate,
-                        groupSize,
-                        pkg,
-                        subtotal,
-                        serviceFee,
-                        total,
-                      }}
-                      className="block w-full rounded-lg bg-[#2d3b2a] px-5 py-3 text-center text-sm font-bold text-white transition-all hover:opacity-90"
-                    >
-                      Book Now
-                    </Link>
-
-                    <button
-                      type="button"
-                      title="Enquiry feature coming soon"
-                      disabled
-                      className="w-full rounded-lg border border-[#e0e8dc] bg-white px-5 py-3 text-sm font-semibold text-[#94a3b8] cursor-not-allowed"
-                    >
-                      Ask a Question
-                    </button>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-                  <h3 className="mb-4 text-base font-bold text-[#2d3b2a]">
-                    Why book this trip?
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <span className="material-symbols-outlined mt-0.5 text-blue-600">
-                        verified_user
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold text-[#2d3b2a]">
-                          Trusted Booking
-                        </p>
-                        <p className="text-xs text-[#6b7280]">
-                          Secure and traveler-friendly booking experience.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <span className="material-symbols-outlined mt-0.5 text-blue-600">
-                        groups
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold text-[#2d3b2a]">
-                          Flexible Group Size
-                        </p>
-                        <p className="text-xs text-[#6b7280]">
-                          Designed for {minGroupSize} to {maxGroupSize} travelers.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <span className="material-symbols-outlined mt-0.5 text-blue-600">
-                        travel_explore
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold text-[#2d3b2a]">
-                          Curated Nepal Experience
-                        </p>
-                        <p className="text-xs text-[#6b7280]">
-                          Balanced itinerary, local support, and scenic routes.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
-                    Package Rating
-                  </p>
-
-                  <div className="mt-3">
-                    {numReviews > 0 ? (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="material-symbols-outlined text-[22px] text-yellow-400"
-                            style={{ fontVariationSettings: "'FILL' 1" }}
-                          >
-                            star
-                          </span>
-                          <span className="text-2xl font-bold text-[#2d3b2a]">
-                            {averageRating.toFixed(1)}
-                          </span>
-                          <span className="text-sm font-medium text-[#6b7280]">
-                            ({numReviews} reviews)
-                          </span>
-                        </div>
-
-                        <p className="mt-2 text-sm text-[#6b7280]">
-                          Travelers who completed this trip rated this package highly.
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-[22px] text-[#cbd5e1]">
-                            star
-                          </span>
-                          <span className="text-base font-semibold text-[#6b7280]">
-                            No ratings yet
-                          </span>
-                        </div>
-
-                        <p className="mt-2 text-sm text-[#6b7280]">
-                          Be the first traveler to review this package after booking.
-                        </p>
-                      </>
-                    )}
-                  </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
-          <div className="px-4 pb-8 md:px-8 lg:hidden">
-            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-              <div className="mb-4 flex items-end justify-between gap-3">
-                <div>
+          <div className="hidden w-[340px] shrink-0 lg:block">
+            <div className="sticky top-24 space-y-6">
+              <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+                <div className="mb-6">
                   <p className="text-[10px] font-medium uppercase tracking-widest text-[#6b7280]">
                     Starting From
                   </p>
-                  <h2 className="mt-1 text-2xl font-bold text-[#2d3b2a]">
+                  <h2 className="mt-1 text-3xl font-bold text-[#2d3b2a]">
                     रु {Number(pkg.price || 0).toLocaleString()}
                   </h2>
                   <p className="text-xs text-[#6b7280]">per person</p>
                 </div>
 
-                <Link
-                  to={getToken() ? `/pay/${packageId}` : "/login"}
-                  state={{
-                    packageId,
-                    selectedDate,
-                    groupSize,
-                    pkg,
-                    subtotal,
-                    serviceFee,
-                    total,
-                  }}
-                  className="rounded-lg bg-[#2d3b2a] px-5 py-3 text-sm font-bold text-white"
-                >
-                  Book Now
-                </Link>
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-[#6b7280]">
+                      Select Date
+                    </label>
+                    <div className="relative">
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]">
+                        calendar_month
+                      </span>
+                      {pkg && Array.isArray(pkg.availableDates) && pkg.availableDates.length > 0 ? (
+                        <select
+                          value={selectedDate}
+                          onChange={(e) => setSelectedDate(e.target.value)}
+                          className="w-full rounded-lg border border-[#e0e8dc] bg-[#f6f7f8] py-3 pl-10 pr-4 text-sm text-[#2d3b2a] outline-none transition-all focus:border-blue-500 focus:ring-1"
+                          aria-label="Select date"
+                        >
+                          {pkg.availableDates.map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="date"
+                          min={todayStr}
+                          value={selectedDate}
+                          onChange={(e) => setSelectedDate(e.target.value)}
+                          className="w-full rounded-lg border border-[#e0e8dc] bg-[#f6f7f8] py-3 pl-10 pr-4 text-sm text-[#2d3b2a] outline-none transition-all focus:border-blue-500 focus:ring-1"
+                          aria-label="Select trip date"
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-[#6b7280]">
+                      Guests
+                    </label>
+
+                    <div className="flex items-center justify-between rounded-lg border border-[#e0e8dc] bg-[#f6f7f8] px-3 py-2.5">
+                      <span className="flex items-center gap-2 text-sm font-medium text-[#2d3b2a]">
+                        <span className="material-symbols-outlined text-[18px] text-[#6b7280]">
+                          person
+                        </span>
+                        {groupSize} {groupSize === 1 ? "Traveler" : "Travelers"}
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setGroupSize((prev) => Math.max(minGroupSize, prev - 1))
+                          }
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#2d3b2a] shadow-sm transition-all hover:bg-[#eef4fb]"
+                          aria-label="Decrease guests"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            remove
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setGroupSize((prev) => Math.min(maxGroupSize, prev + 1))
+                          }
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#2d3b2a] shadow-sm transition-all hover:bg-[#eef4fb]"
+                          aria-label="Increase guests"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            add
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl bg-[#f6f7f8] p-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[#6b7280]">
+                        रु {Number(pkg.price || 0).toLocaleString()} × {groupSize}
+                      </span>
+                      <span className="font-semibold text-[#2d3b2a]">
+                        रु {subtotal.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between text-sm">
+                      <span className="text-[#6b7280]">Service Fee</span>
+                      <span className="font-semibold text-[#2d3b2a]">
+                        रु {serviceFee}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 border-t border-[#e0e8dc] pt-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[#2d3b2a]">Total</span>
+                        <span className="text-lg font-bold text-blue-600">
+                          रु {total.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Link
+                    to={getToken() ? `/pay/${packageId}` : "/login"}
+                    state={{
+                      packageId,
+                      selectedDate,
+                      groupSize,
+                      pkg,
+                      subtotal,
+                      serviceFee,
+                      total,
+                    }}
+                    className="block w-full rounded-lg bg-[#2d3b2a] px-5 py-3 text-center text-sm font-bold text-white transition-all hover:opacity-90"
+                  >
+                    Book Now
+                  </Link>
+
+                  <button
+                    type="button"
+                    title="Enquiry feature coming soon"
+                    disabled
+                    className="w-full rounded-lg border border-[#e0e8dc] bg-white px-5 py-3 text-sm font-semibold text-[#94a3b8] cursor-not-allowed"
+                  >
+                    Ask a Question
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+                <h3 className="mb-4 text-base font-bold text-[#2d3b2a]">
+                  Why book this trip?
+                </h3>
+
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <span className="material-symbols-outlined mt-0.5 text-blue-600">
+                      verified_user
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-[#2d3b2a]">
+                        Trusted Booking
+                      </p>
+                      <p className="text-xs text-[#6b7280]">
+                        Secure and traveler-friendly booking experience.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <span className="material-symbols-outlined mt-0.5 text-blue-600">
+                      groups
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-[#2d3b2a]">
+                        Flexible Group Size
+                      </p>
+                      <p className="text-xs text-[#6b7280]">
+                        Designed for {minGroupSize} to {maxGroupSize} travelers.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <span className="material-symbols-outlined mt-0.5 text-blue-600">
+                      travel_explore
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-[#2d3b2a]">
+                        Curated Nepal Experience
+                      </p>
+                      <p className="text-xs text-[#6b7280]">
+                        Balanced itinerary, local support, and scenic routes.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#94a3b8]">
+                  Package Rating
+                </p>
+
+                <div className="mt-3">
+                  {numReviews > 0 ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="material-symbols-outlined text-[22px] text-yellow-400"
+                          style={{ fontVariationSettings: "'FILL' 1" }}
+                        >
+                          star
+                        </span>
+                        <span className="text-2xl font-bold text-[#2d3b2a]">
+                          {averageRating.toFixed(1)}
+                        </span>
+                        <span className="text-sm font-medium text-[#6b7280]">
+                          ({numReviews} reviews)
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-sm text-[#6b7280]">
+                        Travelers who completed this trip rated this package highly.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[22px] text-[#cbd5e1]">
+                          star
+                        </span>
+                        <span className="text-base font-semibold text-[#6b7280]">
+                          No ratings yet
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-sm text-[#6b7280]">
+                        Be the first traveler to review this package after booking.
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <footer className="mt-auto border-t border-[#e0e8dc] bg-white/50 px-4 py-8 md:px-8">
-            <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row">
-              <p className="text-xs text-[#94a3b8]">
-                © {new Date().getFullYear()} Travolin. All adventures curated with ❤️ in Nepal.
-              </p>
-              <div className="flex items-center gap-6">
-                <a
-                  className="text-xs font-semibold text-[#6b7280] transition-colors hover:text-blue-600"
-                  href="#"
-                >
-                  Terms of Service
-                </a>
-                <a
-                  className="text-xs font-semibold text-[#6b7280] transition-colors hover:text-blue-600"
-                  href="#"
-                >
-                  Privacy Policy
-                </a>
-                <a
-                  className="text-xs font-semibold text-[#6b7280] transition-colors hover:text-blue-600"
-                  href="#"
-                >
-                  Help Center
-                </a>
+        <div className="px-4 pb-8 md:px-8 lg:hidden">
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-widest text-[#6b7280]">
+                  Starting From
+                </p>
+                <h2 className="mt-1 text-2xl font-bold text-[#2d3b2a]">
+                  रु {Number(pkg.price || 0).toLocaleString()}
+                </h2>
+                <p className="text-xs text-[#6b7280]">per person</p>
               </div>
+
+              <Link
+                to={getToken() ? `/pay/${packageId}` : "/login"}
+                state={{
+                  packageId,
+                  selectedDate,
+                  groupSize,
+                  pkg,
+                  subtotal,
+                  serviceFee,
+                  total,
+                }}
+                className="rounded-lg bg-[#2d3b2a] px-5 py-3 text-sm font-bold text-white"
+              >
+                Book Now
+              </Link>
             </div>
+          </div>
+        </div>
+
+        <footer className="mt-auto border-t border-[#e0e8dc] bg-white/50 px-4 py-8 md:px-8">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row">
+            <p className="text-xs text-[#94a3b8]">
+              © {new Date().getFullYear()} Travolin. All adventures curated with ❤️ in Nepal.
+            </p>
+            <div className="flex items-center gap-6">
+              <a
+                className="text-xs font-semibold text-[#6b7280] transition-colors hover:text-blue-600"
+                href="#"
+              >
+                Terms of Service
+              </a>
+              <a
+                className="text-xs font-semibold text-[#6b7280] transition-colors hover:text-blue-600"
+                href="#"
+              >
+                Privacy Policy
+              </a>
+              <a
+                className="text-xs font-semibold text-[#6b7280] transition-colors hover:text-blue-600"
+                href="#"
+              >
+                Help Center
+              </a>
+            </div>
+          </div>
         </footer>
       </main>
     </div>

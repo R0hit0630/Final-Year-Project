@@ -15,7 +15,13 @@ import {
 const router = express.Router();
 
 
-// AUTO SYNC STATUS — order matters: ongoing first, then completed
+// ─── AUTO STATUS SYNC MIDDLEWARE ──────────────────────────────────────────────
+// [FLOW FEATURE: STATUS AUTO-SYNC]
+// This function runs BEFORE every booking read endpoint.
+// It updates booking statuses in the database based on real dates — no cron job needed.
+//   - "confirmed" trips where startDate has arrived  → become "ongoing"
+//   - "ongoing" or "confirmed" trips where endDate passed → become "completed"
+// This means statuses are always fresh when the user views their trips.
 const syncCompletedBookings = async () => {
   const now = new Date();
 
@@ -23,19 +29,19 @@ const syncCompletedBookings = async () => {
   await Booking.updateMany(
     {
       status: "confirmed",
-      startDate: { $lte: now },
-      endDate: { $gte: now },
+      startDate: { $lte: now }, // start date is in the past or today
+      endDate: { $gte: now },   // end date is still in the future
     },
     {
       $set: { status: "ongoing" },
     }
   );
 
-  // Step 2: confirmed or ongoing → completed (trip has ended)
+  // Step 2: confirmed or ongoing → completed (trip end date has fully passed)
   await Booking.updateMany(
     {
       status: { $in: ["confirmed", "ongoing"] },
-      endDate: { $lt: now },
+      endDate: { $lt: now }, // end date is now in the past
     },
     {
       $set: { status: "completed" },
@@ -44,17 +50,23 @@ const syncCompletedBookings = async () => {
 };
 
 
-// ================= CREATE BOOKING =================
+// ─── CREATE BOOKING (PAY LATER) ───────────────────────────────────────────────
+// [FLOW FEATURE: BOOKING - PAY LATER]
+// POST /api/bookings  (Private - User)
+// Creates a direct "pending" booking without going through eSewa.
+// Used by the "Book Now, Pay Later" button on the PayWithEsewa page.
 router.post("/", protect, async (req, res) => {
   try {
     const { packageId, travelers, startDate, notes } = req.body;
 
+    // Step 1: Validate required fields
     if (!packageId || !travelers || !startDate) {
       return res.status(400).json({
         message: "packageId, travelers and startDate are required",
       });
     }
 
+    // Step 2: Verify the package exists and is active
     const pkg = await Package.findById(packageId);
 
     if (!pkg) {
@@ -65,16 +77,19 @@ router.post("/", protect, async (req, res) => {
       return res.status(400).json({ message: "Package is not available" });
     }
 
+    // Step 3: Parse the start date
     const start = new Date(startDate);
     if (isNaN(start.getTime())) {
       return res.status(400).json({ message: "Invalid start date" });
     }
 
+    // Step 4: Calculate total price and trip end date from the package duration
     const totalPrice = Number(pkg.price) * Number(travelers);
 
     const end = new Date(start);
     end.setDate(end.getDate() + Number(pkg.days || 1) - 1);
 
+    // Step 5: Create the Booking document with "pending" status (no payment yet)
     const booking = await Booking.create({
       user: req.user._id,
       package: pkg._id,
@@ -84,11 +99,12 @@ router.post("/", protect, async (req, res) => {
       totalPrice,
       notes: notes || "",
       status: "pending",
-      paymentStatus: "pending",
+      paymentStatus: "pending", // No payment taken — Pay Later path
       guide: null,
       guideAssigned: false,
     });
 
+    // Step 6: Return the booking with populated package and guide details
     const populatedBooking = await Booking.findById(booking._id)
       .populate("package", "title region price days difficulty images itinerary")
       .populate("guide", "name fullName email phone");
@@ -104,9 +120,13 @@ router.post("/", protect, async (req, res) => {
 });
 
 
-// ================= MY BOOKINGS =================
+// ─── MY BOOKINGS (simple list) ────────────────────────────────────────────────
+// [FLOW FEATURE: MY BOOKINGS]
+// GET /api/bookings/my  (Private - User)
+// Runs the status sync, then returns all bookings for the logged-in user as a flat list.
 router.get("/my", protect, async (req, res) => {
   try {
+    // Sync statuses before reading so the user always sees accurate states
     await syncCompletedBookings();
 
     const bookings = await Booking.find({ user: req.user._id })
@@ -122,23 +142,31 @@ router.get("/my", protect, async (req, res) => {
 });
 
 
-// ================= 🔥 FIXED MY TRIPS =================
+// ─── MY TRIPS (structured active + past) ─────────────────────────────────────
+// [FLOW FEATURE: MY TRIPS]
+// GET /api/bookings/my-trips  (Private - User)
+// Syncs statuses first, then delegates to getMyTrips controller
+// which splits bookings into activeTrip and pastTrips for the My Trips page.
 router.get("/my-trips", protect, async (req, res, next) => {
-  // Sync before fetching
   try {
-    await syncCompletedBookings();
-    next();
+    await syncCompletedBookings(); // Always sync before reading trips
+    next();                         // Pass to getMyTrips controller below
   } catch (err) {
     next(err);
   }
 }, getMyTrips);
 
 
-// ================= AGENCY BOOKINGS =================
+// ─── AGENCY BOOKINGS ──────────────────────────────────────────────────────────
+// [FLOW FEATURE: AGENCY DASHBOARD - BOOKINGS LIST]
+// GET /api/bookings/agency  (Private - Agency only)
+// Returns all bookings made for this agency's packages.
+// Sync runs first so agency sees up-to-date statuses.
 router.get("/agency", protect, requireRole("agency"), async (req, res) => {
   try {
     await syncCompletedBookings();
 
+    // Find all packages that belong to this agency (active only)
     const myPackages = await Package.find({
       agency: req.user._id,
       isActive: true,
@@ -146,6 +174,7 @@ router.get("/agency", protect, requireRole("agency"), async (req, res) => {
 
     const packageIds = myPackages.map((pkg) => pkg._id);
 
+    // Fetch all bookings for those packages with traveler, package, guide info
     const bookings = await Booking.find({
       package: { $in: packageIds },
     })
@@ -162,19 +191,25 @@ router.get("/agency", protect, requireRole("agency"), async (req, res) => {
 });
 
 
-// ================= AGENCY STATS & DASHBOARD =================
+// ─── AGENCY STATS & DASHBOARD ─────────────────────────────────────────────────
+// [FLOW FEATURE: AGENCY DASHBOARD]
+// GET /api/bookings/agency/dashboard  → Full dashboard payload (stats, packages, departures)
+// GET /api/bookings/agency/stats      → Summary stats only (total bookings + avg rating)
 router.get("/agency/dashboard", protect, requireRole("agency"), getAgencyDashboardData);
 router.get("/agency/stats", protect, requireRole("agency"), getAgencyStats);
 
 
-// ================= GET SINGLE BOOKING =================
+// ─── GET SINGLE BOOKING ───────────────────────────────────────────────────────
+// [FLOW FEATURE: BOOKING DETAIL]
+// GET /api/bookings/:id  (Private - User)
+// Returns a single booking by ID, only if it belongs to the logged-in user.
 router.get("/:id", protect, async (req, res) => {
   try {
     await syncCompletedBookings();
 
     const booking = await Booking.findOne({
       _id: req.params.id,
-      user: req.user._id,
+      user: req.user._id, // Security: only return if this user owns the booking
     })
       .populate("package", "title region price days difficulty images itinerary")
       .populate("guide", "name fullName email phone");
@@ -191,11 +226,17 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 
-// ================= ASSIGN GUIDE =================
+// ─── ASSIGN GUIDE / COMPLETE BOOKING ─────────────────────────────────────────
+// [FLOW FEATURE: GUIDE ASSIGNMENT]
+// PUT /api/bookings/:id/assign-guide  → Agency assigns a guide to a booking
+// PUT /api/bookings/:id/complete      → Agency manually marks booking as completed
 router.put("/:id/assign-guide", protect, requireRole("agency"), assignGuide);
 router.put("/:id/complete", protect, requireRole("agency"), completeBooking);
 
-// ================= CANCEL BOOKING (user only) =================
+// ─── CANCEL BOOKING ───────────────────────────────────────────────────────────
+// [FLOW FEATURE: CANCEL BOOKING]
+// PUT /api/bookings/:id/cancel  (Private - User only)
+// User cancels their own booking. 70% refund is calculated if payment was made.
 router.put("/:id/cancel", protect, requireRole("user"), cancelBookingByUser);
 
 export default router;

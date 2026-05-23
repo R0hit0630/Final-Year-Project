@@ -22,12 +22,15 @@ export default function AgencyGuideProfile() {
 
 
 
+  // [FLOW FEATURE: AGENCY GUIDES - PROFILE VIEW]
+  // Fetches a single guide's detailed record including certifications, ratings, and leave dates
   useEffect(() => {
     const fetchGuide = async () => {
       try {
         const token = getToken();
         if (!token) { navigate("/login"); return; }
 
+        // GET /api/guides/:id retrieves full guide metadata verified by JWT
         const res = await axios.get(`${API_BASE}/api/guides/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -44,6 +47,8 @@ export default function AgencyGuideProfile() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // [FLOW FEATURE: AGENCY GUIDES - REMOVE]
+  // Sends a DELETE request to permanently remove the guide from the team/agency list
   const handleDelete = async () => {
     if (!window.confirm(`Remove ${guide?.fullName} from your team? This cannot be undone.`)) return;
     try {
@@ -52,7 +57,7 @@ export default function AgencyGuideProfile() {
       await axios.delete(`${API_BASE}/api/guides/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      navigate("/agency/guides");
+      navigate("/agency/guides"); // Redirect back to general list after deletion
     } catch (err) {
       alert(err?.response?.data?.message || "Failed to remove guide.");
     } finally {

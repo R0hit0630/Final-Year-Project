@@ -657,6 +657,8 @@ export default function ExploreNepal() {
   };
 
   useEffect(() => {
+    // [FLOW FEATURE: EXPLORE PAGE]
+    // Step 1: Fetch all active package lists from backend to display on explore screen
     const fetchPackages = async () => {
       try {
         setLoading(true);
@@ -675,6 +677,7 @@ export default function ExploreNepal() {
           ? data.data
           : [];
 
+        // Step 2: Map raw database keys to frontend properties
         const mapped = rawPackages.map((p) => ({
           id: p._id || p.id,
           title: p.title ?? "",
@@ -744,6 +747,8 @@ export default function ExploreNepal() {
     [selectedDifficulties]
   );
 
+  // [FLOW FEATURE: EXPLORE PAGE - FILTER & SORT]
+  // Filters and sorts the fetched packages locally in the browser based on current user inputs
   const filtered = useMemo(() => {
     const query = norm(debouncedQ);
     const [dMin, dMax] = durationRange(duration);
@@ -754,12 +759,14 @@ export default function ExploreNepal() {
       const acts = (p.activities || []).map(norm);
       const difficulty = norm(p.difficulty);
 
+      // Step 1: Text search match (matches title, region, or activities)
       const matchSearch =
         !query ||
         title.includes(query) ||
         region.includes(query) ||
         acts.some((a) => a.includes(query));
 
+      // Step 2: Dropdown/button selection matches (region, activity, budget, duration, difficulty)
       const matchRegion =
         selectedRegions.size === 0 || selectedRegionsNorm.has(region);
 
@@ -786,6 +793,7 @@ export default function ExploreNepal() {
       );
     });
 
+    // Step 3: Sort the filtered list based on the chosen dropdown option
     if (sortBy === "Price: Low to High") {
       list = [...list].sort((a, b) => a.price - b.price);
     } else if (sortBy === "Price: High to Low") {
@@ -793,7 +801,7 @@ export default function ExploreNepal() {
     } else if (sortBy === "Duration") {
       list = [...list].sort((a, b) => a.days - b.days);
     } else {
-      list = [...list].sort((a, b) => b.rating - a.rating);
+      list = [...list].sort((a, b) => b.rating - a.rating); // Default/Popularity sort
     }
 
     return list;

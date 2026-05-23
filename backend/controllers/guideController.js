@@ -1,7 +1,8 @@
 import Guide from "../models/Guide.js";
 import Booking from "../models/Booking.js";
 
-// CREATE GUIDE
+// [FLOW FEATURE: GUIDE - CREATE]
+// Creates a new guide record belonging to the currently logged-in agency
 export const createGuide = async (req, res) => {
   try {
     const {
@@ -18,12 +19,14 @@ export const createGuide = async (req, res) => {
       photo,
     } = req.body;
 
+    // Step 1: Validate required fields before attempting creation
     if (!fullName || !email || !region) {
       return res.status(400).json({
         message: "Full name, email, and region are required",
       });
     }
 
+    // Step 2: Check that this agency does not already have a guide with the same email
     const existingGuide = await Guide.findOne({
       email: email.toLowerCase(),
       agency: req.user._id,
@@ -35,6 +38,7 @@ export const createGuide = async (req, res) => {
       });
     }
 
+    // Step 3: Save new guide to database, linking it to the agency via req.user._id
     const guide = await Guide.create({
       fullName,
       email: email.toLowerCase(),
@@ -62,7 +66,8 @@ export const createGuide = async (req, res) => {
   }
 };
 
-// GET ALL GUIDES OF LOGGED-IN AGENCY
+// [FLOW FEATURE: GUIDE - GET ALL BY AGENCY]
+// Returns all guides belonging to the currently logged-in agency, sorted newest first
 export const getMyGuides = async (req, res) => {
   try {
     const guides = await Guide.find({ agency: req.user._id }).sort({
@@ -78,12 +83,13 @@ export const getMyGuides = async (req, res) => {
   }
 };
 
-// GET SINGLE GUIDE
+// [FLOW FEATURE: GUIDE - GET SINGLE]
+// Fetches one guide by ID, scoped to the logged-in agency to prevent cross-agency access
 export const getGuideById = async (req, res) => {
   try {
     const guide = await Guide.findOne({
       _id: req.params.id,
-      agency: req.user._id,
+      agency: req.user._id, // Ensure only the owning agency can view this guide
     });
 
     if (!guide) {
@@ -99,7 +105,8 @@ export const getGuideById = async (req, res) => {
   }
 };
 
-// UPDATE GUIDE
+// [FLOW FEATURE: GUIDE - UPDATE]
+// Updates a guide's profile fields and optionally sets a leave date range with conflict detection
 export const updateGuide = async (req, res) => {
   try {
     const {
@@ -119,6 +126,7 @@ export const updateGuide = async (req, res) => {
       leaveEndDate,
     } = req.body;
 
+    // Step 1: Find the guide, ensuring it belongs to the requesting agency
     const guide = await Guide.findOne({
       _id: req.params.id,
       agency: req.user._id,
@@ -128,6 +136,7 @@ export const updateGuide = async (req, res) => {
       return res.status(404).json({ message: "Guide not found" });
     }
 
+    // Step 2: Apply the updated field values using nullish coalescing to preserve existing values
     guide.fullName = fullName ?? guide.fullName;
     guide.email = email ? email.toLowerCase() : guide.email;
     guide.phone = phone ?? guide.phone;
@@ -144,6 +153,7 @@ export const updateGuide = async (req, res) => {
       guide.isActive = isActive;
     }
 
+    // Step 3: Handle leave date update if either date is provided
     const hasLeaveDates =
       leaveStartDate !== undefined || leaveEndDate !== undefined;
 
@@ -151,6 +161,7 @@ export const updateGuide = async (req, res) => {
       const nextLeaveStart = leaveStartDate ? new Date(leaveStartDate) : null;
       const nextLeaveEnd = leaveEndDate ? new Date(leaveEndDate) : null;
 
+      // Both dates must be present together — prevent partial leave range
       if ((nextLeaveStart && !nextLeaveEnd) || (!nextLeaveStart && nextLeaveEnd)) {
         return res.status(400).json({
           message: "Both leave start date and leave end date are required",
@@ -158,6 +169,7 @@ export const updateGuide = async (req, res) => {
       }
 
       if (nextLeaveStart && nextLeaveEnd) {
+        // Step 4: Validate date integrity — reject NaN or invalid date strings
         if (Number.isNaN(nextLeaveStart.getTime()) || Number.isNaN(nextLeaveEnd.getTime())) {
           return res.status(400).json({
             message: "Invalid leave dates",
@@ -170,6 +182,7 @@ export const updateGuide = async (req, res) => {
           });
         }
 
+        // Step 5: Check for booking conflicts — deny leave if guide has active trips during that window
         const conflictingBooking = await Booking.findOne({
           guide: guide._id,
           status: { $in: ["pending", "confirmed", "ongoing"] },
@@ -187,11 +200,13 @@ export const updateGuide = async (req, res) => {
         guide.leaveStartDate = nextLeaveStart;
         guide.leaveEndDate = nextLeaveEnd;
       } else {
+        // Clearing leave dates if both are passed as null/undefined
         guide.leaveStartDate = null;
         guide.leaveEndDate = null;
       }
     }
 
+    // Step 6: Persist the updated guide document
     await guide.save();
 
     res.status(200).json({
@@ -206,12 +221,13 @@ export const updateGuide = async (req, res) => {
   }
 };
 
-// DELETE GUIDE
+// [FLOW FEATURE: GUIDE - DELETE]
+// Deletes a guide only if they have no active or upcoming bookings — prevents orphaned trips
 export const deleteGuide = async (req, res) => {
   try {
     const guide = await Guide.findOne({
       _id: req.params.id,
-      agency: req.user._id,
+      agency: req.user._id, // Scoped to the owning agency
     });
 
     if (!guide) {
@@ -230,6 +246,7 @@ export const deleteGuide = async (req, res) => {
       });
     }
 
+    // Hard delete: permanently removes guide record from database
     await guide.deleteOne();
 
     res.status(200).json({

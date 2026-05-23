@@ -28,6 +28,8 @@ export default function Profile({ user, setUser }) {
     []
   );
 
+  // [FLOW FEATURE: USER PROFILE LOGOUT]
+  // Handles logging out the user by navigating to the logout route
   const handleLogout = () => {
     navigate("/logout", { replace: true });
   };

@@ -181,6 +181,8 @@ export default function SavedDestinations() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("Newest Saved");
 
+  // [FLOW FEATURE: WISHLIST - SYNC USER PROFILE]
+  // Fetch current user details from the backend to keep authentication sync fresh
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
@@ -217,6 +219,8 @@ export default function SavedDestinations() {
     fetchCurrentUser();
   }, []);
 
+  // [FLOW FEATURE: WISHLIST - FETCH ALL PACKAGES]
+  // Fetch all packages from the system, then map them for wishlist display matching
   useEffect(() => {
     const fetchPackages = async () => {
       try {
@@ -291,16 +295,21 @@ export default function SavedDestinations() {
     setFavoriteIds(new Set());
   };
 
+  // [FLOW FEATURE: WISHLIST - GET SAVED ITEMS]
+  // Filters out only the packages whose IDs exist in the user's favorite list (from localStorage)
   const validSavedPackages = useMemo(() => {
     return allPackages.filter((pkg) => favoriteIds.has(pkg.id));
   }, [allPackages, favoriteIds]);
 
+  // [FLOW FEATURE: WISHLIST - SEARCH & SORT]
+  // Searches and sorts the saved packages based on title, region, price, name, or duration
   const savedPackages = useMemo(() => {
     const query = norm(search);
 
     let filtered = validSavedPackages.filter((pkg) => {
       if (!query) return true;
 
+      // Match against package title, region, or activities
       return (
         norm(pkg.title).includes(query) ||
         norm(pkg.region).includes(query) ||
@@ -308,6 +317,7 @@ export default function SavedDestinations() {
       );
     });
 
+    // Apply the chosen sort option
     if (sortBy === "Price: Low to High") {
       filtered = [...filtered].sort((a, b) => a.price - b.price);
     } else if (sortBy === "Price: High to Low") {
@@ -317,7 +327,7 @@ export default function SavedDestinations() {
     } else if (sortBy === "Name") {
       filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title));
     } else {
-      filtered = [...filtered];
+      filtered = [...filtered]; // Default sorting (newest saved first)
     }
 
     return filtered;

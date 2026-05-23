@@ -36,6 +36,9 @@ export default function AgencyBookings() {
     fetchData();
   }, []);
 
+  // [FLOW FEATURE: AGENCY BOOKINGS - FETCH DATA]
+  // Fetches both bookings and guides in parallel using Promise.allSettled so a guide load
+  // failure doesn't block the bookings list from displaying
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -47,14 +50,17 @@ export default function AgencyBookings() {
         headers: { Authorization: `Bearer ${token}` },
       };
 
+      // Step 1: Fire both requests in parallel
       const bookingsPromise = axios.get(`${apiBase}/api/bookings/agency`, config);
       const guidesPromise = axios.get(`${apiBase}/api/guides/mine`, config);
 
+      // Step 2: Use allSettled so one failure doesn't reject the other
       const [bookingsResult, guidesResult] = await Promise.allSettled([
         bookingsPromise,
         guidesPromise,
       ]);
 
+      // Step 3: Handle bookings result independently
       if (bookingsResult.status === "fulfilled") {
         const bookingsData =
           bookingsResult.value.data?.bookings || bookingsResult.value.data || [];
@@ -68,6 +74,7 @@ export default function AgencyBookings() {
         setBookings([]);
       }
 
+      // Step 4: Handle guides result independently (non-fatal)
       if (guidesResult.status === "fulfilled") {
         const guidesData =
           guidesResult.value.data?.guides || guidesResult.value.data || [];
@@ -106,6 +113,7 @@ export default function AgencyBookings() {
       setAssigningId(bookingId);
       const token = localStorage.getItem("token");
 
+      // PUT /api/bookings/:id/assign-guide sets guideAssigned=true and links the guide
       await axios.put(
         `${apiBase}/api/bookings/${bookingId}/assign-guide`,
         { guideId },
@@ -115,7 +123,7 @@ export default function AgencyBookings() {
       );
 
       alert("Guide assigned successfully");
-      await fetchData();
+      await fetchData(); // Reload to reflect new guide assignment
     } catch (error) {
       console.error("Assign guide error:", error);
       alert(error?.response?.data?.message || "Failed to assign guide");
@@ -124,6 +132,8 @@ export default function AgencyBookings() {
     }
   };
 
+  // [FLOW FEATURE: AGENCY BOOKINGS - COMPLETE TRIP]
+  // Manually marks a booking status as 'completed' — typically used after the trip has ended
   const handleCompleteTrip = async (bookingId) => {
     if (!window.confirm("Are you sure you want to mark this trip as completed?")) {
       return;
@@ -142,7 +152,7 @@ export default function AgencyBookings() {
       );
 
       alert("Trip marked as completed successfully");
-      await fetchData();
+      await fetchData(); // Refresh the list to show updated status
     } catch (error) {
       console.error("Complete trip error:", error);
       alert(error?.response?.data?.message || "Failed to complete trip");
@@ -151,6 +161,8 @@ export default function AgencyBookings() {
     }
   };
 
+  // [FLOW FEATURE: AGENCY BOOKINGS - STATS MEMO]
+  // Counts booking statuses to populate the header stat cards
   const stats = useMemo(() => {
     const total = bookings.length;
     const pending = bookings.filter((b) => b.status === "pending").length;
@@ -254,6 +266,9 @@ export default function AgencyBookings() {
     return now >= start && now <= end;
   };
 
+  // [FLOW FEATURE: AGENCY BOOKINGS - GUIDE CONFLICT CHECK]
+  // Returns availability and a human-readable reason for each guide relative to a booking's dates:
+  // checks guide isActive, current leave period, and any existing booking overlaps
   const getGuideConflictStatus = (guide, booking) => {
     if (!guide) {
       return { available: false, reason: "Invalid guide" };
@@ -270,6 +285,7 @@ export default function AgencyBookings() {
       return { available: false, reason: "Invalid trip dates" };
     }
 
+    // Check if the guide's leave period overlaps with the booking window
     if (guide.leaveStartDate && guide.leaveEndDate) {
       const leaveStart = new Date(guide.leaveStartDate);
       const leaveEnd = new Date(guide.leaveEndDate);
@@ -279,6 +295,7 @@ export default function AgencyBookings() {
       }
     }
 
+    // Check if the guide is already assigned to another overlapping booking
     const hasConflict = bookings.some((otherBooking) => {
       if (!otherBooking?._id || otherBooking._id === booking._id) return false;
       if (!otherBooking.guide?._id) return false;
@@ -304,6 +321,7 @@ export default function AgencyBookings() {
     return { available: true, reason: "Available" };
   };
 
+  // Returns only guides that pass the conflict check for a given booking
   const getAvailableGuidesForBooking = (booking) => {
     return guides.filter((guide) => getGuideConflictStatus(guide, booking).available);
   };

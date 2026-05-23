@@ -19,6 +19,8 @@ export default function AdminDashboard() {
     secondary: "#2d3b2a",
   };
 
+  // [FLOW FEATURE: ADMIN DASHBOARD - STATS FETCH]
+  // Fetch system statistics, user lists, and booking lists in parallel to load the dashboard overview
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -26,6 +28,7 @@ export default function AdminDashboard() {
         const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
 
+        // Step 1: Run parallel backend GET queries for stats, users and bookings
         const [statsRes, usersRes, bookingsRes] = await Promise.all([
           axios.get(`${apiBase}/api/admin/stats`, { headers }),
           axios.get(`${apiBase}/api/admin/users`, { headers }),
@@ -35,6 +38,7 @@ export default function AdminDashboard() {
         const allUsers = usersRes.data || [];
         const allBookings = bookingsRes.data || [];
 
+        // Step 2: Separate travelers vs agencies, and grab the most recent 5 records for previews
         setData({
           stats: statsRes.data?.stats || {},
           recentUsers: allUsers.filter(u => u.role === "user").slice(0, 5),

@@ -19,29 +19,35 @@ export default function AgencyPackages() {
 
 
 
+  // [FLOW FEATURE: AGENCY PACKAGES - FETCH]
+  // Loads all packages owned by this agency and maps them into display-ready card data
   useEffect(() => {
     const fetchPackages = async () => {
       try {
         const token = localStorage.getItem("token");
 
+        // Step 1: GET all packages scoped to the logged-in agency (/api/packages/mine)
         const res = await axios.get(`${API_BASE}/api/packages/mine`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
+        // Step 2: Normalize response — API may return array directly or wrapped in object
         const rawPackages = Array.isArray(res.data)
           ? res.data
           : Array.isArray(res.data?.packages)
           ? res.data.packages
           : [];
 
+        // Step 3: Map raw DB fields into a flat object for rendering PackageCards
         const mappedPackages = rawPackages.map((p) => ({
           id: p._id,
           title: p.title || "Untitled Package",
           days: `${p.days || 0} Days`,
           location: p.region || "Unknown Region",
           price: `रु ${Number(p.price || 0).toLocaleString()}`,
+          // Use first image if available, prefix with API_BASE if it's a relative path
           img:
             p.images && p.images.length > 0
               ? p.images[0].startsWith("http")
@@ -68,6 +74,8 @@ export default function AgencyPackages() {
     fetchPackages();
   }, []);
 
+  // [FLOW FEATURE: AGENCY PACKAGES - DELETE]
+  // Soft-deletes a package via the API, then filters it out of local state to update the UI
   const handleDeletePackage = async (id) => {
     if (!window.confirm("Are you sure you want to delete this package?")) return;
 
@@ -80,6 +88,7 @@ export default function AgencyPackages() {
       });
 
       alert("Package deleted successfully.");
+      // Remove the deleted package from local state immediately (optimistic update)
       setPackages((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       console.error("Error deleting package:", err);
@@ -104,6 +113,8 @@ export default function AgencyPackages() {
     return "bg-blue-500/10 text-blue-700 border-blue-500/20";
   };
 
+  // [FLOW FEATURE: AGENCY PACKAGES - SUMMARY STATS]
+  // Derives header stat cards from the current packages list: totals, bookings, rating, and revenue potential
   const summaryStats = useMemo(
     () => [
       {
@@ -131,6 +142,7 @@ export default function AgencyPackages() {
       },
       {
         label: "Revenue Potential",
+        // Strip non-numeric chars from the price string before summing
         value: `रु ${packages
           .reduce((sum, p) => {
             const amount = Number(String(p.price).replace(/[^0-9.]/g, "")) || 0;

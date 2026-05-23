@@ -159,7 +159,10 @@ export default function AgencyProfile() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  // [FLOW FEATURE: AGENCY PROFILE - FETCH ACCOUNT DATA]
+  // Requests agency account details, including business info, address, socials, logo, and approval verification state
   const fetchAgencyProfile = async () => {
+    // GET /api/users/agency/me parses token to fetch the specialized Agency user record
     const res = await axios.get(`${API_BASE}/api/users/agency/me`, authConfig);
     const data = res.data || {};
 
@@ -191,6 +194,8 @@ export default function AgencyProfile() {
     setVerified(Boolean(data.isVerified));
   };
 
+  // [FLOW FEATURE: AGENCY PROFILE - FETCH STATS]
+  // Fetches review ratings and booking aggregation numbers for the agency performance snapshot card
   const fetchAgencyStats = async () => {
     try {
       const res = await axios.get(`${API_BASE}/api/bookings/agency/stats`, authConfig);
@@ -207,6 +212,8 @@ export default function AgencyProfile() {
     }
   };
 
+  // [FLOW FEATURE: AGENCY PROFILE - KEY PERSONNEL]
+  // Fetches guides associated with the agency to display them as key personnel card contacts
   const fetchGuides = async () => {
     try {
       const res = await axios.get(`${API_BASE}/api/guides/mine`, authConfig);
@@ -216,6 +223,7 @@ export default function AgencyProfile() {
         ? res.data.guides
         : [];
 
+      // Only slice first 4 guides to fit the key personnel UI box nicely
       const mapped = guides.slice(0, 4).map((guide, index) => ({
         name: guide.name || guide.fullName || "Guide",
         tag: guide.specialization || guide.expertise || guide.language || "Agency Guide",
@@ -251,6 +259,8 @@ export default function AgencyProfile() {
     }
   }, [token]);
 
+  // [FLOW FEATURE: AGENCY PROFILE - LOGO UPLOAD]
+  // Handles uploading a new agency logo picture to the server and updating the avatar display
   const onLogoChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -260,13 +270,14 @@ export default function AgencyProfile() {
     try {
       setUploadingLogo(true);
 
+      // Instantly generate a blob preview for local optimistic UI update
       previewUrl = URL.createObjectURL(file);
       setLogo(previewUrl);
 
       const body = new FormData();
       body.append("image", file);
 
-
+      // POST /api/upload uploads the image file to media directory
       const uploadRes = await axios.post(`${API_BASE}/api/upload`, body, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -287,6 +298,7 @@ export default function AgencyProfile() {
         throw new Error("Upload succeeded but no file path returned");
       }
 
+      // Convert the relative backend storage path into a fully qualified image URL
       const finalLogo = normalizeImageUrl(uploadedPath);
       setLogo(finalLogo);
     } catch (error) {
@@ -301,6 +313,8 @@ export default function AgencyProfile() {
     }
   };
 
+  // [FLOW FEATURE: AGENCY PROFILE - DOCUMENT UPLOAD]
+  // Handles uploading credential PDF/image (Tourism License, Insurance, VAT Registration) to verify the agency
   const onDocumentUpload = async (e, type) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -311,6 +325,7 @@ export default function AgencyProfile() {
       const body = new FormData();
       body.append("document", file);
 
+      // POST /api/upload/document uploads PDF or image for admin verification
       const uploadRes = await axios.post(`${API_BASE}/api/upload/document`, body, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -337,6 +352,8 @@ export default function AgencyProfile() {
     }
   };
 
+  // [FLOW FEATURE: AGENCY PROFILE - UPDATE]
+  // Commits the entire agency details and verification documents to the user record
   const onSave = async () => {
     try {
       setSaving(true);
@@ -358,6 +375,7 @@ export default function AgencyProfile() {
         agencyCredentials: credentials,
       };
 
+      // PUT /api/users/agency/me updates the agency's DB profile
       const res = await axios.put(`${API_BASE}/api/users/agency/me`, payload, authConfig);
 
       setInitialSavedForm({ ...form });

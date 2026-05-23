@@ -74,6 +74,8 @@ export default function AddNewGuide() {
     setPreviewImage(URL.createObjectURL(file));
   };
 
+  // [FLOW FEATURE: AGENCY GUIDES - CREATE NEW]
+  // Handles the form submission to upload the guide picture (if selected) and create a new guide record in the database
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -83,6 +85,7 @@ export default function AddNewGuide() {
       const token = localStorage.getItem("token");
       let photoUrl = "";
 
+      // Step 1: If an image is selected, upload it first to get the URL
       if (selectedImage) {
         const imageData = new FormData();
         imageData.append("image", selectedImage);
@@ -95,12 +98,14 @@ export default function AddNewGuide() {
         photoUrl = uploadRes.data.imageUrl;
       }
 
+      // Step 2: Combine standard fields, skills array, and photo URL
       const payload = {
         ...form,
         skills,
         photo: photoUrl,
       };
 
+      // Step 3: POST to /api/guides to save the guide under the agency's ownership
       const res = await axios.post(
         `${API_BASE}/api/guides`,
         payload,
@@ -113,7 +118,7 @@ export default function AddNewGuide() {
 
       console.log("Guide created:", res.data);
       alert("Guide added successfully");
-      navigate("/agency/guides");
+      navigate("/agency/guides"); // Redirect back to guides list
     } catch (error) {
       console.error("Create guide error:", error);
       alert(error.response?.data?.message || "Failed to create guide");

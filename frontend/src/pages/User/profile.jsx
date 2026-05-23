@@ -103,6 +103,8 @@ export default function Profile() {
   const shortName = (fullName || "User").split(" ").slice(0, 2).join(" ");
   const displayRole = role ? role.charAt(0).toUpperCase() + role.slice(1) : "User";
 
+  // [FLOW FEATURE: USER PROFILE - GET INFO]
+  // Fetch current user details from API and populate states on page load
   useEffect(() => {
     const load = async () => {
       setErr("");
@@ -119,6 +121,7 @@ export default function Profile() {
 
         const normalized = normalizeProfileData(profileData);
 
+        // Populate local states with normalized profile info
         setFullName(normalized.fullName);
         setEmail(normalized.email);
         setPhone(normalized.phone);
@@ -142,6 +145,8 @@ export default function Profile() {
     load();
   }, [authHeaders]);
 
+  // [FLOW FEATURE: USER PROFILE - AVATAR UPLOAD]
+  // Uploads the selected profile picture file to the backend, updates the user's avatar path, and updates snapshot
   const handleProfilePictureUpload = async (file) => {
     if (!file || !isEditing) return;
 
@@ -150,9 +155,11 @@ export default function Profile() {
       setErr("");
       setMsg("");
 
+      // Step 1: Create FormData object and append the image file
       const formData = new FormData();
       formData.append("image", file);
 
+      // Step 2: POST the file to the upload endpoint
       const uploadRes = await axios.post(`${API}/api/upload`, formData);
 
       const imageUrl = uploadRes?.data?.imageUrl || "";
@@ -160,8 +167,10 @@ export default function Profile() {
         throw new Error("Image upload failed");
       }
 
+      // Step 3: Get relative URL path of the uploaded image
       const relativePath = imageUrl.replace(API, "");
 
+      // Step 4: Call update profile API with the new avatar path along with other fields
       await axios.put(
         `${API}/api/users/me`,
         {
@@ -178,6 +187,7 @@ export default function Profile() {
 
       setAvatar(relativePath);
 
+      // Step 5: Save snapshot of the saved data to support Discard action later
       const updatedSnapshot = {
         fullName: fullName.trim(),
         email,
@@ -251,12 +261,15 @@ export default function Profile() {
     setIsEditing(false);
   };
 
+  // [FLOW FEATURE: USER PROFILE - SAVE CHANGES]
+  // Sends the modified profile state values to the backend to update user record in database
   const save = async () => {
     setSaving(true);
     setMsg("");
     setErr("");
 
     try {
+      // Step 1: PUT profile changes to backend endpoint
       await axios.put(
         `${API}/api/users/me`,
         {
@@ -271,6 +284,7 @@ export default function Profile() {
         { headers: authHeaders }
       );
 
+      // Step 2: Update the original state snapshot to match new saved values
       const snapshot = {
         fullName: fullName.trim(),
         email,

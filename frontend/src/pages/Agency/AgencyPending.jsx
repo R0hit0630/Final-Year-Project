@@ -1,10 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import travelinLogo from "../../assets/travolin-logo.png";
 
+// [FLOW FEATURE: AGENCY PENDING - WAITING PAGE]
+// Shown immediately after agency registration when agencyVerified = false.
+// Displays progress steps and a logout option while the admin reviews the submission.
 export default function AgencyPending() {
   const navigate = useNavigate();
+  // Read the cached user object from localStorage to display their username in the greeting
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
+  // [FLOW FEATURE: AGENCY PENDING - LOGOUT]
+  // Clears all auth tokens and user state from localStorage, then redirects to /login
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");

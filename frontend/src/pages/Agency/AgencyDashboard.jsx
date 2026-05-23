@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_BASE } from "../../config/api.js";
 
-// Converts relative image paths to full URLs
+// [FLOW FEATURE: AGENCY DASHBOARD - IMAGE URL HELPER]
+// Converts relative image paths stored in DB (e.g. /uploads/img.jpg) to fully qualified URLs
 const buildImageUrl = (imgPath) => {
   if (!imgPath) return null;
   if (imgPath.startsWith("http")) return imgPath;
@@ -32,21 +33,26 @@ export default function AgencyDashboard() {
 
 
 
+  // [FLOW FEATURE: AGENCY DASHBOARD - DATA FETCH]
+  // Fetches live stats, package occupancy, and upcoming booking departures from the backend on mount
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         const token = getToken();
+        // Guard: redirect to login if no token found in localStorage
         if (!token) {
           navigate("/login");
           return;
         }
 
+        // Step 1: Call the agency dashboard endpoint which returns stats, packages, and departures together
         const res = await axios.get(`${API_BASE}/api/bookings/agency/dashboard`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         const data = res.data;
 
+        // Step 2: Map the raw API stats into the StatCard display format
         setStats([
           {
             label: "Total Bookings",
@@ -73,6 +79,7 @@ export default function AgencyDashboard() {
           },
         ]);
 
+        // Step 3: Store the packages and upcoming departures for rendering below
         setPackages(data.packages || []);
         setDepartures(data.departures || []);
       } catch (err) {
@@ -87,12 +94,15 @@ export default function AgencyDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // [FLOW FEATURE: AGENCY DASHBOARD - COMPLETE TRIP]
+  // Manually marks an ongoing or confirmed booking as completed via the backend
   const handleCompleteTrip = async (bookingId) => {
     if (!window.confirm("Mark this trip as completed?")) return;
 
     try {
       setCompletingId(bookingId);
       const token = getToken();
+      // PUT request updates the booking status to 'completed' on the backend
       await axios.put(`${API_BASE}/api/bookings/${bookingId}/complete`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });

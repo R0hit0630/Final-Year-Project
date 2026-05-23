@@ -43,6 +43,8 @@ export default function MyTrips() {
 
 
 
+  // [FLOW FEATURE: MY TRIPS]
+  // Fetches the current user's profile and all their booking data in parallel
   const fetchData = async () => {
     if (!token) {
       setError("Please log in to view your trips.");
@@ -60,12 +62,15 @@ export default function MyTrips() {
         },
       };
 
+      // Step 1: Load user profile + bookings at the same time for speed
+      // Note: /api/bookings/my-trips also auto-syncs statuses (confirmed -> ongoing -> completed)
       const [userRes, tripsRes] = await Promise.all([
         axios.get(`${apiBase}/api/users/me`, config),
         axios.get(`${apiBase}/api/bookings/my-trips`, config),
       ]);
 
       setUserData(userRes.data || null);
+      // Step 2: Split bookings into the active upcoming trip and list of past trips
       setActiveTrip(tripsRes.data?.activeTrip || null);
       setPastTrips(tripsRes.data?.pastTrips || []);
     } catch (err) {
@@ -82,12 +87,16 @@ export default function MyTrips() {
     fetchData();
   }, [token]);
 
+  // Returns true if the trip is completed AND has not yet been reviewed by this user
   const canReviewTrip = (trip) =>
     String(trip?.status || "").toLowerCase() === "completed" && !trip?.isReviewed;
 
+  // Returns true if the trip is completed AND has already been reviewed
   const hasReviewedTrip = (trip) =>
     String(trip?.status || "").toLowerCase() === "completed" && !!trip?.isReviewed;
 
+  // [FLOW FEATURE: REVIEWS]
+  // Opens the star rating modal and resets all previous rating inputs
   const openReviewModal = (trip) => {
     setReviewTrip(trip);
     setPackageRating(0);
@@ -259,6 +268,7 @@ export default function MyTrips() {
     return buildImageUrl(src) || defaultAvatar;
   };
 
+  // Updates the local state to mark a trip as reviewed without refetching from the server
   const markTripReviewedLocally = (tripId) => {
     setActiveTrip((prev) =>
       prev && prev._id === tripId ? { ...prev, isReviewed: true } : prev
@@ -271,6 +281,8 @@ export default function MyTrips() {
     );
   };
 
+  // [FLOW FEATURE: CANCEL BOOKING]
+  // Calls the cancel API. If the trip was already paid, a 70% refund is calculated on the backend.
   const handleCancelTrip = async () => {
     if (!activeTrip?._id) return;
     
@@ -282,6 +294,7 @@ export default function MyTrips() {
 
     try {
       setLoading(true);
+      // PUT /api/bookings/:id/cancel  -- backend handles refund logic
       await axios.put(
         `${apiBase}/api/bookings/${activeTrip._id}/cancel`,
         {},
@@ -300,14 +313,19 @@ export default function MyTrips() {
     }
   };
 
+  // [FLOW FEATURE: REVIEWS - SUBMIT]
+  // Validates star ratings and POSTs to /api/reviews. The backend will then
+  // automatically recalculate the average rating for the package and guide.
   const handleSubmitReview = async () => {
     if (!reviewTrip?._id) return;
 
+    // Step 1: Validate that a package star rating was chosen
     if (!packageRating) {
       alert("Please rate the package.");
       return;
     }
 
+    // Step 2: If a guide was assigned to this trip, also require a guide rating
     if (reviewTrip?.guide && !guideRating) {
       alert("Please rate the guide.");
       return;
@@ -316,12 +334,15 @@ export default function MyTrips() {
     try {
       setSubmittingReview(true);
 
+      // Step 3: POST review data to backend. Backend creates Review documents and
+      // calls updatePackageRating() and updateGuideRating() to recalculate averages.
       await axios.post(
         `${apiBase}/api/reviews`,
         {
           bookingId: reviewTrip._id,
           packageRating,
           packageComment,
+          // Only send guide rating if a guide was actually assigned to the trip
           guideRating: reviewTrip?.guide ? guideRating : null,
           guideComment: reviewTrip?.guide ? guideComment : "",
         },
@@ -332,6 +353,7 @@ export default function MyTrips() {
         }
       );
 
+      // Step 4: Mark the trip as reviewed in local state to hide the "Rate Now" button
       markTripReviewedLocally(reviewTrip._id);
       closeReviewModal();
       alert("Review submitted successfully.");

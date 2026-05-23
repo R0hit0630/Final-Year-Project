@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
 import travelinLogo from "../assets/travolin-logo.png";
 
+// [FLOW FEATURE: NOT FOUND - 404 PAGE]
+// Catch-all page rendered by the router for any URL that doesn't match a defined route.
+// Offers two recovery CTAs: go back to Home or browse /explore packages.
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-[#111921] text-white flex flex-col items-center justify-center p-6 text-center">

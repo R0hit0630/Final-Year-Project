@@ -26,11 +26,14 @@ export default function AgencyPackageDetails() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
+  // [FLOW FEATURE: AGENCY PACKAGES - LOAD DETAILS]
+  // Fetches a single agency package's specifications, including details and itinerary list
   useEffect(() => {
     const fetchPackage = async () => {
       try {
         const token = localStorage.getItem("token");
 
+        // GET /api/packages/mine/:id retrieves the owned package verified by agency role check
         const res = await axios.get(
           `${API_BASE}/api/packages/mine/${id}`,
           {
@@ -55,6 +58,7 @@ export default function AgencyPackageDetails() {
           itinerary: Array.isArray(pkg.itinerary) ? pkg.itinerary : [],
         });
 
+        // Normalize relative path arrays to build clean preview URLs
         setPreviewImages(
           (pkg.images || []).map((img) =>
             img.startsWith("http") ? img : `${API_BASE}${img}`
@@ -109,6 +113,8 @@ export default function AgencyPackageDetails() {
     setPreviewImages(files.map((file) => URL.createObjectURL(file)));
   };
 
+  // [FLOW FEATURE: AGENCY PACKAGES - UPDATE]
+  // Handles package revision submit, optionally uploading replacement photos first if chosen
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -123,6 +129,7 @@ export default function AgencyPackageDetails() {
         const imageFormData = new FormData();
         images.forEach((img) => imageFormData.append("images", img));
 
+        // POST /api/upload/multiple uploads multiple travel images simultaneously
         const uploadRes = await axios.post(
           `${API_BASE}/api/upload/multiple`,
           imageFormData,
@@ -150,7 +157,7 @@ export default function AgencyPackageDetails() {
         payload.images = uploadedImageUrls;
       }
 
-      // Step 3: PUT as JSON
+      // Step 3: PUT package updates to backend API
       const res = await axios.put(
         `${API_BASE}/api/packages/${id}`,
         payload,
@@ -177,6 +184,8 @@ export default function AgencyPackageDetails() {
     }
   };
 
+  // [FLOW FEATURE: AGENCY PACKAGES - DELETE]
+  // Sends a DELETE request to soft-delete or permanently remove the travel package
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this package?")) return;
     setSaving(true);
@@ -184,6 +193,7 @@ export default function AgencyPackageDetails() {
 
     try {
       const token = localStorage.getItem("token");
+      // DELETE /api/packages/:id removes the package and prevents new tourist bookings
       await axios.delete(`${API_BASE}/api/packages/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -191,7 +201,7 @@ export default function AgencyPackageDetails() {
       });
 
       alert("Package deleted successfully.");
-      navigate("/agency/packages");
+      navigate("/agency/packages"); // Redirect to listings dashboard
     } catch (err) {
       console.error("Error deleting package:", err);
       setMessage(err.response?.data?.message || "Failed to delete package.");

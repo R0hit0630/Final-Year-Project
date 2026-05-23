@@ -5,17 +5,19 @@ import fs from "fs";
 
 const router = express.Router();
 
+// Make sure the uploads folder exists on disk before saving any files
 const uploadDir = path.join(process.cwd(), "uploads");
-
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+// Configure where uploaded files go and how they are named
 const storage = multer.diskStorage({
   destination(req, file, cb) {
-    cb(null, uploadDir);
+    cb(null, uploadDir); // Save all uploads to the /uploads folder
   },
   filename(req, file, cb) {
+    // Create a unique filename using timestamp + random number to avoid conflicts
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(
       null,
@@ -24,26 +26,29 @@ const storage = multer.diskStorage({
   },
 });
 
+// Only allow image file types — reject anything else
 const fileFilter = (req, file, cb) => {
   if (file.mimetype && file.mimetype.startsWith("image/")) {
-    cb(null, true);
+    cb(null, true); // Accept the file
   } else {
-    cb(new Error("Only image files are allowed"), false);
+    cb(new Error("Only image files are allowed"), false); // Reject the file
   }
 };
 
+// Set up the image uploader (max 20MB per file)
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 20 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
 });
 
-// single image
+// Upload a single image — used when only one photo is needed
 router.post("/", upload.single("image"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: "No image uploaded" });
   }
 
+  // Return the public URL path of the saved image
   const imageUrl = `/uploads/${req.file.filename}`;
 
   return res.status(200).json({
@@ -52,7 +57,7 @@ router.post("/", upload.single("image"), (req, res) => {
   });
 });
 
-// multiple images
+// Upload multiple images at once (max 6) — used when creating a package with multiple photos
 router.post("/multiple", upload.array("images", 6), (req, res) => {
   const files = req.files || [];
 
@@ -60,6 +65,7 @@ router.post("/multiple", upload.array("images", 6), (req, res) => {
     return res.status(400).json({ message: "No images uploaded" });
   }
 
+  // Return an array of public URL paths for all uploaded images
   const imageUrls = files.map(
     (file) => `/uploads/${file.filename}`
   );
@@ -70,29 +76,31 @@ router.post("/multiple", upload.array("images", 6), (req, res) => {
   });
 });
 
+// Allow images AND documents (PDF, Word) — used for uploading travel documents
 const documentFilter = (req, file, cb) => {
   if (
     file.mimetype &&
-    (file.mimetype.startsWith("image/") || 
+    (file.mimetype.startsWith("image/") ||
      file.mimetype === "application/pdf" ||
      file.mimetype.includes("pdf") ||
      file.mimetype.includes("word") ||
      file.mimetype.includes("document"))
   ) {
-    cb(null, true);
+    cb(null, true); // Accept images and documents
   } else {
     req.fileValidationError = "Invalid file type. Only images and PDFs are allowed.";
-    cb(null, false);
+    cb(null, false); // Reject the file
   }
 };
 
+// Set up the document uploader (max 20MB)
 const documentUpload = multer({
   storage,
   fileFilter: documentFilter,
   limits: { fileSize: 20 * 1024 * 1024 },
 });
 
-// single document
+// Upload a single document (image or PDF) — used for passport/visa document uploads
 router.post("/document", documentUpload.single("document"), (req, res) => {
   if (req.fileValidationError) {
     return res.status(400).json({ message: req.fileValidationError });
@@ -102,6 +110,7 @@ router.post("/document", documentUpload.single("document"), (req, res) => {
     return res.status(400).json({ message: "No document uploaded" });
   }
 
+  // Return the public URL path of the saved document
   const documentUrl = `/uploads/${req.file.filename}`;
 
   return res.status(200).json({

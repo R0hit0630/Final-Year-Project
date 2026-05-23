@@ -24,20 +24,24 @@ const Login = ({ setUser }) => {
       return;
     }
     navigate("/explore", { replace: true });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // [FLOW FEATURE: LOGIN]
+  // Handles form submission, calls backend API, stores session credentials, and redirects
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
+      // Step 1: POST to /api/auth/login endpoint
       const res = await axios.post(`${API_BASE}/api/auth/login`, {
         identifier,
         password,
       });
 
+      // Step 2: Store the token inside localStorage
       localStorage.setItem("token", res.data.token);
 
       const userObj = {
@@ -48,10 +52,11 @@ const Login = ({ setUser }) => {
         agencyVerified: res.data.agencyVerified ?? null,
       };
 
+      // Step 3: Store the profile details in localStorage and update state
       localStorage.setItem("user", JSON.stringify(userObj));
       setUser(userObj);
 
-      //  Redirect by role
+      // Step 4: Redirect the user to the correct workspace depending on their role
       if (res.data.role === "agency") {
         if (res.data.agencyVerified) {
           navigate("/agency", { replace: true });
@@ -72,7 +77,7 @@ const Login = ({ setUser }) => {
 
   return (
     <div className="min-h-screen w-full flex bg-white font-sans text-slate-800">
-      
+
       {/* LEFT IMAGE PANEL */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden">
         <div
@@ -82,14 +87,14 @@ const Login = ({ setUser }) => {
           {/* Very light overlay to keep it bright and airy */}
           <div className="absolute inset-0 bg-black/20" />
         </div>
-        
+
         {/* Subtle branding overlay */}
         <div className="absolute bottom-12 left-12 text-white max-w-lg drop-shadow-md">
           <p className="text-sm font-semibold tracking-[0.2em] uppercase mb-4 opacity-90">
             Journey to the Himalayas
           </p>
           <h1 className="text-5xl font-light leading-tight">
-            Discover a world of <br/>
+            Discover a world of <br />
             <span className="font-semibold">extraordinary beauty.</span>
           </h1>
         </div>
@@ -98,7 +103,7 @@ const Login = ({ setUser }) => {
       {/* RIGHT FORM PANEL */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-16 lg:p-24 bg-white">
         <div className="w-full max-w-[420px]">
-          
+
           {/* Back to Home */}
           <div className="mb-8">
             <Link

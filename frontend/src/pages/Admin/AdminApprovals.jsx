@@ -13,6 +13,8 @@ export default function AdminApprovals() {
     secondary: "#2d3b2a",
   };
 
+  // [FLOW FEATURE: ADMIN APPROVALS - FETCH PENDING]
+  // Fetches lists of all registered travel agencies whose verification state is still pending
   const fetchApprovals = async () => {
     try {
       setLoading(true);
@@ -32,6 +34,8 @@ export default function AdminApprovals() {
     fetchApprovals();
   }, [apiBase]);
 
+  // [FLOW FEATURE: ADMIN APPROVALS - VERIFY AGENCY]
+  // Updates the verification state of a pending agency to verified in the database
   const handleApprove = async (agencyId) => {
     try {
       const token = localStorage.getItem("token");
@@ -39,12 +43,14 @@ export default function AdminApprovals() {
         headers: { Authorization: `Bearer ${token}` },
       });
       alert("Agency approved successfully!");
-      fetchApprovals();
+      fetchApprovals(); // Reload list to reflect approval status
     } catch (error) {
       alert("Failed to approve agency");
     }
   };
 
+  // [FLOW FEATURE: ADMIN APPROVALS - LOCAL SEARCH]
+  // Filters matching agencies based on agencyName or user email locally in the browser
   const filteredApprovals = useMemo(() => {
     return approvals.filter(item => {
       const name = item.agencyName || item.username || "";
@@ -94,102 +100,102 @@ export default function AdminApprovals() {
   };
 
   return (
-            <main className="flex-1 p-6 md:p-8 lg:p-10">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold">Agency Approvals</h1>
-            <p className="mt-1 text-[#6b7280]">
-              Review pending agency requests and verify submitted documents.
-            </p>
+    <main className="flex-1 p-6 md:p-8 lg:p-10">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Agency Approvals</h1>
+        <p className="mt-1 text-[#6b7280]">
+          Review pending agency requests and verify submitted documents.
+        </p>
+      </div>
+
+      <div className="mb-8 rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative w-full lg:max-w-sm">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]">
+              search
+            </span>
+            <input
+              type="text"
+              placeholder="Search by agency or owner"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 bg-[#fcfbf8] py-3 pl-11 pr-4 text-sm outline-none focus:border-primary/50"
+            />
           </div>
 
-          <div className="mb-8 rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="relative w-full lg:max-w-sm">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]">
-                  search
-                </span>
-                <input
-                  type="text"
-                  placeholder="Search by agency or owner"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-[#fcfbf8] py-3 pl-11 pr-4 text-sm outline-none focus:border-primary/50"
-                />
-              </div>
+          <select className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-[#2d3b2a] outline-none focus:border-primary/50">
+            <option>All Status</option>
+            <option>Pending</option>
+          </select>
+        </div>
+      </div>
 
-              <select className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-[#2d3b2a] outline-none focus:border-primary/50">
-                <option>All Status</option>
-                <option>Pending</option>
-              </select>
-            </div>
-          </div>
+      <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <h3 className="text-lg font-bold">Approval Requests</h3>
+        </div>
 
-          <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-lg font-bold">Approval Requests</h3>
-            </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
+                  Agency
+                </th>
+                <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
+                  Owner
+                </th>
+                <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
+                  Submitted
+                </th>
+                <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
+                  Document
+                </th>
+                <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
+                  Status
+                </th>
+                <th className="pb-4 text-right text-xs font-bold uppercase tracking-wider text-[#6b7280]">
+                  Action
+                </th>
+              </tr>
+            </thead>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                      Agency
-                    </th>
-                    <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                      Owner
-                    </th>
-                    <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                      Submitted
-                    </th>
-                    <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                      Document
-                    </th>
-                    <th className="pb-4 text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                      Status
-                    </th>
-                    <th className="pb-4 text-right text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredApprovals.map((item) => (
-                    <tr key={item._id} className="border-b border-gray-100 last:border-0">
-                      <td className="py-4">
-                        <p className="font-semibold text-[#2d3b2a]">{item.agencyName || item.username}</p>
-                        <p className="text-xs text-[#6b7280]">{item.email}</p>
-                      </td>
-                      <td className="py-4 text-[#4b5563]">{item.fullName || "N/A"}</td>
-                      <td className="py-4 text-[#4b5563]">{new Date(item.createdAt).toLocaleDateString()}</td>
-                      <td className="py-4 text-[#4b5563]">{renderCredentials(item)}</td>
-                      <td className="py-4">
-                        <span
-                          className={[
-                            "rounded-full border px-3 py-1 text-xs font-bold",
-                            getStatusBadge(item.agencyVerified),
-                          ].join(" ")}
-                        >
-                          {item.agencyVerified ? "Verified" : "Pending"}
-                        </span>
-                      </td>
-                      <td className="py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button 
-                            onClick={() => handleApprove(item._id)}
-                            className="rounded-lg bg-[#1978e5] px-3 py-2 text-xs font-bold text-white hover:opacity-90"
-                          >
-                            Approve
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </main>
+            <tbody>
+              {filteredApprovals.map((item) => (
+                <tr key={item._id} className="border-b border-gray-100 last:border-0">
+                  <td className="py-4">
+                    <p className="font-semibold text-[#2d3b2a]">{item.agencyName || item.username}</p>
+                    <p className="text-xs text-[#6b7280]">{item.email}</p>
+                  </td>
+                  <td className="py-4 text-[#4b5563]">{item.fullName || "N/A"}</td>
+                  <td className="py-4 text-[#4b5563]">{new Date(item.createdAt).toLocaleDateString()}</td>
+                  <td className="py-4 text-[#4b5563]">{renderCredentials(item)}</td>
+                  <td className="py-4">
+                    <span
+                      className={[
+                        "rounded-full border px-3 py-1 text-xs font-bold",
+                        getStatusBadge(item.agencyVerified),
+                      ].join(" ")}
+                    >
+                      {item.agencyVerified ? "Verified" : "Pending"}
+                    </span>
+                  </td>
+                  <td className="py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => handleApprove(item._id)}
+                        className="rounded-lg bg-[#1978e5] px-3 py-2 text-xs font-bold text-white hover:opacity-90"
+                      >
+                        Approve
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
   );
 }

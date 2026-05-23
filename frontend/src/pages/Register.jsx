@@ -5,10 +5,33 @@ import { API_BASE } from "../config/api.js";
 import bgImage from "../assets/bg.jpg";
 import travelinLogo from "../assets/travolin-logo.png";
 
+const _ISO_CODES = [
+  "AF","AL","DZ","AD","AO","AG","AR","AM","AU","AT","AZ","BS","BH","BD",
+  "BB","BY","BE","BZ","BJ","BT","BO","BA","BW","BR","BN","BG","BF","BI",
+  "CV","KH","CM","CA","CF","TD","CL","CN","CO","KM","CG","CD","CR","HR",
+  "CU","CY","CZ","DK","DJ","DM","DO","EC","EG","SV","GQ","ER","EE","SZ",
+  "ET","FJ","FI","FR","GA","GM","GE","DE","GH","GR","GD","GT","GN","GW",
+  "GY","HT","HN","HU","IS","IN","ID","IR","IQ","IE","IL","IT","JM","JP",
+  "JO","KZ","KE","KI","KW","KG","LA","LV","LB","LS","LR","LY","LI","LT",
+  "LU","MG","MW","MY","MV","ML","MT","MH","MR","MU","MX","FM","MD","MC",
+  "MN","ME","MA","MZ","MM","NA","NR","NP","NL","NZ","NI","NE","NG","KP",
+  "MK","NO","OM","PK","PW","PS","PA","PG","PY","PE","PH","PL","PT","QA",
+  "RO","RU","RW","KN","LC","VC","WS","SM","ST","SA","SN","RS","SC","SL",
+  "SG","SK","SI","SB","SO","ZA","KR","SS","ES","LK","SD","SR","SE","CH",
+  "SY","TW","TJ","TZ","TH","TL","TG","TO","TT","TN","TR","TM","TV","UG",
+  "UA","AE","GB","US","UY","UZ","VU","VA","VE","VN","YE","ZM","ZW",
+];
+const _regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+const COUNTRIES = _ISO_CODES
+  .map((code) => _regionNames.of(code))
+  .filter(Boolean)
+  .sort();
+
 const Register = ({ setUser }) => {
   const navigate = useNavigate();
 
-  // Redirect already-logged-in users to their dashboard
+  // [FLOW FEATURE: REGISTRATION - AUTH REDIRECT]
+  // Redirect already-logged-in users directly to their corresponding dashboards on load
   useEffect(() => {
     const token = localStorage.getItem("token");
     const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -40,12 +63,15 @@ const Register = ({ setUser }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // [FLOW FEATURE: REGISTRATION - SUBMIT]
+  // Sends registration fields to the backend, saves response tokens, and redirects user by role
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
+      // Step 1: Build the request payload based on the selected role
       const payload = {
         username: formData.username,
         email: formData.email,
@@ -60,11 +86,13 @@ const Register = ({ setUser }) => {
         payload.agencyPhone = formData.agencyPhone;
       }
 
+      // Step 2: POST registration details to the register API endpoint
       const res = await axios.post(
         `${API_BASE}/api/auth/register`,
         payload
       );
 
+      // Step 3: Save JWT token to localStorage
       localStorage.setItem("token", res.data.token);
 
       const userObj = {
@@ -75,9 +103,11 @@ const Register = ({ setUser }) => {
         agencyVerified: res.data.agencyVerified ?? null,
       };
 
+      // Step 4: Save basic user details object in localStorage
       localStorage.setItem("user", JSON.stringify(userObj));
       if (setUser) setUser(userObj);
 
+      // Step 5: Redirect to appropriate route based on user role and verification status
       if (res.data.role === "agency") {
         if (res.data.agencyVerified) {
           navigate("/agency");
@@ -227,15 +257,18 @@ const Register = ({ setUser }) => {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 block">Nationality</label>
-                <input
-                  type="text"
+                <select
                   name="nationality"
-                  placeholder="e.g. USA"
                   value={formData.nationality}
                   onChange={handleChange}
-                  className={inputClass}
+                  className={`${inputClass} cursor-pointer`}
                   required
-                />
+                >
+                  <option value="" disabled>Select country…</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
             </div>
 

@@ -117,6 +117,8 @@ export default function AddPackage() {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // [FLOW FEATURE: CREATE PACKAGE]
+  // Step 1: Upload the selected package images to the server's local upload API
   const uploadImages = async (files, token) => {
     const fd = new FormData();
     files.forEach((file) => fd.append("images", file));
@@ -130,6 +132,8 @@ export default function AddPackage() {
     return res?.data?.imageUrls || [];
   };
 
+  // [FLOW FEATURE: CREATE PACKAGE]
+  // Step 2: Validate fields, perform the image upload, and submit payload to backend API
   const handleLaunch = async () => {
     setError("");
 
@@ -172,12 +176,14 @@ export default function AddPackage() {
     try {
       setSaving(true);
 
+      // Trigger Step 1: Upload the images
       const uploadedImageUrls = await uploadImages(images, token);
 
       if (!uploadedImageUrls.length) {
         throw new Error("Image upload failed");
       }
 
+      // Step 3: Post the package payload with uploaded image paths to the backend
       await axios.post(
         `${API_BASE}/api/packages`,
         {
@@ -200,6 +206,7 @@ export default function AddPackage() {
         }
       );
 
+      // Navigate back to agency packages listing on success
       navigate("/agency/packages", { replace: true });
     } catch (err) {
       console.error("LAUNCH ERROR:", err);

@@ -1,9 +1,6 @@
 import User from "../models/user.js";
 
-// ==============================
 // USER PROFILE
-// ==============================
-
 // GET /api/users/me
 export const getMyProfile = async (req, res) => {
   try {
